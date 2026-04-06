@@ -141,27 +141,31 @@ const content = {
         bgColor: "#B5E0F1",
         textColor: "#1a5276",
         title: "What is Diabetes?",
-        image: "/images/diabetes-what.jpg",
         points: [
-          "A condition where your blood has too much sugar",
-          "Food turns into sugar (glucose) in your blood when you eat",
-          "Your body needs insulin to move sugar into cells for energy",
-          "With diabetes, this process does not work properly",
+          "Too much sugar in your blood",
+          "Happens when body cannot use sugar properly",
+          "Insulin does not work well or is not enough",
         ],
+        subSection: {
+          title: "Prediabetes",
+          points: [
+            "Blood sugar is higher than normal",
+            "Not diabetes yet, but high risk",
+            "About 11.6% Malaysians have prediabetes",
+          ],
+        },
       },
       {
         icon: Activity,
         bgColor: "#DAE0AF",
         textColor: "#5d6d1e",
         title: "Why Does It Happen?",
-        image: "/images/diabetes-why.jpg",
         points: [
-          "Eating too much sweet or oily food",
+          "Eat too much sugar / unhealthy food",
           "Lack of exercise",
-          "Being overweight",
-          "Family history of diabetes",
-          "High blood pressure",
-          "Age (risk increases after 45 years old)",
+          "Overweight",
+          "Family history",
+          "Age (risk higher for elderly)",
         ],
       },
       {
@@ -169,28 +173,26 @@ const content = {
         bgColor: "#F8DFF1",
         textColor: "#8b3a62",
         title: "Symptoms",
-        image: "/images/diabetes-symptoms.jpg",
         points: [
-          "Feeling very thirsty all the time",
-          "Urinating often (especially at night)",
-          "Feeling very tired",
+          "Very thirsty",
+          "Urinate often",
+          "Feel tired",
           "Blurry vision",
-          "Slow healing of wounds",
-          "Feeling hungry even after eating",
+          "Wounds heal slowly",
         ],
+        warning: "Some people may have no symptoms early",
       },
       {
         icon: Heart,
         bgColor: "#E6EAC7",
         textColor: "#4a5a23",
         title: "Prevention",
-        image: "/images/diabetes-prevention.jpg",
         points: [
-          "Eat less sweet food and sugary drinks",
-          "Choose brown rice over white rice",
-          "Exercise for 30 minutes daily (walking is fine!)",
-          "Maintain a healthy weight",
-          "Do regular blood sugar checks",
+          "Reduce sugar and sweet drinks",
+          "Choose healthier food options",
+          "Exercise regularly (e.g., walking)",
+          "Maintain healthy weight",
+          "Check blood sugar regularly",
         ],
       },
     ],
@@ -223,27 +225,31 @@ const content = {
         bgColor: "#B5E0F1",
         textColor: "#1a5276",
         title: "Apa Itu Diabetes?",
-        image: "/images/diabetes-what.jpg",
         points: [
-          "Keadaan di mana darah anda mengandungi terlalu banyak gula",
-          "Makanan bertukar menjadi gula (glukosa) dalam darah anda",
-          "Badan anda memerlukan insulin untuk memindahkan gula ke dalam sel",
-          "Dengan diabetes, proses ini tidak berfungsi dengan betul",
+          "Terlalu banyak gula dalam darah anda",
+          "Berlaku apabila badan tidak dapat menggunakan gula dengan betul",
+          "Insulin tidak berfungsi dengan baik atau tidak mencukupi",
         ],
+        subSection: {
+          title: "Pradiabetes",
+          points: [
+            "Gula darah lebih tinggi daripada biasa",
+            "Belum diabetes, tetapi berisiko tinggi",
+            "Kira-kira 11.6% rakyat Malaysia menghidap pradiabetes",
+          ],
+        },
       },
       {
         icon: Activity,
         bgColor: "#DAE0AF",
         textColor: "#5d6d1e",
         title: "Kenapa Ia Berlaku?",
-        image: "/images/diabetes-why.jpg",
         points: [
-          "Makan terlalu banyak makanan manis atau berminyak",
+          "Makan terlalu banyak gula / makanan tidak sihat",
           "Kurang bersenam",
           "Berat badan berlebihan",
-          "Sejarah keluarga diabetes",
-          "Tekanan darah tinggi",
-          "Umur (risiko meningkat selepas 45 tahun)",
+          "Sejarah keluarga",
+          "Umur (risiko lebih tinggi untuk warga emas)",
         ],
       },
       {
@@ -251,28 +257,26 @@ const content = {
         bgColor: "#F8DFF1",
         textColor: "#8b3a62",
         title: "Gejala",
-        image: "/images/diabetes-symptoms.jpg",
         points: [
-          "Rasa dahaga yang berlebihan",
-          "Kerap kencing (terutama pada waktu malam)",
-          "Rasa sangat penat",
+          "Sangat dahaga",
+          "Kerap kencing",
+          "Rasa penat",
           "Penglihatan kabur",
-          "Penyembuhan luka yang lambat",
-          "Rasa lapar walaupun selepas makan",
+          "Luka lambat sembuh",
         ],
+        warning: "Sesetengah orang mungkin tiada gejala pada peringkat awal",
       },
       {
         icon: Heart,
         bgColor: "#E6EAC7",
         textColor: "#4a5a23",
         title: "Pencegahan",
-        image: "/images/diabetes-prevention.jpg",
         points: [
-          "Makan kurang makanan manis dan minuman bergula",
-          "Pilih nasi perang berbanding nasi putih",
-          "Bersenam 30 minit sehari (berjalan kaki pun boleh!)",
-          "Mengekalkan berat badan yang sihat",
-          "Melakukan pemeriksaan gula darah secara berkala",
+          "Kurangkan gula dan minuman manis",
+          "Pilih makanan yang lebih sihat",
+          "Bersenam secara tetap (contoh: berjalan kaki)",
+          "Kekalkan berat badan yang sihat",
+          "Periksa gula darah secara berkala",
         ],
       },
     ],
@@ -305,27 +309,31 @@ const content = {
         bgColor: "#B5E0F1",
         textColor: "#1a5276",
         title: "什么是糖尿病？",
-        image: "/images/diabetes-what.jpg",
         points: [
-          "血液中糖分过多的一种疾病",
-          "进食时食物在血液中转化为糖（葡萄糖）",
-          "身体需要胰岛素将糖转移到细胞中获取能量",
-          "患有糖尿病时，这个过程不能正常运作",
+          "血液中糖分过多",
+          "当身体无法正常使用糖分时发生",
+          "胰岛素功能不佳或不足",
         ],
+        subSection: {
+          title: "糖尿病前期",
+          points: [
+            "血糖高于正常水平",
+            "尚未患糖尿病，但风险很高",
+            "约11.6%的马来西亚人有糖尿病前期",
+          ],
+        },
       },
       {
         icon: Activity,
         bgColor: "#DAE0AF",
         textColor: "#5d6d1e",
         title: "为什么会患上？",
-        image: "/images/diabetes-why.jpg",
         points: [
-          "摄入过多甜食或油腻食物",
+          "摄入过多糖分/不健康食物",
           "缺乏运动",
           "超重",
-          "糖尿病家族史",
-          "高血压",
-          "年龄（45岁后风险增加）",
+          "家族病史",
+          "年龄（老年人风险更高）",
         ],
       },
       {
@@ -333,28 +341,26 @@ const content = {
         bgColor: "#F8DFF1",
         textColor: "#8b3a62",
         title: "症状",
-        image: "/images/diabetes-symptoms.jpg",
         points: [
-          "经常感到极度口渴",
-          "频繁排尿（尤其是夜间）",
-          "感到非常疲倦",
+          "非常口渴",
+          "频繁排尿",
+          "感到疲倦",
           "视力模糊",
           "伤口愈合缓慢",
-          "吃饭后仍感到饥饿",
         ],
+        warning: "有些人早期可能没有症状",
       },
       {
         icon: Heart,
         bgColor: "#E6EAC7",
         textColor: "#4a5a23",
         title: "预防",
-        image: "/images/diabetes-prevention.jpg",
         points: [
-          "减少甜食和含糖饮料",
-          "选择糙米而非白米",
-          "每天运动30分钟（散步也行！）",
-          "维持健康体重",
-          "定期检测血糖",
+          "减少糖分和甜饮料",
+          "选择更健康的食物",
+          "定期运动（如散步）",
+          "保持健康体重",
+          "定期检查血糖",
         ],
       },
     ],
@@ -365,39 +371,68 @@ const content = {
 function EduCard({ section }: { section: (typeof content.en.edu_sections)[0] }) {
   return (
     <div 
-      className="rounded-2xl border border-border/30 overflow-hidden shadow-sm"
+      className="rounded-2xl border border-border/30 overflow-hidden shadow-sm p-6 sm:p-8"
       style={{ backgroundColor: section.bgColor }}
     >
-      <div className="flex flex-col md:flex-row">
-        {/* Image Section */}
-        <div className="md:w-2/5 aspect-[4/3] md:aspect-auto relative overflow-hidden">
-          <img 
-            src={section.image} 
-            alt={section.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {/* Content Section */}
-        <div className="md:w-3/5 p-8 flex flex-col justify-center">
-          <h3 
-            className="text-2xl font-bold mb-5"
+      <h3 
+        className="text-2xl font-bold mb-5"
+        style={{ color: section.textColor }}
+      >
+        {section.title}
+      </h3>
+      <ul className="space-y-3 mb-4">
+        {section.points.map((point, idx) => (
+          <li key={idx} className="flex items-start gap-3">
+            <section.icon 
+              className="w-5 h-5 shrink-0 mt-0.5" 
+              style={{ color: section.textColor }}
+            />
+            <span className="text-base leading-relaxed text-foreground/90">{point}</span>
+          </li>
+        ))}
+      </ul>
+      
+      {/* SubSection for Prediabetes info */}
+      {section.subSection && (
+        <div className="mt-6 pt-4 border-t border-foreground/10">
+          <h4 
+            className="text-xl font-bold mb-3"
             style={{ color: section.textColor }}
           >
-            {section.title}
-          </h3>
-          <ul className="space-y-3">
-            {section.points.map((point, idx) => (
-              <li key={idx} className="flex items-center gap-3">
-                <section.icon 
-                  className="w-5 h-5 shrink-0" 
-                  style={{ color: section.textColor }}
+            {section.subSection.title}
+          </h4>
+          <ul className="space-y-2">
+            {section.subSection.points.map((point, idx) => (
+              <li key={idx} className="flex items-start gap-3">
+                <span 
+                  className="w-2 h-2 rounded-full shrink-0 mt-2" 
+                  style={{ backgroundColor: section.textColor }}
                 />
                 <span className="text-base leading-relaxed text-foreground/90">{point}</span>
               </li>
             ))}
           </ul>
         </div>
-      </div>
+      )}
+      
+      {/* Warning message */}
+      {section.warning && (
+        <div 
+          className="mt-4 p-3 rounded-xl flex items-center gap-3"
+          style={{ backgroundColor: `${section.textColor}15` }}
+        >
+          <AlertCircle 
+            className="w-5 h-5 shrink-0" 
+            style={{ color: section.textColor }}
+          />
+          <span 
+            className="text-base font-medium"
+            style={{ color: section.textColor }}
+          >
+            {section.warning}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

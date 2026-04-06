@@ -13,6 +13,20 @@ export const metadata: Metadata = {
   title: 'MANIS - Modern Analytics & Nutrition Interactive System',
   description: 'MANIS helps Malaysian elderly understand and manage their sugar intake for diabetes prevention. Sistem Interaktif Analitik & Pemakanan Moden untuk warga emas Malaysia. 面向马来西亚老年人的现代分析与营养互动系统。',
   generator: 'v0.app',
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'icon', url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+      { rel: 'icon', url: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
