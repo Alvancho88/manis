@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { PageLayout } from "@/components/page-layout"
 import Link from "next/link"
 import Image from "next/image"
@@ -14,10 +15,22 @@ const content = {
     hero_secondary: "Learn More",
     stats_title: "Diabetes in Malaysia",
     stats: [
-      { value: "21.1%", label: "Malaysian adults have diabetes", icon: Users },
-      { value: "40%", label: "Elderly aged 60+ affected", icon: TrendingUp },
-      { value: "4.75M", label: "People living with diabetes", icon: Heart },
+      { value: "1 in 5", label: "Malaysian adults have diabetes", image: "/images/1-in-5.png" },
+      { value: "2 in 5", label: "Elderly aged 60+ are affected", icon: Users },
+      { value: "4.75M", label: "People living with diabetes.", icon: Heart },
     ],
+    prediabetes_title: "The Warning Sign We Cannot Ignore",
+    prediabetes_value: "11.6%",
+    prediabetes_sublabel: "of Malaysian adults have prediabetes, and it is growing",
+    prediabetes_approx: "≈ 2.6 million people",
+    prediabetes_bars: [
+      { label: "Healthy", value: 67.3, colorClass: "bg-blue-500", textColorClass: "text-blue-700" },
+      { label: "Diabetes", value: 21.1, colorClass: "bg-red-500", textColorClass: "text-red-700" },
+      { label: "Prediabetes ↑", value: 11.6, colorClass: "bg-amber-500", textColorClass: "text-amber-700", highlight: true },
+    ],
+    prediabetes_callout_title: "11.6% of us are at a crossroads — and that number is climbing.",
+    prediabetes_callout_body: "Prediabetes is your last window of opportunity. With the right steps today, you can stop it from becoming diabetes, but that window will not stay open forever. ",
+    prediabetes_cta_hint: "Use the buttons below to start your journey of prevention and learn more about prediabetes and diabetes.",
     features_title: "What Can I Do Here?",
     features: [
       {
@@ -69,10 +82,22 @@ const content = {
     hero_secondary: "Ketahui Lebih Lanjut",
     stats_title: "Diabetes di Malaysia",
     stats: [
-      { value: "21.1%", label: "Orang dewasa Malaysia menghidap diabetes", icon: Users },
+      { value: "21.1%", label: "Orang dewasa Malaysia menghidap diabetes", image: "/images/1-in-5.png" },
       { value: "40%", label: "Warga emas berusia 60+ terjejas", icon: TrendingUp },
       { value: "4.75J", label: "Orang hidup dengan diabetes", icon: Heart },
     ],
+    prediabetes_title: "Amaran Yang Tidak Boleh Diabaikan",
+    prediabetes_value: "11.6%",
+    prediabetes_sublabel: "orang dewasa Malaysia menghidap prediabetes — dan semakin meningkat",
+    prediabetes_approx: "≈ 2.6 juta orang",
+    prediabetes_bars: [
+      { label: "Sihat", value: 67.3, colorClass: "bg-blue-500", textColorClass: "text-blue-700" },
+      { label: "Diabetes", value: 21.1, colorClass: "bg-red-500", textColorClass: "text-red-700" },
+      { label: "Prediabetes ↑", value: 11.6, colorClass: "bg-amber-500", textColorClass: "text-amber-700", highlight: true },
+    ],
+    prediabetes_callout_title: "11.6% daripada kita berada di persimpangan — dan angka itu semakin meningkat.",
+    prediabetes_callout_body: "Prediabetes adalah peluang terakhir anda. Dengan langkah yang betul hari ini, anda boleh menghalangnya daripada menjadi diabetes — tetapi peluang itu tidak akan kekal selamanya.",
+    prediabetes_cta_hint: "Gunakan butang di bawah untuk memulakan perjalanan pencegahan anda dan ketahui lebih lanjut tentang prediabetes dan diabetes.",
     features_title: "Apa Yang Boleh Saya Lakukan Di Sini?",
     features: [
       {
@@ -124,10 +149,22 @@ const content = {
     hero_secondary: "了解更多",
     stats_title: "马来西亚的糖尿病",
     stats: [
-      { value: "21.1%", label: "马来西亚成年人患有糖尿病", icon: Users },
+      { value: "21.1%", label: "马来西亚成年人患有糖尿病", image: "/images/1-in-5.png" },
       { value: "40%", label: "60岁以上老年人受影响", icon: TrendingUp },
       { value: "475万", label: "人患有糖尿病", icon: Heart },
     ],
+    prediabetes_title: "我们不能忽视的警告信号",
+    prediabetes_value: "11.6%",
+    prediabetes_sublabel: "的马来西亚成年人患有前驱糖尿病 — 且仍在增加",
+    prediabetes_approx: "约 260 万人",
+    prediabetes_bars: [
+      { label: "健康", value: 67.3, colorClass: "bg-blue-500", textColorClass: "text-blue-700" },
+      { label: "糖尿病", value: 21.1, colorClass: "bg-red-500", textColorClass: "text-red-700" },
+      { label: "前驱糖尿病 ↑", value: 11.6, colorClass: "bg-amber-500", textColorClass: "text-amber-700", highlight: true },
+    ],
+    prediabetes_callout_title: "11.6% 的人站在十字路口 — 而这个数字还在攀升。",
+    prediabetes_callout_body: "前驱糖尿病是您最后的机会窗口。今天采取正确的步骤，您可以阻止它发展为糖尿病 — 但这个窗口不会永远敞开。",
+    prediabetes_cta_hint: "使用下方的按钮，开始您的预防之旅，并进一步了解前驱糖尿病和糖尿病。",
     features_title: "我在这里可以做什么？",
     features: [
       {
@@ -171,6 +208,26 @@ const content = {
     tip_title: "今日健康贴士",
     tip: "用糙米代替白米有助于降低您的血糖。今天试试一餐！",
   },
+}
+
+// Animated bar component — grows from 0 to target width on mount
+function AnimatedBar({ value, colorClass }: { value: number; colorClass: string }) {
+  const barRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = barRef.current
+    if (!el) return
+    // Start at 0, then animate to target after a short delay so the transition fires
+    el.style.width = "0%"
+    const timer = setTimeout(() => {
+      el.style.width = `${value}%`
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [value])
+
+  return (
+    <div ref={barRef} className={`h-full rounded-full ${colorClass} transition-all duration-[1400ms] ease-[cubic-bezier(.4,0,.2,1)]`} style={{ width: "0%" }} />
+  )
 }
 
 export default function HomePage() {
@@ -240,7 +297,7 @@ export default function HomePage() {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-6 h-6 text-accent-foreground shrink-0 mt-0.5" />
-                  <p className="text-base text-accent-foreground font-medium">
+                  <p className="text-lg text-accent-foreground font-medium">
                     <span className="font-bold">{t.warning_title}: </span>
                     {t.warning_text}
                   </p>
@@ -255,7 +312,18 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   {t.stats.map((stat, i) => (
                     <div key={i} className="bg-background rounded-2xl p-6 text-center border border-border shadow-sm">
-                      <stat.icon className="w-10 h-10 text-primary mx-auto mb-3" />
+                      {stat.image ? (
+                        <div className="relative w-35 h-16 mx-auto mb-3">
+                          <Image
+                            src={stat.image}
+                            alt={stat.label}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      ) : stat.icon ? (
+                        <stat.icon className="w-16 h-16 text-primary mx-auto mb-3" />
+                      ) : null}
                       <div className="text-4xl md:text-5xl font-extrabold text-primary mb-2">{stat.value}</div>
                       <div className="text-base md:text-lg text-muted-foreground font-medium">{stat.label}</div>
                     </div>
@@ -264,6 +332,72 @@ export default function HomePage() {
               </div>
             </section>
 
+            {/* Prediabetes Prevalence Section */}
+            <section className="py-12 md:py-16 bg-background">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 text-balance">
+                  {t.prediabetes_title}
+                </h2>
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-6 md:p-8">
+
+                  {/* Big number */}
+                  <div className="mb-8">
+                    <div className="flex items-baseline gap-3 mb-1">
+                      <span className="text-5xl md:text-6xl font-extrabold text-amber-600">
+                        {t.prediabetes_value}
+                      </span>
+                      <span className="text-lg md:text-xl text-muted-foreground leading-snug">
+                        {t.prediabetes_sublabel}
+                      </span>
+                    </div>
+                    <p className="text-lg text-muted-foreground">{t.prediabetes_approx}</p>
+                  </div>
+
+                  {/* Animated bars */}
+                  <div className="flex flex-col gap-4 mb-8">
+                    {t.prediabetes_bars.map((bar, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-4 bg-background rounded-2xl px-5 py-4 border ${
+                          bar.highlight ? "border-amber-400" : "border-border"
+                        }`}
+                      >
+                        <span
+                          className={`text-lg w-36 shrink-0 ${
+                            bar.highlight ? "font-bold text-amber-700" : "text-muted-foreground"
+                          }`}
+                        >
+                          {bar.label}
+                        </span>
+                        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                          <AnimatedBar value={bar.value} colorClass={bar.colorClass} />
+                        </div>
+                        <span className={`text-lg font-bold w-12 text-right ${bar.textColorClass}`}>
+                          {bar.value}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Callout text */}
+                  <div className="border-l-4 border-amber-400 pl-4 md:pl-5">
+                    <p className="text-base md:text-xl font-bold text-foreground mb-1">
+                      {t.prediabetes_callout_title}
+                    </p>
+                    <p className="text-sm md:text-lg text-muted-foreground leading-relaxed">
+                      {t.prediabetes_callout_body}
+                    </p>
+                    
+                  </div>
+
+                  <p className="text-lg md:text-lg font-bold">
+                      {t.prediabetes_cta_hint}
+                  </p>
+
+                </div>
+              </div>
+            </section>
+            
             {/* Daily Tip */}
             <section className="py-8 bg-amber-100 border-y-2 border-amber-400/50">
               <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -272,8 +406,8 @@ export default function HomePage() {
                     <Heart className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <div className="font-bold text-amber-800 text-xl mb-1">{t.tip_title}</div>
-                    <p className="text-lg md:text-xl text-amber-900">{t.tip}</p>
+                    <div className="font-bold text-xl mb-1">{t.tip_title}</div>
+                    <p className="text-lg md:text-xl">{t.tip}</p>
                   </div>
                 </div>
               </div>
@@ -294,7 +428,7 @@ export default function HomePage() {
                         <feature.icon className="w-7 h-7 text-white" />
                       </div>
                       <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                      <p className="text-base text-muted-foreground leading-relaxed">{feature.desc}</p>
+                      <p className="text-lg text-muted-foreground leading-relaxed">{feature.desc}</p>
                     </Link>
                   ))}
                 </div>

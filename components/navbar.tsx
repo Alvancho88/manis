@@ -63,7 +63,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                   )}
                 >
                   <item.icon className="w-6 h-6 shrink-0" />
-                  <span className="whitespace-nowrap text-xs">{t(item.label)}</span>
+                  <span className="whitespace-nowrap text-sm">{t(item.label)}</span>
                 </Link>
               )
             })}
