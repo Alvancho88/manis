@@ -734,27 +734,27 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
         {"controllableTiles" in section && section.controllableTiles && (
           <div className="flex flex-col gap-3">
             <div>
-              <p className="text-sm font-medium mb-2" style={{ color: "#085041" }}>
+              <p className="text-base font-medium mb-2" style={{ color: "#085041" }}>
                 {section.controllableTiles.canControlLabel}
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {section.controllableTiles.canControl.map((tile, i) => (
                   <div key={i} className="rounded-xl p-2 flex flex-col items-center gap-2 text-center" style={{ backgroundColor: "#E1F5EE" }}>
                     <ImgOrPlaceholder src={tile.image} alt={tile.label} className="w-full h-20" />
-                    <p className="text-sm font-medium leading-tight" style={{ color: "#085041" }}>{tile.label}</p>
+                    <p className="text-base font-medium leading-tight" style={{ color: "#085041" }}>{tile.label}</p>
                   </div>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium mb-2" style={{ color: "#633806" }}>
+              <p className="text-base font-medium mb-2" style={{ color: "#633806" }}>
                 {section.controllableTiles.cannotControlLabel}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {section.controllableTiles.cannotControl.map((tile, i) => (
                   <div key={i} className="rounded-xl p-2 flex flex-col items-center gap-2 text-center" style={{ backgroundColor: "#FAEEDA" }}>
                     <ImgOrPlaceholder src={tile.image} alt={tile.label} className="w-full h-20" />
-                    <p className="text-sm font-medium leading-tight" style={{ color: "#633806" }}>{tile.label}</p>
+                    <p className="text-base font-medium leading-tight" style={{ color: "#633806" }}>{tile.label}</p>
                   </div>
                 ))}
               </div>
