@@ -71,13 +71,13 @@ const content = {
         titleColor: "#0C447C",
         title: "What is diabetes?",
         points: [
-          "Your body needs sugar (glucose) for energy",
-          "Insulin is the \"key\" that lets sugar into your cells",
-          "In diabetes, the key is missing or broken, sugar builds up in blood",
+          "Sugar = Energy for your body.",
+          "Insulin is the \"key\" that lets sugar into your cells.",
+          "In diabetes, the key is broken. Sugar gets stuck in your blood.",
         ],
         types: [
-          { label: "Type 1", bg: "#E6F1FB", textColor: "#0C447C", desc: "Body makes no insulin. Needs daily injections. Usually starts young.", image: "/images/edu/Type1.png" },
-          { label: "Type 2", bg: "#E1F5EE", textColor: "#085041", desc: "Body ignores insulin. More common. Strongly linked to lifestyle.", image: "/images/edu/Type2.png" },
+          { label: "■ Type 1", bg: "#E6F1FB", textColor: "#0C447C", desc: "Born with it.\nBody makes no insulin.\nNeeds daily injections.", image: "/images/edu/Type1.png" },
+          { label: "▲ Type 2", bg: "#E1F5EE", textColor: "#085041", desc: "Lifestyle linked.\nBody ignores insulin.\nMost common type.", image: "/images/edu/Type2.png" },
         ],
         subSection: {
           bg: "#E6F1FB",
@@ -693,10 +693,10 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
         {"types" in section && section.types && (
           <div className="grid grid-cols-2 gap-3">
             {section.types.map((t, i) => (
-              <div key={i} className="rounded-xl p-3 flex flex-col gap-2" style={{ backgroundColor: t.bg }}>
+              <div key={i} className="rounded-xl p-4 flex flex-col items-center text-center gap-2" style={{ backgroundColor: t.bg }}>
                 <ImgOrPlaceholder src={t.image} alt={t.label} className="w-full h-24" />
                 <p className="text-base font-bold" style={{ color: t.textColor }}>{t.label}</p>
-                <p className="text-base leading-snug text-foreground">{t.desc}</p>
+                <p className="text-base leading-snug text-foreground whitespace-pre-line">{t.desc}</p>
               </div>
             ))}
           </div>
@@ -794,7 +794,7 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
         {/* See a doctor box (symptoms) */}
         {"seeDoctor" in section && section.seeDoctor && (
           <div className="rounded-xl p-4" style={{ backgroundColor: section.seeDoctor.bg }}>
-            <p className="text-base font-medium mb-2" style={{ color: section.seeDoctor.titleColor }}>
+            <p className="text-base font-bold mb-2" style={{ color: section.seeDoctor.titleColor }}>
               {section.seeDoctor.title}
             </p>
             <ul className="space-y-1.5">
