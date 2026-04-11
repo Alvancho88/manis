@@ -387,16 +387,16 @@ function CommonFoodCard({ food, t, lang }: { food: typeof commonFoods[0]; t: typ
           <h4 className="font-bold text-base text-center mb-2 sm:mb-3">{food.name}</h4>
           <div className="grid grid-cols-3 gap-1">
             <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-xs sm:text-sm truncate">{food.sugar}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-xs truncate">{t.nutrition_sugar}</div>
+              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.sugar}</div>
+              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_sugar}</div>
             </div>
             <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-xs sm:text-sm truncate">{food.calories}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-xs truncate">{t.nutrition_cal}</div>
+              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.calories}</div>
+              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_cal}</div>
             </div>
             <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-xs sm:text-sm truncate">{food.gi}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-xs truncate">{t.nutrition_gi}</div>
+              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.gi}</div>
+              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_gi}</div>
             </div>
           </div>
         </div>

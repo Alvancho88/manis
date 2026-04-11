@@ -3,7 +3,7 @@
 import { PageLayout } from "@/components/page-layout"
 import { useState, useEffect, useRef } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, Cell, LabelList } from "recharts"
-import { AlertCircle, Heart, Activity, Eye, X, ChevronDown, Users, TrendingUp, Skull, HeartPulse } from "lucide-react"
+import { AlertCircle, Heart, Activity, Eye, X, ChevronDown, Users, TrendingUp, Skull, HeartPulse, TriangleAlert, CalendarCheck } from "lucide-react"
 import { MalaysiaChoroplethMap, type YearMapData } from "@/components/malaysia-choropleth-map"
 import Image from "next/image"
 
@@ -60,64 +60,175 @@ const content = {
     average_rate: "Average Rate",
     click_state: "👆 Tap a state for more information",
     edu_title: "Understand Diabetes",
+    edu_learn_more: "Learn more",
+    edu_show_less: "Show less",
     edu_sections: [
       {
         icon: AlertCircle,
-        bgColor: "#B5E0F1",
-        textColor: "#1a5276",
-        title: "What is Diabetes?",
+        borderColor: "#378ADD",
+        iconBg: "#E6F1FB",
+        iconColor: "#185FA5",
+        titleColor: "#0C447C",
+        title: "What is diabetes?",
         points: [
-          "Too much sugar in your blood",
-          "Happens when body cannot use sugar properly",
-          "Insulin does not work well or is not enough",
+          "Your body needs sugar (glucose) for energy",
+          "Insulin is the \"key\" that lets sugar into your cells",
+          "In diabetes, the key is missing or broken, sugar builds up in blood",
+        ],
+        types: [
+          { label: "Type 1", bg: "#E6F1FB", textColor: "#0C447C", desc: "Body makes no insulin. Needs daily injections. Usually starts young." },
+          { label: "Type 2", bg: "#E1F5EE", textColor: "#085041", desc: "Body ignores insulin. More common. Strongly linked to lifestyle." },
         ],
         subSection: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
           title: "Prediabetes",
           points: [
-            "Blood sugar is higher than normal",
-            "Not diabetes yet, but high risk",
-            "About 11.6% Malaysians have prediabetes",
+            { text: "Blood sugar higher than normal, but not yet diabetes", highlight: false },
+            { text: "It is reversible, healthy habits can bring it back to normal", highlight: true },
+            { text: "11.6% of Malaysians have prediabetes, many don't know it", highlight: false },
           ],
         },
+        learnMore: [
+          "Diabetes is a long-term condition. It cannot be cured, but it can be managed well. Many people with diabetes live full, healthy lives.",
+          "Type 2 makes up over 90% of cases in Malaysia and develops slowly over years, often without obvious signs.",
+          "Doctors diagnose diabetes using an HbA1c blood test, which shows your average blood sugar over 3 months. A fasting blood sugar test is also commonly used.",
+        ],
       },
       {
         icon: Activity,
-        bgColor: "#DAE0AF",
-        textColor: "#5d6d1e",
-        title: "Why Does It Happen?",
+        borderColor: "#1D9E75",
+        iconBg: "#E1F5EE",
+        iconColor: "#0F6E56",
+        titleColor: "#085041",
+        title: "Risk factors",
         points: [
-          "Eat too much sugar / unhealthy food",
-          "Lack of exercise",
-          "Overweight",
-          "Family history",
-          "Age (risk higher for elderly)",
+          "Eating too much sugar, white rice, or processed food",
+          "Not moving enough daily",
+          "Being overweight, especially around the belly",
+          "Family member (parent or sibling) with diabetes",
+          "Age 40 and above",
+          "History of gestational diabetes (during pregnancy)",
+        ],
+        controllable: {
+          label: "Can you change it?",
+          labelColor: "#085041",
+          yes: ["Diet", "Exercise", "Weight"],
+          no: ["Age", "Family history"],
+          note: "Green = can control · Orange = cannot control",
+        },
+        learnMore: [
+          "Having one or two risk factors does not mean you will definitely get diabetes, but the more you have, the higher your chance.",
+          "Belly fat is a particularly strong risk factor because fat around the organs directly affects how insulin works.",
+          "Even if diabetes runs in your family, lifestyle changes can delay or prevent it. You are not powerless against your genes.",
         ],
       },
       {
         icon: Eye,
-        bgColor: "#F8DFF1",
-        textColor: "#8b3a62",
-        title: "Symptoms",
+        borderColor: "#BA7517",
+        iconBg: "#FAEEDA",
+        iconColor: "#854F0B",
+        titleColor: "#633806",
+        title: "Symptoms to watch for",
         points: [
-          "Very thirsty",
-          "Urinate often",
-          "Feel tired",
-          "Blurry vision",
-          "Wounds heal slowly",
+          "Feeling very thirsty even after drinking",
+          "Needing to urinate frequently, especially at night",
+          "Feeling tired or weak without reason",
+          "Blurry or worsening vision",
+          "Cuts or wounds that heal very slowly",
+          "Numbness or tingling in hands or feet",
         ],
-        warning: "Some people may have no symptoms early",
+        warning: {
+          bg: "#FAEEDA",
+          iconColor: "#854F0B",
+          textColor: "#633806",
+          text: "Many people with Type 2 diabetes have no symptoms for years. Damage can happen silently.",
+        },
+        seeDoctor: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
+          textColor: "#185FA5",
+          title: "See a doctor if you:",
+          points: [
+            "Have 2 or more symptoms above",
+            "Have a family member with diabetes",
+            "Haven't had a blood sugar check in over a year",
+          ],
+        },
+        learnMore: [
+          "Foot numbness and tingling are early signs of nerve damage (neuropathy): a complication of long-term high blood sugar that, if ignored, can lead to serious foot problems.",
+          "Eye, kidney, and heart damage also develop silently over years. This is why regular screening matters more than waiting for symptoms.",
+        ],
+      },
+      {
+        icon: TriangleAlert,
+        borderColor: "#D85A30",
+        iconBg: "#FAECE7",
+        iconColor: "#993C1D",
+        titleColor: "#712B13",
+        title: "Complications if unmanaged",
+        intro: "High blood sugar over time damages blood vessels and nerves throughout the body:",
+        complications: [
+          { label: "Eyes", bg: "#FBEAF0", textColor: "#72243E", desc: "Blurry vision, cataracts, blindness" },
+          { label: "Kidneys", bg: "#E6F1FB", textColor: "#0C447C", desc: "Kidney failure, need for dialysis" },
+          { label: "Heart", bg: "#FAECE7", textColor: "#712B13", desc: "Heart attack, coronary disease" },
+          { label: "Brain", bg: "#F1EFE8", textColor: "#444441", desc: "Higher risk of stroke" },
+          { label: "Feet", bg: "#FAEEDA", textColor: "#633806", desc: "Infections, ulcers, amputation risk" },
+          { label: "Nerves", bg: "#EEEDFE", textColor: "#3C3489", desc: "Numbness, pain, digestive issues" },
+        ],
+        note: { bg: "#FAECE7", textColor: "#712B13", text: "All of these are preventable or delayed with good blood sugar control. It is never too late to start." },
+        learnMore: [
+          "Diabetes is the leading cause of preventable blindness and kidney failure in Malaysia. Regular eye and kidney checks, at least once a year, can catch problems early.",
+          "Foot care is especially important. Check your feet daily for cuts, sores, or colour changes. Wear well-fitted shoes and never walk barefoot outside.",
+          "People with diabetes have 2–4 times the risk of heart disease. Controlling blood pressure and cholesterol alongside blood sugar greatly reduces this risk.",
+        ],
       },
       {
         icon: Heart,
-        bgColor: "#E6EAC7",
-        textColor: "#4a5a23",
-        title: "Prevention",
+        borderColor: "#7F77DD",
+        iconBg: "#EEEDFE",
+        iconColor: "#534AB7",
+        titleColor: "#3C3489",
+        title: "Prevention & healthy habits",
         points: [
-          "Reduce sugar and sweet drinks",
-          "Choose healthier food options",
-          "Exercise regularly (e.g., walking)",
-          "Maintain healthy weight",
-          "Check blood sugar regularly",
+          "Swap sugary drinks for plain water or unsweetened tea",
+          "Replace white rice with brown rice or smaller portions",
+          "Walk for at least 30 minutes, 5 days a week",
+          "Aim for a healthy waist (men <90cm, women <80cm)",
+          "Check your blood sugar yearly if you are over 40",
+        ],
+        note: { bg: "#EEEDFE", textColor: "#3C3489", text: "Small changes done consistently matter more than big changes done occasionally." },
+        learnMore: [
+          "Brisk walking is one of the most effective activities for blood sugar control, no gym needed. Even 10-minute walks after meals help.",
+          "Reducing portion size matters as much as food choice. Using a smaller plate is a simple, practical way to eat less without feeling deprived.",
+          "Stress raises blood sugar too. Adequate sleep (7–8 hours), social connection, and relaxation all play a real role in diabetes prevention.",
+        ],
+      },
+      {
+        icon: CalendarCheck,
+        borderColor: "#D4537E",
+        iconBg: "#FBEAF0",
+        iconColor: "#993556",
+        titleColor: "#72243E",
+        title: "Living with diabetes",
+        intro: "Already diagnosed? Here is what to stay on top of:",
+        checklist: [
+          "Take your medication every day, do not skip doses",
+          "Monitor your blood sugar as advised by your doctor",
+          "Attend clinic follow-ups, every 3 to 6 months",
+          "Get annual eye, kidney, and foot checks",
+          "Tell your doctor if you feel unwell or readings change",
+          "Talk to someone if you feel overwhelmed, you are not alone",
+        ],
+        checkBg: "#EEEDFE",
+        checkColor: "#534AB7",
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Managing diabetes is a long journey. It is okay to ask for help from family, doctors, or support groups." },
+        learnMore: [
+          "Your HbA1c target is usually below 7%, ask your doctor what your personal target is. This single number gives the clearest picture of overall blood sugar control.",
+          "If you use insulin or certain medications, always carry a snack in case your blood sugar drops too low (hypoglycaemia). Signs include shaking, sweating, and confusion.",
+          "Emotional wellbeing matters. Diabetes distress, feeling frustrated or burnt out, is very common and very treatable. Speak to your doctor or a counsellor.",
         ],
       },
     ],
@@ -154,64 +265,175 @@ const content = {
     average_rate: "Kadar Purata",
     click_state: "Klik pada negeri untuk maklumat lanjut",
     edu_title: "Fahami Diabetes",
+    edu_learn_more: "Klik untuk maklumat lanjut",
+    edu_show_less: "Sembunyikan",
     edu_sections: [
       {
         icon: AlertCircle,
-        bgColor: "#B5E0F1",
-        textColor: "#1a5276",
-        title: "Apa Itu Diabetes?",
+        borderColor: "#378ADD",
+        iconBg: "#E6F1FB",
+        iconColor: "#185FA5",
+        titleColor: "#0C447C",
+        title: "Apa itu diabetes?",
         points: [
-          "Terlalu banyak gula dalam darah anda",
-          "Berlaku apabila badan tidak dapat menggunakan gula dengan betul",
-          "Insulin tidak berfungsi dengan baik atau tidak mencukupi",
+          "Badan anda memerlukan gula (glukosa) untuk tenaga",
+          "Insulin adalah \"kunci\" yang membenarkan gula masuk ke dalam sel anda",
+          "Dalam diabetes, kunci hilang atau rosak — gula berkumpul dalam darah",
+        ],
+        types: [
+          { label: "Jenis 1", bg: "#E6F1FB", textColor: "#0C447C", desc: "Badan tidak menghasilkan insulin. Perlu suntikan harian. Biasanya bermula muda." },
+          { label: "Jenis 2", bg: "#E1F5EE", textColor: "#085041", desc: "Badan mengabaikan insulin. Lebih biasa. Berkait rapat dengan gaya hidup." },
         ],
         subSection: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
           title: "Pradiabetes",
           points: [
-            "Gula darah lebih tinggi daripada biasa",
-            "Belum diabetes, tetapi berisiko tinggi",
-            "Kira-kira 11.6% rakyat Malaysia menghidap pradiabetes",
+            { text: "Gula darah lebih tinggi daripada biasa, tetapi belum diabetes", highlight: false },
+            { text: "Ia boleh dipulihkan — tabiat sihat boleh mengembalikannya ke normal", highlight: true },
+            { text: "11.6% rakyat Malaysia menghidap pradiabetes, ramai yang tidak tahu", highlight: false },
           ],
         },
+        learnMore: [
+          "Diabetes adalah keadaan jangka panjang — ia tidak boleh disembuhkan, tetapi boleh diuruskan dengan baik. Ramai penghidap diabetes menjalani kehidupan yang penuh dan sihat.",
+          "Jenis 2 merangkumi lebih 90% kes di Malaysia dan berkembang perlahan selama bertahun-tahun, sering tanpa tanda yang jelas.",
+          "Doktor mendiagnosis diabetes menggunakan ujian darah HbA1c, yang menunjukkan purata gula darah anda selama 3 bulan.",
+        ],
       },
       {
         icon: Activity,
-        bgColor: "#DAE0AF",
-        textColor: "#5d6d1e",
-        title: "Kenapa Ia Berlaku?",
+        borderColor: "#1D9E75",
+        iconBg: "#E1F5EE",
+        iconColor: "#0F6E56",
+        titleColor: "#085041",
+        title: "Faktor risiko",
         points: [
-          "Makan terlalu banyak gula / makanan tidak sihat",
-          "Kurang bersenam",
-          "Berat badan berlebihan",
-          "Sejarah keluarga",
-          "Umur (risiko lebih tinggi untuk warga emas)",
+          "Makan terlalu banyak gula, nasi putih, atau makanan diproses",
+          "Kurang bergerak setiap hari",
+          "Berat badan berlebihan, terutama di bahagian perut",
+          "Ahli keluarga (ibu bapa atau adik beradik) menghidap diabetes",
+          "Umur 40 tahun ke atas",
+          "Sejarah diabetes semasa mengandung",
+        ],
+        controllable: {
+          label: "Bolehkah anda mengawalnya?",
+          labelColor: "#085041",
+          yes: ["Pemakanan", "Senaman", "Berat badan"],
+          no: ["Umur", "Sejarah keluarga"],
+          note: "Hijau = boleh kawal · Oren = tidak boleh kawal",
+        },
+        learnMore: [
+          "Mempunyai satu atau dua faktor risiko tidak bermakna anda pasti akan menghidap diabetes — tetapi lebih banyak faktor yang anda ada, lebih tinggi peluangnya.",
+          "Lemak perut adalah faktor risiko yang sangat kuat kerana lemak di sekeliling organ mempengaruhi cara insulin berfungsi.",
+          "Walaupun diabetes ada dalam keluarga anda, perubahan gaya hidup boleh melambatkan atau mencegahnya.",
         ],
       },
       {
         icon: Eye,
-        bgColor: "#F8DFF1",
-        textColor: "#8b3a62",
-        title: "Gejala",
+        borderColor: "#BA7517",
+        iconBg: "#FAEEDA",
+        iconColor: "#854F0B",
+        titleColor: "#633806",
+        title: "Gejala yang perlu dipantau",
         points: [
-          "Sangat dahaga",
-          "Kerap kencing",
-          "Rasa penat",
-          "Penglihatan kabur",
-          "Luka lambat sembuh",
+          "Rasa sangat dahaga walaupun selepas minum",
+          "Kerap membuang air kecil, terutama pada waktu malam",
+          "Rasa penat atau lemah tanpa sebab",
+          "Penglihatan kabur atau semakin teruk",
+          "Luka atau potong yang sangat lambat sembuh",
+          "Kebas atau rasa kesemutan di tangan atau kaki",
         ],
-        warning: "Sesetengah orang mungkin tiada gejala pada peringkat awal",
+        warning: {
+          bg: "#FAEEDA",
+          iconColor: "#854F0B",
+          textColor: "#633806",
+          text: "Ramai penghidap diabetes Jenis 2 tidak mempunyai gejala selama bertahun-tahun. Kerosakan boleh berlaku secara senyap.",
+        },
+        seeDoctor: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
+          textColor: "#185FA5",
+          title: "Berjumpa doktor jika anda:",
+          points: [
+            "Mempunyai 2 atau lebih gejala di atas",
+            "Mempunyai ahli keluarga yang menghidap diabetes",
+            "Belum memeriksa gula darah lebih dari setahun",
+          ],
+        },
+        learnMore: [
+          "Kebas dan kesemutan kaki adalah tanda awal kerosakan saraf (neuropati) — komplikasi gula darah tinggi jangka panjang yang boleh membawa masalah kaki yang serius.",
+          "Kerosakan mata, buah pinggang, dan jantung juga berlaku secara senyap selama bertahun-tahun. Ini sebabnya saringan berkala lebih penting daripada menunggu gejala.",
+        ],
+      },
+      {
+        icon: TriangleAlert,
+        borderColor: "#D85A30",
+        iconBg: "#FAECE7",
+        iconColor: "#993C1D",
+        titleColor: "#712B13",
+        title: "Komplikasi jika tidak dirawat",
+        intro: "Gula darah tinggi yang berterusan merosakkan saluran darah dan saraf di seluruh badan:",
+        complications: [
+          { label: "Mata", bg: "#FBEAF0", textColor: "#72243E", desc: "Penglihatan kabur, katarak, buta" },
+          { label: "Buah pinggang", bg: "#E6F1FB", textColor: "#0C447C", desc: "Kegagalan buah pinggang, perlu dialisis" },
+          { label: "Jantung", bg: "#FAECE7", textColor: "#712B13", desc: "Serangan jantung, penyakit koronari" },
+          { label: "Otak", bg: "#F1EFE8", textColor: "#444441", desc: "Risiko strok yang lebih tinggi" },
+          { label: "Kaki", bg: "#FAEEDA", textColor: "#633806", desc: "Jangkitan, ulser, risiko amputasi" },
+          { label: "Saraf", bg: "#EEEDFE", textColor: "#3C3489", desc: "Kebas, sakit, masalah pencernaan" },
+        ],
+        note: { bg: "#FAECE7", textColor: "#712B13", text: "Semua ini boleh dicegah atau ditangguhkan dengan kawalan gula darah yang baik. Tidak terlambat untuk bermula." },
+        learnMore: [
+          "Diabetes adalah punca utama kebutaan dan kegagalan buah pinggang yang boleh dicegah di Malaysia. Pemeriksaan mata dan buah pinggang secara tahunan boleh mengesan masalah lebih awal.",
+          "Penjagaan kaki sangat penting. Periksa kaki anda setiap hari untuk luka atau perubahan warna. Pakai kasut yang selesa dan jangan berjalan berkaki ayam di luar.",
+          "Penghidap diabetes mempunyai risiko penyakit jantung 2–4 kali lebih tinggi. Mengawal tekanan darah dan kolesterol bersama gula darah sangat mengurangkan risiko ini.",
+        ],
       },
       {
         icon: Heart,
-        bgColor: "#E6EAC7",
-        textColor: "#4a5a23",
-        title: "Pencegahan",
+        borderColor: "#7F77DD",
+        iconBg: "#EEEDFE",
+        iconColor: "#534AB7",
+        titleColor: "#3C3489",
+        title: "Pencegahan & tabiat sihat",
         points: [
-          "Kurangkan gula dan minuman manis",
-          "Pilih makanan yang lebih sihat",
-          "Bersenam secara tetap (contoh: berjalan kaki)",
-          "Kekalkan berat badan yang sihat",
-          "Periksa gula darah secara berkala",
+          "Gantikan minuman manis dengan air kosong atau teh tawar",
+          "Gantikan nasi putih dengan nasi perang atau bahagian yang lebih kecil",
+          "Berjalan kaki sekurang-kurangnya 30 minit, 5 hari seminggu",
+          "Sasarkan saiz pinggang yang sihat (lelaki <90sm, wanita <80sm)",
+          "Periksa gula darah setiap tahun jika anda berusia lebih 40 tahun",
+        ],
+        note: { bg: "#EEEDFE", textColor: "#3C3489", text: "Perubahan kecil yang dilakukan secara konsisten lebih berkesan daripada perubahan besar yang dilakukan sekali-sekala." },
+        learnMore: [
+          "Berjalan kaki dengan pantas adalah salah satu aktiviti paling berkesan untuk kawalan gula darah — tidak perlu pergi ke gimnasium. Malah berjalan 10 minit selepas makan pun membantu.",
+          "Mengurangkan saiz hidangan sama pentingnya dengan pilihan makanan. Menggunakan pinggan yang lebih kecil adalah cara mudah untuk makan lebih sedikit.",
+          "Tekanan juga meningkatkan gula darah. Tidur yang cukup (7–8 jam), hubungan sosial, dan relaksasi memainkan peranan nyata dalam pencegahan diabetes.",
+        ],
+      },
+      {
+        icon: CalendarCheck,
+        borderColor: "#D4537E",
+        iconBg: "#FBEAF0",
+        iconColor: "#993556",
+        titleColor: "#72243E",
+        title: "Menjalani hidup dengan diabetes",
+        intro: "Sudah didiagnosis? Berikut adalah perkara yang perlu diberi perhatian:",
+        checklist: [
+          "Ambil ubat anda setiap hari — jangan langkau dos",
+          "Pantau gula darah anda seperti yang disarankan doktor",
+          "Hadiri susulan klinik — setiap 3 hingga 6 bulan",
+          "Dapatkan pemeriksaan mata, buah pinggang, dan kaki setiap tahun",
+          "Beritahu doktor jika anda rasa tidak sihat atau bacaan berubah",
+          "Berbicara dengan seseorang jika anda rasa tertekan — anda tidak berseorangan",
+        ],
+        checkBg: "#EEEDFE",
+        checkColor: "#534AB7",
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Mengurus diabetes adalah perjalanan yang panjang. Tidak mengapa untuk meminta bantuan daripada keluarga, doktor, atau kumpulan sokongan." },
+        learnMore: [
+          "Sasaran HbA1c anda biasanya di bawah 7% — tanya doktor anda apakah sasaran peribadi anda. Nombor tunggal ini memberikan gambaran paling jelas tentang kawalan gula darah keseluruhan.",
+          "Jika anda menggunakan insulin atau ubat-ubatan tertentu, sentiasa bawa snek sekiranya gula darah turun terlalu rendah (hipoglisemia). Tanda-tandanya termasuk menggigil, berpeluh, dan keliru.",
+          "Kesejahteraan emosi penting. Tekanan diabetes — rasa kecewa atau keletihan — sangat biasa dan boleh dirawat. Berbicara dengan doktor atau kaunselor anda.",
         ],
       },
     ],
@@ -248,64 +470,175 @@ const content = {
     average_rate: "平均率",
     click_state: "点击州属查看详情",
     edu_title: "了解糖尿病",
+    edu_learn_more: "了解更多",
+    edu_show_less: "收起",
     edu_sections: [
       {
         icon: AlertCircle,
-        bgColor: "#B5E0F1",
-        textColor: "#1a5276",
+        borderColor: "#378ADD",
+        iconBg: "#E6F1FB",
+        iconColor: "#185FA5",
+        titleColor: "#0C447C",
         title: "什么是糖尿病？",
         points: [
-          "血液中糖分过多",
-          "当身体无法正常使用糖分时发生",
-          "胰岛素功能不佳或不足",
+          "您的身体需要糖（葡萄糖）来提供能量",
+          "胰岛素是让糖进入细胞的\"钥匙\"",
+          "糖尿病时，钥匙丢失或损坏——糖在血液中积聚",
+        ],
+        types: [
+          { label: "1型", bg: "#E6F1FB", textColor: "#0C447C", desc: "身体不产生胰岛素。需要每日注射。通常年轻时发病。" },
+          { label: "2型", bg: "#E1F5EE", textColor: "#085041", desc: "身体忽视胰岛素。更常见。与生活方式密切相关。" },
         ],
         subSection: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
           title: "糖尿病前期",
           points: [
-            "血糖高于正常水平",
-            "尚未患糖尿病，但风险很高",
-            "约11.6%的马来西亚人有糖尿病前期",
+            { text: "血糖高于正常水平，但尚未达到糖尿病标准", highlight: false },
+            { text: "可以逆转——健康习惯可以让血糖恢复正常", highlight: true },
+            { text: "约11.6%的马来西亚人有糖尿病前期，许多人不知道", highlight: false },
           ],
         },
+        learnMore: [
+          "糖尿病是一种长期病症——无法治愈，但可以得到良好控制。许多糖尿病患者过着充实健康的生活。",
+          "2型糖尿病占马来西亚病例的90%以上，通常在数年内缓慢发展，往往没有明显症状。",
+          "医生使用HbA1c血液检测来诊断糖尿病，该检测显示您过去3个月的平均血糖水平。",
+        ],
       },
       {
         icon: Activity,
-        bgColor: "#DAE0AF",
-        textColor: "#5d6d1e",
-        title: "为什么会患上？",
+        borderColor: "#1D9E75",
+        iconBg: "#E1F5EE",
+        iconColor: "#0F6E56",
+        titleColor: "#085041",
+        title: "风险因素",
         points: [
-          "摄入过多糖分/不健康食物",
-          "缺乏运动",
-          "超重",
-          "家族病史",
-          "年龄（老年人风险更高）",
+          "摄入过多糖分、白米或加工食品",
+          "日常活动不足",
+          "超重，尤其是腹部肥胖",
+          "家族成员（父母或兄弟姐妹）患有糖尿病",
+          "40岁及以上",
+          "曾有妊娠糖尿病史",
+        ],
+        controllable: {
+          label: "您能改变吗？",
+          labelColor: "#085041",
+          yes: ["饮食", "运动", "体重"],
+          no: ["年龄", "家族史"],
+          note: "绿色 = 可以控制 · 橙色 = 无法控制",
+        },
+        learnMore: [
+          "拥有一两个风险因素并不意味着您一定会得糖尿病——但风险因素越多，患病机会越高。",
+          "腹部脂肪是一个特别强的风险因素，因为器官周围的脂肪直接影响胰岛素的工作方式。",
+          "即使糖尿病在您的家族中有遗传，生活方式的改变也可以延迟或预防它。",
         ],
       },
       {
         icon: Eye,
-        bgColor: "#F8DFF1",
-        textColor: "#8b3a62",
-        title: "症状",
+        borderColor: "#BA7517",
+        iconBg: "#FAEEDA",
+        iconColor: "#854F0B",
+        titleColor: "#633806",
+        title: "需要注意的症状",
         points: [
-          "非常口渴",
-          "频繁排尿",
-          "感到疲倦",
-          "视力模糊",
-          "伤口愈合缓慢",
+          "即使喝水后仍感到非常口渴",
+          "频繁排尿，尤其是夜间",
+          "无缘无故感到疲倦或虚弱",
+          "视力模糊或逐渐恶化",
+          "伤口或割伤愈合非常缓慢",
+          "手脚麻木或刺痛感",
         ],
-        warning: "有些人早期可能没有症状",
+        warning: {
+          bg: "#FAEEDA",
+          iconColor: "#854F0B",
+          textColor: "#633806",
+          text: "许多2型糖尿病患者多年来没有任何症状。损害可能在无声中发生。",
+        },
+        seeDoctor: {
+          bg: "#E6F1FB",
+          titleColor: "#0C447C",
+          dotColor: "#378ADD",
+          textColor: "#185FA5",
+          title: "如有以下情况请就医：",
+          points: [
+            "有2个或以上上述症状",
+            "家族成员患有糖尿病",
+            "超过一年未检查血糖",
+          ],
+        },
+        learnMore: [
+          "脚部麻木和刺痛是神经损伤（神经病变）的早期迹象——这是长期高血糖的并发症，若忽视可能导致严重的足部问题。",
+          "眼睛、肾脏和心脏损伤也会在多年内无声发生。这就是为什么定期筛查比等待症状出现更重要。",
+        ],
+      },
+      {
+        icon: TriangleAlert,
+        borderColor: "#D85A30",
+        iconBg: "#FAECE7",
+        iconColor: "#993C1D",
+        titleColor: "#712B13",
+        title: "不控制的后果",
+        intro: "长期高血糖会损害全身的血管和神经：",
+        complications: [
+          { label: "眼睛", bg: "#FBEAF0", textColor: "#72243E", desc: "视力模糊、白内障、失明" },
+          { label: "肾脏", bg: "#E6F1FB", textColor: "#0C447C", desc: "肾衰竭、需要透析" },
+          { label: "心脏", bg: "#FAECE7", textColor: "#712B13", desc: "心脏病发作、冠心病" },
+          { label: "大脑", bg: "#F1EFE8", textColor: "#444441", desc: "中风风险更高" },
+          { label: "足部", bg: "#FAEEDA", textColor: "#633806", desc: "感染、溃疡、截肢风险" },
+          { label: "神经", bg: "#EEEDFE", textColor: "#3C3489", desc: "麻木、疼痛、消化问题" },
+        ],
+        note: { bg: "#FAECE7", textColor: "#712B13", text: "所有这些都可以通过良好的血糖控制来预防或延缓。现在开始永远不嫌晚。" },
+        learnMore: [
+          "糖尿病是马来西亚可预防性失明和肾衰竭的主要原因。每年至少进行一次眼睛和肾脏检查可以及早发现问题。",
+          "足部护理尤为重要。每天检查脚部是否有伤口或颜色变化。穿合脚的鞋子，不要在室外赤脚行走。",
+          "糖尿病患者患心脏病的风险是常人的2-4倍。同时控制血压和胆固醇可以大大降低这一风险。",
+        ],
       },
       {
         icon: Heart,
-        bgColor: "#E6EAC7",
-        textColor: "#4a5a23",
-        title: "预防",
+        borderColor: "#7F77DD",
+        iconBg: "#EEEDFE",
+        iconColor: "#534AB7",
+        titleColor: "#3C3489",
+        title: "预防与健康习惯",
         points: [
-          "减少糖分和甜饮料",
-          "选择更健康的食物",
-          "定期运动（如散步）",
-          "保持健康体重",
-          "定期检查血糖",
+          "用白开水或无糖茶代替含糖饮料",
+          "用糙米代替白米，或减少每餐饭量",
+          "每周至少5天，每天步行30分钟",
+          "保持健康腰围（男性<90厘米，女性<80厘米）",
+          "40岁以上每年检查一次血糖",
+        ],
+        note: { bg: "#EEEDFE", textColor: "#3C3489", text: "持续做出小改变比偶尔做出大改变更有效。" },
+        learnMore: [
+          "快步行走是控制血糖最有效的活动之一——不需要去健身房。甚至饭后散步10分钟也有帮助。",
+          "减少食物份量与食物选择同样重要。使用较小的碗碟是减少进食量的简单方法。",
+          "压力也会升高血糖。充足睡眠（7-8小时）、社交联系和放松在预防糖尿病中都起着真实的作用。",
+        ],
+      },
+      {
+        icon: CalendarCheck,
+        borderColor: "#D4537E",
+        iconBg: "#FBEAF0",
+        iconColor: "#993556",
+        titleColor: "#72243E",
+        title: "与糖尿病共存",
+        intro: "已确诊？以下是需要注意的事项：",
+        checklist: [
+          "每天按时服药——不要漏服",
+          "按医生建议监测血糖",
+          "定期复诊——每3至6个月一次",
+          "每年进行眼睛、肾脏和足部检查",
+          "如感不适或读数变化，告知医生",
+          "如感到不知所措，请寻求帮助——您并不孤单",
+        ],
+        checkBg: "#EEEDFE",
+        checkColor: "#534AB7",
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "控制糖尿病是一段漫长的旅程。向家人、医生或支持团体寻求帮助是完全可以的。" },
+        learnMore: [
+          "您的HbA1c目标通常在7%以下——询问医生您的个人目标。这个数字可以最清楚地反映整体血糖控制情况。",
+          "如果您使用胰岛素或某些药物，请随身携带零食，以防血糖过低（低血糖）。症状包括颤抖、出汗和意识混乱。",
+          "情绪健康很重要。糖尿病困扰——感到沮丧或精疲力竭——非常普遍且可以治疗。请与医生或辅导员交流。",
         ],
       },
     ],
@@ -347,70 +680,194 @@ const DEFAULT_EXPLANATION = {
   zh: "该群体的糖尿病患病率受遗传、饮食和生活方式等多种因素影响。定期健康筛查和均衡饮食有助于管理和降低风险。",
 }
 
-function EduCard({ section }: { section: (typeof content.en.edu_sections)[0] }) {
-  return (
-    <div 
-      className="rounded-2xl border border-border/30 overflow-hidden shadow-sm p-6 sm:p-8"
-      style={{ backgroundColor: section.bgColor }}
+function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof content.en.edu_sections[0]; learnMoreLabel: string; showLessLabel: string }) {
+  const [open, setOpen] = useState(false)
+return (
+    <div
+      className="rounded-2xl bg-background p-6 sm:p-8 flex flex-col gap-4"
+      style={{ border: `2px solid ${section.borderColor}` }}
     >
-      <h3 
-        className="text-2xl font-bold mb-5"
-        style={{ color: section.textColor }}
-      >
-        {section.title}
-      </h3>
-      <ul className="space-y-3 mb-4">
-        {section.points.map((point, idx) => (
-          <li key={idx} className="flex items-start gap-3">
-            <section.icon 
-              className="w-5 h-5 shrink-0 mt-0.5" 
-              style={{ color: section.textColor }}
-            />
-            <span className="text-lg leading-relaxed text-foreground/90">{point}</span>
-          </li>
-        ))}
-      </ul>
-      
-      {/* SubSection for Prediabetes info */}
-      {section.subSection && (
-        <div className="mt-6 pt-4 border-t border-foreground/10">
-          <h4 
-            className="text-xl font-bold mb-3"
-            style={{ color: section.textColor }}
-          >
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div
+          className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: section.iconBg }}
+        >
+          <section.icon className="w-8 h-8" style={{ color: section.iconColor }} />
+        </div>
+        <h3 className="text-2xl font-bold leading-snug" style={{ color: section.titleColor }}>
+          {section.title}
+        </h3>
+      </div>
+
+      <div className="border-t border-border/30" />
+
+      {/* Intro text (complications / living with) */}
+      {"intro" in section && section.intro && (
+        <p className="text-lg text-muted-foreground">{section.intro}</p>
+      )}
+
+      {/* Main bullet points */}
+      {"points" in section && section.points && (
+        <ul className="space-y-2.5">
+          {(section.points as string[]).map((point, idx) => (
+            <li key={idx} className="flex items-start gap-3">
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0 mt-[7px]"
+                style={{ backgroundColor: section.borderColor }}
+              />
+              <span className="text-lg leading-relaxed text-foreground">{point}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Type 1 / Type 2 tiles */}
+      {"types" in section && section.types && (
+        <div className="grid grid-cols-2 gap-2">
+          {section.types.map((t, i) => (
+            <div key={i} className="rounded-xl p-3" style={{ backgroundColor: t.bg }}>
+              <p className="text-lg font-bold mb-1" style={{ color: t.textColor }}>{t.label}</p>
+              <p className="text-base leading-snug text-foreground">{t.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Prediabetes subsection */}
+      {"subSection" in section && section.subSection && (
+        <div className="rounded-xl p-4" style={{ backgroundColor: section.subSection.bg }}>
+          <p className="text-lg font-bold mb-2.5" style={{ color: section.subSection.titleColor }}>
             {section.subSection.title}
-          </h4>
+          </p>
           <ul className="space-y-2">
-            {section.subSection.points.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-3">
-                <span 
-                  className="w-2 h-2 rounded-full shrink-0 mt-2" 
-                  style={{ backgroundColor: section.textColor }}
+            {section.subSection.points.map((pt, idx) => (
+              <li key={idx} className="flex items-start gap-2.5">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0 mt-[7px]"
+                  style={{ backgroundColor: section.subSection!.dotColor }}
                 />
-                <span className="text-lg leading-relaxed text-foreground/90">{point}</span>
+                <span
+                  className="text-base leading-relaxed"
+                  style={{
+                    color: pt.highlight ? section.subSection!.titleColor : "var(--foreground)",
+                    fontWeight: pt.highlight ? 800 : 400,
+                  }}
+                >
+                  {pt.text}
+                </span>
               </li>
             ))}
           </ul>
         </div>
       )}
-      
-      {/* Warning message */}
-      {section.warning && (
-        <div 
-          className="mt-4 p-3 rounded-xl flex items-center gap-3"
-          style={{ backgroundColor: `${section.textColor}15` }}
-        >
-          <AlertCircle 
-            className="w-5 h-5 shrink-0" 
-            style={{ color: section.textColor }}
-          />
-          <span 
-            className="text-base font-medium"
-            style={{ color: section.textColor }}
-          >
-            {section.warning}
+
+      {/* Controllable / uncontrollable risk tags */}
+      {"controllable" in section && section.controllable && (
+        <div>
+          <p className="text-lg font-bold mb-2" style={{ color: section.controllable.labelColor }}>
+            {section.controllable.label}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {section.controllable.yes.map((tag, i) => (
+              <span key={i} className="text-base px-3 py-1 rounded-full font-medium" style={{ backgroundColor: "#E1F5EE", color: "#085041" }}>{tag}</span>
+            ))}
+            {section.controllable.no.map((tag, i) => (
+              <span key={i} className="text-base px-3 py-1 rounded-full font-medium" style={{ backgroundColor: "#FAEEDA", color: "#633806" }}>{tag}</span>
+            ))}
+          </div>
+          <p className="text-base text-muted-foreground mt-1.5">{section.controllable.note}</p>
+        </div>
+      )}
+
+      {/* Warning box */}
+      {"warning" in section && section.warning && typeof section.warning === "object" && (
+        <div className="rounded-xl p-3 flex items-start gap-3" style={{ backgroundColor: section.warning.bg }}>
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: section.warning.iconColor }} />
+          <span className="text-base font-medium leading-snug" style={{ color: section.warning.textColor }}>
+            {section.warning.text}
           </span>
         </div>
+      )}
+
+      {/* See a doctor box */}
+      {"seeDoctor" in section && section.seeDoctor && (
+        <div className="rounded-xl p-4" style={{ backgroundColor: section.seeDoctor.bg }}>
+          <p className="text-lg font-medium mb-2" style={{ color: section.seeDoctor.titleColor }}>
+            {section.seeDoctor.title}
+          </p>
+          <ul className="space-y-1.5">
+            {section.seeDoctor.points.map((pt, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[8px]" style={{ backgroundColor: section.seeDoctor!.dotColor }} />
+                <span className="text-base leading-relaxed" >{pt}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Complications grid */}
+      {"complications" in section && section.complications && (
+        <div className="grid grid-cols-2 gap-2">
+          {section.complications.map((c, i) => (
+            <div key={i} className="rounded-xl p-3" style={{ backgroundColor: c.bg }}>
+              <p className="text-lg font-medium mb-0.5" style={{ color: c.textColor }}>{c.label}</p>
+              <p className="text-base leading-snug text-foreground">{c.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Checklist (living with diabetes) */}
+      {"checklist" in section && section.checklist && (
+        <ul className="space-y-3">
+          {(section.checklist as string[]).map((item, idx) => (
+            <li key={idx} className="flex items-start gap-3">
+              <span
+                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5"
+                style={{ backgroundColor: section.checkBg }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={section.checkColor} strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span className="text-lg leading-relaxed text-foreground">{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Note / quote */}
+      {"note" in section && section.note && (
+        <div className="rounded-xl p-3" style={{ backgroundColor: section.note.bg }}>
+          <p className="text-base leading-relaxed italic" style={{ color: section.note.textColor }}>
+            {section.note.text}
+          </p>
+        </div>
+      )}
+
+      {/* Learn more expandable */}
+      {"learnMore" in section && section.learnMore && (
+        <>
+          <button
+            onClick={() => setOpen(o => !o)}
+            className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-medium border border-border/100 text-foreground hover:bg-muted transition-colors"
+          >
+            <ChevronDown
+              className="w-4 h-4 transition-transform duration-200"
+              style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+            />
+            {open ? showLessLabel : learnMoreLabel}
+          </button>
+          {open && (
+            <div className="flex flex-col gap-2 pt-1 border-t border-border/20">
+              {(section.learnMore as string[]).map((para, idx) => (
+                <p key={idx} className="text-base leading-relaxed text-foreground">{para}</p>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -723,9 +1180,14 @@ export default function OverviewClient({ dataByYear, availableYears, nationalTre
             {/* Education Section */}
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">{t.edu_title}</h2>
-              <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {t.edu_sections.map((section, idx) => (
-                  <EduCard key={idx} section={section} />
+                  <EduCard
+                    key={idx}
+                    section={section}
+                    learnMoreLabel={t.edu_learn_more}
+                    showLessLabel={t.edu_show_less}
+                  />
                 ))}
               </div>
             </div>
