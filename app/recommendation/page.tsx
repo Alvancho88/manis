@@ -173,7 +173,7 @@ const content = {
       dessert: "甜点",
       drink: "饮料",
     },
-    result_title: "分析结   ",
+    result_title: "分析结���",
     best_choice: "最佳选择",
     disclaimer: "排名基于估计的糖分、卡路里和GI值。结果仅供一般指导。",
     tip_label: "健康提示",
@@ -538,6 +538,36 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   )
 }
 
+// ─── Client-side image compression ──────────────────────────────────────────
+// Resizes + re-encodes to JPEG before upload so 5 photos stay well under 4MB total
+function compressImage(file: File, maxDimension = 1024, quality = 0.75): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const { width, height } = img
+      const scale = Math.min(1, maxDimension / Math.max(width, height))
+      const w = Math.round(width * scale)
+      const h = Math.round(height * scale)
+      const canvas = document.createElement("canvas")
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }))
+        },
+        "image/jpeg",
+        quality
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
 // Map Gemini category key → page category key
 const CATEGORY_MAP: Record<string, string> = {
   "Appetizer": "appetizer",
@@ -584,19 +614,20 @@ export default function RecommendationPage() {
     
     setIsUploading(true)
     
-    // Process only up to remaining slots
     const filesToProcess = Array.from(files).slice(0, remainingSlots)
     
-    setTimeout(() => {
-      const newUrls = filesToProcess.map(file => URL.createObjectURL(file))
+    // Compress each image client-side before storing (~1024px max, 75% JPEG quality)
+    // This keeps 5 photos well under Vercel's 4.5MB body limit
+    Promise.all(filesToProcess.map((f) => compressImage(f))).then((compressed) => {
+      const newUrls = compressed.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
-      setUploadedFiles(prev => [...prev, ...filesToProcess])
+      setUploadedFiles(prev => [...prev, ...compressed])
       setIsUploading(false)
       setShowCategories(false)
       setSelectedCategory(null)
       setResults(null)
       setApiResultsCache(null)
-    }, 1000)
+    })
   }, [uploadedImages.length])
 
   const removeImage = (index: number) => {
