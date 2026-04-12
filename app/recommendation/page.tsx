@@ -33,6 +33,7 @@ const content = {
     text_input_hint: "No photo? Type the dish name here instead.",
     text_placeholder: "E.g., Nasi lemak, Roti canai, Teh tarik...",
     analyze_btn: "Analyse & Recommend",
+    analyzing: "Analyzing...",
     select_category: "Select Food Category",
     select_category_hint: "Choose which type of food you want to analyse:",
     categories: {
@@ -99,6 +100,7 @@ const content = {
     text_input_hint: "Tiada foto? Taip nama hidangan di sini.",
     text_placeholder: "Cth., Nasi lemak, Roti canai, Teh tarik...",
     analyze_btn: "Analisis & Cadangan",
+    analyzing: "Menganalisis...",
     select_category: "Pilih Kategori Makanan",
     select_category_hint: "Pilih jenis makanan yang ingin anda analisis:",
     categories: {
@@ -165,6 +167,7 @@ const content = {
     text_input_hint: "没有照片？在这里输入菜名。",
     text_placeholder: "例如：椰浆饭、印度煎饼、拉茶...",
     analyze_btn: "分析推荐",
+    analyzing: "分析中...",
     select_category: "选择食物类别",
     select_category_hint: "选择您想分析的食物类型：",
     categories: {
@@ -222,98 +225,6 @@ const commonFoods = [
   { name: "Cendol", image: "/images/food-cendol.jpg", sugar: "42g", calories: "380", gi: "78", risk: "high", portion: "1 bowl", tip: { en: "Very high sugar. Avoid or limit to a few spoonfuls only.", ms: "Gula sangat tinggi. Elakkan atau hadkan kepada beberapa sudu sahaja.", zh: "含糖量极高。避免食用或只吃几勺。" } },
   { name: "Teh Tarik", image: "/images/food-teh-tarik.jpg", sugar: "18g", calories: "120", gi: "65", risk: "medium", portion: "1 glass (200ml)", tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" } },
 ]
-
-// Mock analysis results by category
-const mockResultsByCategory = {
-  appetizer: [
-    {
-      name: "Popiah",
-      risk: "low",
-      sugar: "3g",
-      calories: "150",
-      gi: "45",
-      tip: { en: "Great choice! Fresh vegetables wrapped in thin skin. Low in sugar and calories.", ms: "Pilihan bagus! Sayuran segar dibungkus dalam kulit nipis. Rendah gula dan kalori.", zh: "很好的选择！新鲜蔬菜裹在薄皮里。糖分和卡路里低。" },
-    },
-    {
-      name: "Satay (3 sticks)",
-      risk: "medium",
-      sugar: "5g",
-      calories: "220",
-      gi: "55",
-      tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限制在3-4串。" },
-    },
-  ],
-  main: [
-    {
-      name: "Brown Rice with Fish",
-      risk: "low",
-      sugar: "2g",
-      calories: "380",
-      gi: "50",
-      tip: { en: "Excellent choice! Brown rice has more fiber and steamed fish is healthy.", ms: "Pilihan hebat! Nasi perang lebih banyak serat dan ikan kukus sihat.", zh: "极佳选择！糙米纤维更多，清蒸鱼很健康。" },
-    },
-    {
-      name: "Nasi Lemak",
-      risk: "medium",
-      sugar: "8g",
-      calories: "644",
-      gi: "64",
-      tip: { en: "Enjoy in smaller portions. Ask for less sambal and skip fried items.", ms: "Nikmati dalam bahagian kecil. Minta sambal yang kurang dan elakkan yang digoreng.", zh: "少量食用。少放参巴酱，不吃油炸食品。" },
-    },
-    {
-      name: "Roti Canai",
-      risk: "high",
-      sugar: "4g",
-      calories: "301",
-      gi: "82",
-      tip: { en: "High GI - causes blood sugar to spike quickly. Eat less often.", ms: "GI tinggi - menyebabkan gula darah naik cepat. Makan kurang kerap.", zh: "高GI - 血糖迅速升高。少吃。" },
-    },
-  ],
-  dessert: [
-    {
-      name: "Fresh Fruits",
-      risk: "low",
-      sugar: "12g",
-      calories: "80",
-      gi: "40",
-      tip: { en: "Best dessert choice! Natural sugars with fiber. Choose papaya, guava over mango.", ms: "Pilihan pencuci mulut terbaik! Gula semula jadi dengan serat. Pilih betik, jambu berbanding mangga.", zh: "最佳甜点选择！天然糖分配纤维。选择木瓜、番石榴而非芒果。" },
-    },
-    {
-      name: "Cendol",
-      risk: "high",
-      sugar: "42g",
-      calories: "380",
-      gi: "78",
-      tip: { en: "Very high in sugar from gula melaka. Enjoy rarely and in small portions.", ms: "Sangat tinggi gula dari gula melaka. Nikmati jarang dan dalam bahagian kecil.", zh: "椰糖含糖量很高。偶尔享用，份量要小。" },
-    },
-  ],
-  drink: [
-    {
-      name: "Plain Water / Teh O Kosong",
-      risk: "low",
-      sugar: "0g",
-      calories: "0",
-      gi: "0",
-      tip: { en: "Perfect choice! Zero sugar and keeps you hydrated.", ms: "Pilihan sempurna! Sifar gula dan memastikan anda terhidrat.", zh: "完美选择！零糖分，保持水分。" },
-    },
-    {
-      name: "Teh Tarik",
-      risk: "medium",
-      sugar: "18g",
-      calories: "120",
-      gi: "65",
-      tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" },
-    },
-    {
-      name: "Air Sirap",
-      risk: "high",
-      sugar: "35g",
-      calories: "140",
-      gi: "85",
-      tip: { en: "Very high sugar syrup drink. Best avoided or only small sips.", ms: "Minuman sirap sangat tinggi gula. Elakkan atau minum sedikit sahaja.", zh: "糖浆含糖量非常高。最好避免或只喝一小口。" },
-    },
-  ],
-}
 
 function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   const configs = {
@@ -538,13 +449,24 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   )
 }
 
+// API response type
+type APIResults = {
+  Appetizer: { ranking: FoodItem[] }
+  "Main Dish": { ranking: FoodItem[] }
+  Dessert: { ranking: FoodItem[] }
+  Drinks: { ranking: FoodItem[] }
+} | null
+
 export default function RecommendationPage() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]) // Store actual files for API
   const [isUploading, setIsUploading] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [textInput, setTextInput] = useState("")
   const [showCategories, setShowCategories] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [results, setResults] = useState<FoodItem[] | null>(null)
+  const [apiResults, setApiResults] = useState<APIResults>(null) // Store full API response
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -553,25 +475,15 @@ export default function RecommendationPage() {
 
   const MAX_IMAGES = 5
 
-  // Persist state selections
+  // Persist only text input (API results are not persisted across reloads)
   useEffect(() => {
-    const savedCategory = sessionStorage.getItem("rec-category")
     const savedText = sessionStorage.getItem("rec-text")
-    const savedShowCategories = sessionStorage.getItem("rec-showCategories")
-    if (savedCategory) {
-      setSelectedCategory(savedCategory)
-      const categoryResults = mockResultsByCategory[savedCategory as keyof typeof mockResultsByCategory] || []
-      setResults(categoryResults)
-    }
     if (savedText) setTextInput(savedText)
-    if (savedShowCategories === "true") setShowCategories(true)
   }, [])
 
   useEffect(() => {
-    if (selectedCategory) sessionStorage.setItem("rec-category", selectedCategory)
     sessionStorage.setItem("rec-text", textInput)
-    sessionStorage.setItem("rec-showCategories", String(showCategories))
-  }, [selectedCategory, textInput, showCategories])
+  }, [textInput])
 
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -587,37 +499,89 @@ export default function RecommendationPage() {
     setTimeout(() => {
       const newUrls = filesToProcess.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
+      setUploadedFiles(prev => [...prev, ...filesToProcess]) // Store actual files
       setIsUploading(false)
       setShowCategories(false)
       setSelectedCategory(null)
       setResults(null)
+      setApiResults(null)
     }, 1000)
   }, [uploadedImages.length])
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResults(null)
   }
 
   const removeAllImages = () => {
     setUploadedImages([])
+    setUploadedFiles([])
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResults(null)
   }
 
-  const handleAnalyze = () => {
-    setShowCategories(true)
-    setSelectedCategory(null)
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true)
     setResults(null)
+    setApiResults(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("userText", textInput)
+      
+      // Append all uploaded files
+      uploadedFiles.forEach((file) => {
+        formData.append("file", file)
+      })
+
+      const response = await fetch("/api/predict", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Analysis failed")
+      }
+
+      const data = await response.json()
+      setApiResults(data)
+      setShowCategories(true)
+      setSelectedCategory(null)
+    } catch (error) {
+      console.error("Analysis error:", error)
+      // On error, still show categories but with empty results
+      setApiResults({
+        Appetizer: { ranking: [] },
+        "Main Dish": { ranking: [] },
+        Dessert: { ranking: [] },
+        Drinks: { ranking: [] },
+      })
+      setShowCategories(true)
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category)
     setShowCategories(false)
-    const categoryResults = mockResultsByCategory[category as keyof typeof mockResultsByCategory] || []
+    
+    // Map category to API response key
+    const categoryMap: Record<string, keyof NonNullable<APIResults>> = {
+      appetizer: "Appetizer",
+      main: "Main Dish",
+      dessert: "Dessert",
+      drink: "Drinks",
+    }
+    
+    const apiKey = categoryMap[category]
+    const categoryResults = apiResults?.[apiKey]?.ranking || []
     setResults(categoryResults)
   }
 
@@ -629,10 +593,12 @@ export default function RecommendationPage() {
 
   const clearAll = () => {
     setUploadedImages([])
+    setUploadedFiles([])
     setTextInput("")
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResults(null)
   }
 
   const openImageModal = (imageUrl: string) => {
@@ -822,10 +788,20 @@ export default function RecommendationPage() {
               <div className="flex justify-center">
                 <button
                   onClick={handleAnalyze}
-                  className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg"
+                  disabled={isAnalyzing}
+                  className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <CheckCircle className="w-7 h-7" />
-                  {t.analyze_btn}
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-7 h-7 animate-spin" />
+                      {t.analyzing}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-7 h-7" />
+                      {t.analyze_btn}
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -908,11 +884,11 @@ export default function RecommendationPage() {
                   {t.disclaimer}
                 </div>
                 <div className="space-y-4">
-                  {results.map((food, i) => (
+                  {results.slice(0, 3).map((food, i) => (
                     <FoodResultCard 
                       key={i} 
                       food={food} 
-                      isBest={food.risk === "low"} 
+                      isBest={i === 0} 
                       t={t} 
                       lang={lang}
                     />
