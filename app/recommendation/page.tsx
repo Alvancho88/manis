@@ -529,7 +529,7 @@ export default function RecommendationPage() {
   // Compress an image File to JPEG at reduced quality/size
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
-      const img = new Image()
+      const img = new window.Image()
       img.crossOrigin = "anonymous"
       const url = URL.createObjectURL(file)
       img.onload = () => {
