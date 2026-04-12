@@ -94,8 +94,7 @@ Each item in the arrays should have this structure:
 `
 
   try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`
-    console.log("[v0] Calling Gemini model: gemini-2.0-flash")
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${geminiApiKey}`
     const response = await fetch(geminiUrl,
       {
         method: "POST",
