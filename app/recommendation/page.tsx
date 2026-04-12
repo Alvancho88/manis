@@ -173,7 +173,7 @@ const content = {
       dessert: "甜点",
       drink: "饮料",
     },
-    result_title: "分析结���",
+    result_title: "分析结   ",
     best_choice: "最佳选择",
     disclaimer: "排名基于估计的糖分、卡路里和GI值。结果仅供一般指导。",
     tip_label: "健康提示",
@@ -538,9 +538,23 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   )
 }
 
+// Map Gemini category key → page category key
+const CATEGORY_MAP: Record<string, string> = {
+  "Appetizer": "appetizer",
+  "Main Dish": "main",
+  "Dessert": "dessert",
+  "Drinks": "drink",
+}
+
+type ApiResultsCache = Record<string, FoodItem[]>
+
 export default function RecommendationPage() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+  const [apiResultsCache, setApiResultsCache] = useState<ApiResultsCache | null>(null)
   const [textInput, setTextInput] = useState("")
   const [showCategories, setShowCategories] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -549,29 +563,18 @@ export default function RecommendationPage() {
   const [modalImage, setModalImage] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
-  
 
   const MAX_IMAGES = 5
 
-  // Persist state selections
+  // Persist text input across navigation
   useEffect(() => {
-    const savedCategory = sessionStorage.getItem("rec-category")
     const savedText = sessionStorage.getItem("rec-text")
-    const savedShowCategories = sessionStorage.getItem("rec-showCategories")
-    if (savedCategory) {
-      setSelectedCategory(savedCategory)
-      const categoryResults = mockResultsByCategory[savedCategory as keyof typeof mockResultsByCategory] || []
-      setResults(categoryResults)
-    }
     if (savedText) setTextInput(savedText)
-    if (savedShowCategories === "true") setShowCategories(true)
   }, [])
 
   useEffect(() => {
-    if (selectedCategory) sessionStorage.setItem("rec-category", selectedCategory)
     sessionStorage.setItem("rec-text", textInput)
-    sessionStorage.setItem("rec-showCategories", String(showCategories))
-  }, [selectedCategory, textInput, showCategories])
+  }, [textInput])
 
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -587,37 +590,82 @@ export default function RecommendationPage() {
     setTimeout(() => {
       const newUrls = filesToProcess.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
+      setUploadedFiles(prev => [...prev, ...filesToProcess])
       setIsUploading(false)
       setShowCategories(false)
       setSelectedCategory(null)
       setResults(null)
+      setApiResultsCache(null)
     }, 1000)
   }, [uploadedImages.length])
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResultsCache(null)
   }
 
   const removeAllImages = () => {
     setUploadedImages([])
+    setUploadedFiles([])
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResultsCache(null)
   }
 
-  const handleAnalyze = () => {
-    setShowCategories(true)
+  const handleAnalyze = async () => {
+    setAnalyzeError(null)
+    setIsAnalyzing(true)
+    setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("userText", textInput)
+      uploadedFiles.forEach(file => formData.append("file", file))
+
+      const res = await fetch("/api/predict", { method: "POST", body: formData })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(err.error || `Server error ${res.status}`)
+      }
+
+      const data = await res.json()
+
+      // Transform Gemini output → FoodItem shape the UI expects
+      // Gemini: { "Main Dish": { ranking: [{f, sugar, c, gi_val, risk, tip}] } }
+      // UI:     { main: FoodItem[] }
+      const cache: ApiResultsCache = {}
+      for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
+        const raw = data[geminiKey]?.ranking ?? []
+        cache[pageKey] = raw.map((item: { f: string; sugar: number; c: number; gi_val: number; risk: string; tip: string }) => ({
+          name: item.f,
+          risk: item.risk?.toLowerCase() ?? "medium",
+          sugar: `${item.sugar}g`,
+          calories: `${item.c}`,
+          gi: `${item.gi_val}`,
+          tip: { en: item.tip, ms: item.tip, zh: item.tip },
+        }))
+      }
+
+      setApiResultsCache(cache)
+      setShowCategories(true)
+    } catch (err: unknown) {
+      setAnalyzeError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category)
     setShowCategories(false)
-    const categoryResults = mockResultsByCategory[category as keyof typeof mockResultsByCategory] || []
+    const categoryResults = apiResultsCache?.[category] ?? []
     setResults(categoryResults)
   }
 
@@ -629,10 +677,13 @@ export default function RecommendationPage() {
 
   const clearAll = () => {
     setUploadedImages([])
+    setUploadedFiles([])
     setTextInput("")
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
+    setApiResultsCache(null)
+    setAnalyzeError(null)
   }
 
   const openImageModal = (imageUrl: string) => {
@@ -819,14 +870,30 @@ export default function RecommendationPage() {
 
             {/* Analyse Button */}
             {hasContent && !showCategories && !results && (
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-4">
                 <button
                   onClick={handleAnalyze}
-                  className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg"
+                  disabled={isAnalyzing}
+                  className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <CheckCircle className="w-7 h-7" />
-                  {t.analyze_btn}
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-7 h-7 animate-spin" />
+                      {lang === "en" ? "Analysing..." : lang === "ms" ? "Menganalisis..." : "分析中..."}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-7 h-7" />
+                      {t.analyze_btn}
+                    </>
+                  )}
                 </button>
+                {analyzeError && (
+                  <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg">
+                    <Info className="inline w-5 h-5 mr-2 mb-0.5" />
+                    {analyzeError}
+                  </div>
+                )}
               </div>
             )}
 
@@ -912,7 +979,7 @@ export default function RecommendationPage() {
                     <FoodResultCard 
                       key={i} 
                       food={food} 
-                      isBest={food.risk === "low"} 
+                      isBest={i === 0} 
                       t={t} 
                       lang={lang}
                     />
