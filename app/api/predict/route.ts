@@ -94,8 +94,9 @@ Each item in the arrays should have this structure:
 `
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`
+    console.log("[v0] Calling Gemini model: gemini-2.0-flash")
+    const response = await fetch(geminiUrl,
       {
         method: "POST",
         headers: {
@@ -116,15 +117,16 @@ Each item in the arrays should have this structure:
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("[v0] Gemini API error:", errorText)
-      throw new Error(`Gemini API error: ${response.status}`)
+      console.error("[v0] Gemini API error status:", response.status, errorText)
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log("[v0] Gemini raw response:", JSON.stringify(data).slice(0, 500))
     const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!textContent) {
-      console.error("[v0] No text content in Gemini response")
+      console.error("[v0] No text content in Gemini response, full response:", JSON.stringify(data))
       return { Appetizer: { ranking: [] }, "Main Dish": { ranking: [] }, Dessert: { ranking: [] }, Drinks: { ranking: [] } }
     }
 
@@ -208,11 +210,14 @@ export async function POST(request: NextRequest) {
     const userText = (formData.get("userText") as string) || ""
     const files = formData.getAll("file") as File[]
 
+    console.log("[v0] Received files:", files.length, "userText:", userText)
+
     // Limit to max 5 files
     const filesToProcess = files.slice(0, 5)
 
     // Process all images in parallel for OCR
-    const ocrPromises = filesToProcess.map(async (file) => {
+    const ocrPromises = filesToProcess.map(async (file, i) => {
+      console.log(`[v0] Processing file ${i}: ${file.name}, size: ${file.size}`)
       const arrayBuffer = await file.arrayBuffer()
       const base64 = Buffer.from(arrayBuffer).toString("base64")
       return processImageOCR(base64)
@@ -221,11 +226,11 @@ export async function POST(request: NextRequest) {
     const ocrResults = await Promise.all(ocrPromises)
     const combinedOCR = ocrResults.filter(Boolean).join("\n")
 
-    console.log("[v0] Combined OCR results:", combinedOCR)
-    console.log("[v0] User text input:", userText)
+    console.log("[v0] Combined OCR:", combinedOCR || "(empty)")
 
     // If no OCR results and no user text, return empty results
     if (!combinedOCR && !userText.trim()) {
+      console.log("[v0] No input - returning empty results")
       return NextResponse.json({
         Appetizer: { ranking: [] },
         "Main Dish": { ranking: [] },
@@ -237,11 +242,11 @@ export async function POST(request: NextRequest) {
     // Analyze with Gemini
     const results = await analyzeWithGemini(combinedOCR, userText)
 
-    console.log("[v0] Final results:", JSON.stringify(results, null, 2))
+    console.log("[v0] Returning results for categories:", Object.keys(results))
 
     return NextResponse.json(results)
   } catch (error) {
-    console.error("[v0] Predict API error:", error)
+    console.error("[v0] Predict API error:", error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Analysis failed" },
       { status: 500 }

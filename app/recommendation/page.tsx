@@ -546,7 +546,9 @@ export default function RecommendationPage() {
       })
 
       if (!response.ok) {
-        throw new Error("Analysis failed")
+        const errBody = await response.json().catch(() => ({}))
+        console.error("[v0] API error:", response.status, errBody)
+        throw new Error((errBody as { error?: string })?.error || "Analysis failed")
       }
 
       const data = await response.json()
@@ -554,7 +556,7 @@ export default function RecommendationPage() {
       setShowCategories(true)
       setSelectedCategory(null)
     } catch (error) {
-      console.error("Analysis error:", error)
+      console.error("[v0] Analysis error:", error)
       // On error, still show categories but with empty results
       setApiResults({
         Appetizer: { ranking: [] },
