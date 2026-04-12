@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
+export const maxDuration = 60 // seconds
+
+export const dynamic = "force-dynamic"
+
 // Clean string values to numbers
 function cleanToNumber(value: unknown): number {
   if (typeof value === "number") return value

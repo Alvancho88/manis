@@ -526,17 +526,51 @@ export default function RecommendationPage() {
     setApiResults(null)
   }
 
+  // Compress an image File to JPEG at reduced quality/size
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX_DIM = 1024
+        let { width, height } = img
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) { height = Math.round((height * MAX_DIM) / width); width = MAX_DIM }
+          else { width = Math.round((width * MAX_DIM) / height); height = MAX_DIM }
+        }
+        const canvas = document.createElement("canvas")
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }))
+            else resolve(file)
+          },
+          "image/jpeg",
+          0.75
+        )
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+      img.src = url
+    })
+  }
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
     setResults(null)
     setApiResults(null)
 
     try {
+      // Compress all images before upload to stay under the 4MB body limit
+      const compressedFiles = await Promise.all(uploadedFiles.map(compressImage))
+
       const formData = new FormData()
       formData.append("userText", textInput)
       
-      // Append all uploaded files
-      uploadedFiles.forEach((file) => {
+      compressedFiles.forEach((file) => {
         formData.append("file", file)
       })
 
