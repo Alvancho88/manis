@@ -97,49 +97,59 @@ Each item in the arrays should have this structure:
 {"f": "food name", "sugar": number, "c": number, "gi_val": number, "risk": "Low" or "Medium" or "High", "tip": "health tip string"}
 `
 
-  try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${geminiApiKey}`
-    const response = await fetch(geminiUrl,
-      {
+  const MODELS = [
+    "gemini-3.1-flash-lite-preview",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ]
+
+  const requestBody = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json" },
+  })
+
+  for (const model of MODELS) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`
+      const response = await fetch(geminiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: "application/json",
-          },
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        // On 503 (overloaded) or 429 (rate limit), try the next model
+        if (response.status === 503 || response.status === 429) {
+          console.warn(`[v0] Model ${model} unavailable (${response.status}), trying next model...`)
+          continue
+        }
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
       }
-    )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] Gemini API error status:", response.status, errorText)
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
+      const data = await response.json()
+      const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text
+
+      if (!textContent) {
+        console.error("[v0] No text content from model:", model)
+        continue
+      }
+
+      const rawData = JSON.parse(textContent)
+      return processAndRankResults(rawData)
+    } catch (error) {
+      // If it's a parse error or non-retryable error, rethrow immediately
+      if (error instanceof SyntaxError) throw error
+      if ((error as Error).message?.includes("Gemini API error:") && 
+          !(error as Error).message?.includes("503") &&
+          !(error as Error).message?.includes("429")) {
+        throw error
+      }
+      console.warn(`[v0] Error with model ${model}:`, (error as Error).message)
     }
-
-    const data = await response.json()
-    console.log("[v0] Gemini raw response:", JSON.stringify(data).slice(0, 500))
-    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text
-
-    if (!textContent) {
-      console.error("[v0] No text content in Gemini response, full response:", JSON.stringify(data))
-      return { Appetizer: { ranking: [] }, "Main Dish": { ranking: [] }, Dessert: { ranking: [] }, Drinks: { ranking: [] } }
-    }
-
-    // Parse the JSON response
-    const rawData = JSON.parse(textContent)
-    return processAndRankResults(rawData)
-  } catch (error) {
-    console.error("[v0] Gemini analysis error:", error)
-    throw error
   }
+
+  throw new Error("All Gemini models are currently unavailable. Please try again later.")
 }
 
 interface RawFoodItem {
