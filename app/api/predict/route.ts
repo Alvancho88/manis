@@ -106,9 +106,12 @@ async function analyzeWithGemini(
 CONTEXT:
 Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
- 
+
+CRITICAL RULE:
+- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it. 
+
 TASK:
-1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item.
+1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item. Do NOT add items not present in the input.
 2. Categorize each item into exactly one of: 'Appetizer', 'Main Dish', 'Dessert', 'Drinks'.
    CATEGORIZATION RULES (follow strictly):
    - 'Drinks': water, plain water, air putih, mineral water, tea, coffee, kopi, teh, juice, cham, barley, cincau, soy bean, milo, coke, 100 plus, limau, lemon tea, any hot or cold beverage you drink through a cup or glass.

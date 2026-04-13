@@ -332,11 +332,29 @@ function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
 }
 
 // Get sugar level from sugar string (e.g., "8g" -> "medium")
+// Thresholds: Low ≤5g, Medium 5.1–22.5g, High >22.5g
 function getSugarLevel(sugar: string): "low" | "medium" | "high" {
-  const value = parseInt(sugar.replace(/[^0-9]/g, ''), 10)
-  if (value < 5) return "low"
-  if (value <= 15) return "medium"
+  const value = parseFloat(sugar.replace(/[^0-9.]/g, ''))
+  if (value <= 5) return "low"
+  if (value <= 22.5) return "medium"
   return "high"
+}
+
+// Determine overall risk level based on BOTH sugar AND GI (issue #3)
+// Low:    sugar ≤5g   AND GI ≤55
+// Medium: sugar ≤22.5g AND GI ≤69
+// High:   sugar >22.5g AND GI ≥70
+function computeRiskFromValues(sugarStr: string, giStr: string, apiRisk: string): "low" | "medium" | "high" {
+  const sugar = parseFloat(sugarStr.replace(/[^0-9.]/g, ''))
+  const gi = parseInt(giStr.replace(/[^0-9]/g, ''), 10)
+  if (!isNaN(sugar) && !isNaN(gi)) {
+    if (sugar <= 5 && gi <= 55) return "low"
+    if (sugar > 22.5 && gi >= 70) return "high"
+    // medium for anything in between
+    return "medium"
+  }
+  // fall back to API-provided risk
+  return (apiRisk?.toLowerCase() as "low" | "medium" | "high") ?? "medium"
 }
 
 function getSugarConfig(level: "low" | "medium" | "high") {
@@ -498,7 +516,9 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   const isHighGI = giValue >= 70
   const isHighSugar = sugarLevel === "high"
   const tipText = food.tip[lang] || food.tip.en
-  const tipContainsHigh = /high|tinggi|高/i.test(tipText)
+  // Use computed risk based on thresholds (issue #3: only red when truly high risk)
+  const computedRisk = computeRiskFromValues(food.sugar, food.gi, food.risk)
+  const isHighRisk = computedRisk === "high"
   
   return (
     <div className={`bg-card rounded-2xl border-2 shadow-sm overflow-hidden ${isBest ? "border-primary" : "border-border"}`}>
@@ -511,7 +531,7 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-xl font-bold">{food.name}</h3>
-          <RiskBadge risk={food.risk} t={t} />
+          <RiskBadge risk={computedRisk} t={t} />
         </div>
         <div className="flex flex-wrap gap-4 mb-4 text-base">
           <div className={`rounded-xl px-4 py-2 ${isHighSugar ? 'bg-[var(--risk-high-bg)]' : 'bg-muted'}`}>
@@ -527,10 +547,10 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
             <span className={`ml-1 ${isHighGI ? 'text-red-700 font-extrabold' : ''}`}>{food.gi}</span>
           </div>
         </div>
-        <div className={`flex items-start gap-2 rounded-xl p-4 ${tipContainsHigh ? 'bg-[var(--risk-high-bg)]' : 'bg-accent/20'}`}>
-          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${tipContainsHigh ? 'text-red-700' : 'text-accent-foreground'}`} />
-          <p className={`text-base ${tipContainsHigh ? 'text-red-700 font-extrabold' : 'text-foreground'}`}>
-            <span className={`${tipContainsHigh ? '' : 'font-bold'}`}>{t.tip_label}:</span> {tipText}
+        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? 'bg-[var(--risk-high-bg)]' : 'bg-accent/20'}`}>
+          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? 'text-red-700' : 'text-accent-foreground'}`} />
+          <p className={`text-base ${isHighRisk ? 'text-red-700 font-extrabold' : 'text-foreground'}`}>
+            <span className={`${isHighRisk ? '' : 'font-bold'}`}>{t.tip_label}:</span> {tipText}
           </p>
         </div>
       </div>
@@ -581,10 +601,14 @@ type ApiResultsCache = Record<string, FoodItem[]>
 export default function RecommendationPage() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  // newFiles: only the photos added since the last analyze (for incremental OCR, issue #2)
+  const [newFiles, setNewFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [apiResultsCache, setApiResultsCache] = useState<ApiResultsCache | null>(null)
+  // previousOcr: OCR text from the previous analyze run to combine with new scan (issue #2)
+  const [previousOcr, setPreviousOcr] = useState<string>("")
   const [textInput, setTextInput] = useState("")
   const [showCategories, setShowCategories] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -621,18 +645,23 @@ export default function RecommendationPage() {
     Promise.all(filesToProcess.map((f) => compressImage(f))).then((compressed) => {
       const newUrls = compressed.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
+      // Track only the newly added files for incremental scanning (issue #2)
+      setNewFiles(prev => [...prev, ...compressed])
       setUploadedFiles(prev => [...prev, ...compressed])
       setIsUploading(false)
+      // Don't reset results/cache — allow re-analyze with new photos added (issue #2)
+      // Only hide category/results UI so the analyze button re-appears
       setShowCategories(false)
       setSelectedCategory(null)
       setResults(null)
-      setApiResultsCache(null)
     })
   }, [uploadedImages.length])
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
     setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+    setNewFiles([])
+    setPreviousOcr("")
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
@@ -642,6 +671,8 @@ export default function RecommendationPage() {
   const removeAllImages = () => {
     setUploadedImages([])
     setUploadedFiles([])
+    setNewFiles([])
+    setPreviousOcr("")
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
@@ -657,8 +688,11 @@ export default function RecommendationPage() {
 
     try {
       const formData = new FormData()
-      formData.append("userText", textInput)
-      uploadedFiles.forEach(file => formData.append("file", file))
+      // Issue #2: send previous OCR as context + only scan newly added files
+      const filesToScan = newFiles.length > 0 ? newFiles : uploadedFiles
+      const previousOcrContext = previousOcr ? `Previously scanned items:\n${previousOcr}\n\nAdditional items from new photos:` : ""
+      formData.append("userText", [previousOcrContext, textInput].filter(Boolean).join("\n"))
+      filesToScan.forEach(file => formData.append("file", file))
 
       const res = await fetch("/api/predict", { method: "POST", body: formData })
       if (!res.ok) {
@@ -683,6 +717,12 @@ export default function RecommendationPage() {
           tip: { en: item.tip, ms: item.tip, zh: item.tip },
         }))
       }
+
+      // Build combined OCR string from all scanned items for next incremental run (issue #2)
+      const allItems = Object.values(cache).flat().map(item => item.name).join("\n")
+      setPreviousOcr(allItems)
+      // Reset newFiles — all current files are now "previous" for the next scan
+      setNewFiles([])
 
       setApiResultsCache(cache)
       setShowCategories(true)
@@ -709,6 +749,8 @@ export default function RecommendationPage() {
   const clearAll = () => {
     setUploadedImages([])
     setUploadedFiles([])
+    setNewFiles([])
+    setPreviousOcr("")
     setTextInput("")
     setShowCategories(false)
     setSelectedCategory(null)
@@ -723,6 +765,9 @@ export default function RecommendationPage() {
   }
 
   const hasContent = uploadedImages.length > 0 || textInput.trim().length > 0
+  // Issue #5: show analyze button when there's content and no results displayed yet
+  // Also show it after a new photo is added (newFiles.length > 0) even if categories were shown
+  const showAnalyzeButton = hasContent && !isAnalyzing && !results && (!showCategories || newFiles.length > 0)
 
   return (
     <PageLayout>
@@ -870,7 +915,7 @@ export default function RecommendationPage() {
                   accept="image/jpeg,image/png" 
                   multiple
                   className="hidden" 
-                  onChange={(e) => handleFileUpload(e.target.files)} 
+                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
                 />
                 {/* Camera input - uses capture attribute to open camera */}
                 <input 
@@ -879,7 +924,7 @@ export default function RecommendationPage() {
                   accept="image/jpeg,image/png" 
                   capture="environment"
                   className="hidden" 
-                  onChange={(e) => handleFileUpload(e.target.files)} 
+                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
                 />
               </div>
 
@@ -900,7 +945,7 @@ export default function RecommendationPage() {
             </div>
 
             {/* Analyse Button */}
-            {hasContent && !showCategories && !results && (
+            {showAnalyzeButton && (
               <div className="flex flex-col items-center gap-4">
                 <button
                   onClick={handleAnalyze}
@@ -974,13 +1019,23 @@ export default function RecommendationPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-[#8b3a62]">{t.no_results}</h3>
                 <p className="text-base text-foreground/80 mb-6">{t.no_results_hint}</p>
-                <button
-                  onClick={clearAll}
-                  className="inline-flex items-center gap-2 bg-[#8b3a62] text-white font-bold px-6 py-3 rounded-xl hover:opacity-90"
-                >
-                  <Upload className="w-5 h-5" />
-                  {t.back_to_upload}
-                </button>
+                {/* Issue #1: always show both action buttons even when no items in category */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleAnalyzeAnother}
+                    className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl hover:opacity-90"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    {t.analyze_another}
+                  </button>
+                  <button
+                    onClick={clearAll}
+                    className="inline-flex items-center gap-2 bg-[#8b3a62] text-white font-bold px-6 py-3 rounded-xl hover:opacity-90"
+                  >
+                    <Upload className="w-5 h-5" />
+                    {t.back_to_upload}
+                  </button>
+                </div>
               </div>
             )}
 
