@@ -78,6 +78,9 @@ const content = {
     unrecognized_hint: "Try uploading a clearer image or describe the food in the text box.",
     no_results: "No food items detected",
     no_results_hint: "Please upload a clearer photo of the menu or describe your food.",
+    scanning_steps: ["Reading menu...", "Identifying food items...", "Calculating nutrition values...", "Almost done..."],
+    success_found: "items found!",
+    success_none: "No items detected",
   },
   ms: {
     page_title: "Semak & Cadangan Makanan",
@@ -144,6 +147,9 @@ const content = {
     unrecognized_hint: "Cuba muat naik imej yang lebih jelas atau terangkan makanan dalam kotak teks.",
     no_results: "Tiada item makanan dikesan",
     no_results_hint: "Sila muat naik foto menu yang lebih jelas atau terangkan makanan anda.",
+    scanning_steps: ["Membaca menu...", "Mengenal pasti item makanan...", "Mengira nilai nutrisi...", "Hampir selesai..."],
+    success_found: "item dijumpai!",
+    success_none: "Tiada item dikesan",
   },
   zh: {
     page_title: "食物检查与推荐",
@@ -210,6 +216,9 @@ const content = {
     unrecognized_hint: "请上传更清晰的图片或在文本框中描述食物。",
     no_results: "未检测到食物",
     no_results_hint: "请上传更清晰的菜单照片或描述您的食物。",
+    scanning_steps: ["正在读取菜单...", "正在识别食物...", "正在计算营养值...", "即将完成..."],
+    success_found: "个食物已找到！",
+    success_none: "未检测到食物",
   },
 }
 
@@ -605,6 +614,10 @@ export default function RecommendationPage() {
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  // AC 1.2.1: current scanning step index (cycles through scanning_steps while isAnalyzing)
+  const [scanStep, setScanStep] = useState(0)
+  // AC 1.2.2: total items found – shown briefly in the success state before category picker
+  const [successCount, setSuccessCount] = useState<number | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [apiResultsCache, setApiResultsCache] = useState<ApiResultsCache | null>(null)
   // previousOcr: OCR text from the previous analyze run to combine with new scan (issue #2)
@@ -629,6 +642,13 @@ export default function RecommendationPage() {
   useEffect(() => {
     sessionStorage.setItem("rec-text", textInput)
   }, [textInput])
+
+  // AC 1.2.1: cycle through scanning step labels every 1.8s while analyzing
+  useEffect(() => {
+    if (!isAnalyzing) { setScanStep(0); return }
+    const id = setInterval(() => setScanStep(prev => (prev + 1) % 4), 1800)
+    return () => clearInterval(id)
+  }, [isAnalyzing])
 
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -682,10 +702,12 @@ export default function RecommendationPage() {
   const handleAnalyze = async () => {
     setAnalyzeError(null)
     setIsAnalyzing(true)
+    setSuccessCount(null)
     setShowCategories(false)
     setSelectedCategory(null)
     setResults(null)
 
+    let succeeded = false
     try {
       const formData = new FormData()
       // Issue #2: send previous OCR as context + only scan newly added files
@@ -725,11 +747,20 @@ export default function RecommendationPage() {
       setNewFiles([])
 
       setApiResultsCache(cache)
+      succeeded = true
+
+      // AC 1.2.2: stop spinner, show success banner for 2s, then reveal category picker
+      const totalFound = Object.values(cache).flat().length
+      setIsAnalyzing(false)
+      setSuccessCount(totalFound)
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      setSuccessCount(null)
       setShowCategories(true)
     } catch (err: unknown) {
       setAnalyzeError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
-      setIsAnalyzing(false)
+      // Only reset analyzing spinner on error path; success path already called setIsAnalyzing(false)
+      if (!succeeded) setIsAnalyzing(false)
     }
   }
 
@@ -952,24 +983,60 @@ export default function RecommendationPage() {
                   disabled={isAnalyzing}
                   className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-7 h-7 animate-spin" />
-                      {lang === "en" ? "Analysing..." : lang === "ms" ? "Menganalisis..." : "分析中..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-7 h-7" />
-                      {t.analyze_btn}
-                    </>
-                  )}
+                  <CheckCircle className="w-7 h-7" />
+                  {t.analyze_btn}
                 </button>
-                {analyzeError && (
-                  <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg">
-                    <Info className="inline w-5 h-5 mr-2 mb-0.5" />
-                    {analyzeError}
-                  </div>
-                )}
+              </div>
+            )}
+
+            {/* AC 1.2.1: Loading indicator — shown below the input area while analysing */}
+            {isAnalyzing && (
+              <div className="flex flex-col items-center gap-4 py-8">
+                <div className="relative w-20 h-20">
+                  {/* Outer ring */}
+                  <svg className="w-20 h-20 animate-spin" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="34" stroke="var(--color-primary)" strokeOpacity="0.15" strokeWidth="8" />
+                    <circle
+                      cx="40" cy="40" r="34"
+                      stroke="var(--color-primary)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="53 160"
+                    />
+                  </svg>
+                </div>
+                <p className="text-base font-semibold text-primary">{t.scanning_steps[scanStep]}</p>
+              </div>
+            )}
+
+            {/* Error display — shown below loading area */}
+            {analyzeError && !isAnalyzing && (
+              <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg mx-auto">
+                <Info className="inline w-5 h-5 mr-2 mb-0.5" />
+                {analyzeError}
+              </div>
+            )}
+
+            {/* AC 1.2.2: Success state — shown briefly after API returns before category picker */}
+            {successCount !== null && (
+              <div className="flex flex-col items-center gap-3 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="w-20 h-20 rounded-full bg-[var(--risk-low-bg)] flex items-center justify-center shadow-md">
+                  <CheckCircle className="w-10 h-10 text-[var(--risk-low)]" />
+                </div>
+                <p className="text-2xl font-extrabold text-[var(--risk-low)]">
+                  {successCount > 0
+                    ? `${successCount} ${t.success_found}`
+                    : t.success_none}
+                </p>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map(i => (
+                    <div
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-primary animate-bounce"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
