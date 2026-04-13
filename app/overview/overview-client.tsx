@@ -58,7 +58,7 @@ const content = {
     highest_rate: "Highest Rate",
     lowest_rate: "Lowest Rate",
     average_rate: "Average Rate",
-    click_state: "👆 Tap a state for more information",
+    click_state: "👇 Tap a state for more information",
     edu_title: "Understand Diabetes",
     edu_learn_more: "Learn more",
     edu_show_less: "Show less",
@@ -247,7 +247,7 @@ const content = {
     highest_rate: "Kadar Tertinggi",
     lowest_rate: "Kadar Terendah",
     average_rate: "Kadar Purata",
-    click_state: "Klik pada negeri untuk maklumat lanjut",
+    click_state: "👇 Klik pada negeri untuk maklumat lanjut",
     edu_title: "Fahami Diabetes",
     edu_learn_more: "Klik untuk maklumat lanjut",
     edu_show_less: "Sembunyikan",
@@ -436,7 +436,7 @@ const content = {
     highest_rate: "最高率",
     lowest_rate: "最低率",
     average_rate: "平均率",
-    click_state: "点击州属查看详情",
+    click_state: "👇 点击州属查看详情",
     edu_title: "了解糖尿病",
     edu_learn_more: "了解更多",
     edu_show_less: "收起",
@@ -929,7 +929,7 @@ function TrendsChart({ t, nationalTrend }: { t: typeof content.en; nationalTrend
   )
 }
 
-const ETHNICITY_COLORS = ["#56b4e9", "#e07b4a", "#0072b1", "#a76bbf", "#cc79a7", "#f0e444"]
+const ETHNICITY_COLORS = ["#56b4e9", "#e07b4a", "#0072b1", "#a76bbf", "#cc79a7", "#e6da3e"]
 
 function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicityData: EthnicityRow[]}) {
   const chartData = ethnicityData.map((row) => ({

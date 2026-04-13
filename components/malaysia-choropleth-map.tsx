@@ -151,7 +151,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
         ))}
       </div>
 
-      <p className="text-lg text-muted-foreground mb-3">{t.click_state}</p>
+      <p className="text-lg text-foreground mb-3">{t.click_state}</p>
 
       {/* Map canvas */}
       <div
