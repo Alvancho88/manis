@@ -851,7 +851,7 @@ export default function RecommendationPage() {
                 ) : uploadedImages.length > 0 ? (
                   <div>
                     {/* Image Grid */}
-                    <div className="relative grid grid-cols-3 gap-2 mb-4">
+                    <div className="grid grid-cols-3 gap-2 mb-4">
                       {uploadedImages.map((img, index) => (
                         <div key={index} className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary group">
                           <Image src={img} alt={`Uploaded ${index + 1}`} fill className="object-cover cursor-pointer" onClick={() => openImageModal(img)} />
@@ -869,19 +869,6 @@ export default function RecommendationPage() {
                           </div>
                         </div>
                       ))}
-                      {/* AC 1.2.1: scanning overlay that covers the entire image grid */}
-                      {isAnalyzing && (
-                        <div className="absolute inset-0 z-30 rounded-xl bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 pointer-events-none">
-                          {/* Animated scan line */}
-                          <div className="relative w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
-                            <div className="absolute inset-y-0 left-0 w-1/3 bg-primary rounded-full animate-[scan_1.2s_ease-in-out_infinite]" />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                            <span className="text-sm font-semibold text-primary">{t.scanning_steps[scanStep]}</span>
-                          </div>
-                        </div>
-                      )}
                       {/* Add more button */}
                       {uploadedImages.length < MAX_IMAGES && (
                         <button
@@ -996,31 +983,37 @@ export default function RecommendationPage() {
                   disabled={isAnalyzing}
                   className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-7 h-7 animate-spin" />
-                      {lang === "en" ? "Analysing..." : lang === "ms" ? "Menganalisis..." : "分析中..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-7 h-7" />
-                      {t.analyze_btn}
-                    </>
-                  )}
+                  <CheckCircle className="w-7 h-7" />
+                  {t.analyze_btn}
                 </button>
-                {/* AC 1.2.1: scanning step label shown for text-only flow (no image overlay available) */}
-                {isAnalyzing && uploadedImages.length === 0 && (
-                  <div className="flex items-center gap-2 text-primary font-semibold text-base">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {t.scanning_steps[scanStep]}
-                  </div>
-                )}
-                {analyzeError && (
-                  <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg">
-                    <Info className="inline w-5 h-5 mr-2 mb-0.5" />
-                    {analyzeError}
-                  </div>
-                )}
+              </div>
+            )}
+
+            {/* AC 1.2.1: Loading indicator — shown below the input area while analysing */}
+            {isAnalyzing && (
+              <div className="flex flex-col items-center gap-4 py-8">
+                <div className="relative w-20 h-20">
+                  {/* Outer ring */}
+                  <svg className="w-20 h-20 animate-spin" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="34" stroke="var(--color-primary)" strokeOpacity="0.15" strokeWidth="8" />
+                    <circle
+                      cx="40" cy="40" r="34"
+                      stroke="var(--color-primary)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="53 160"
+                    />
+                  </svg>
+                </div>
+                <p className="text-base font-semibold text-primary">{t.scanning_steps[scanStep]}</p>
+              </div>
+            )}
+
+            {/* Error display — shown below loading area */}
+            {analyzeError && !isAnalyzing && (
+              <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg mx-auto">
+                <Info className="inline w-5 h-5 mr-2 mb-0.5" />
+                {analyzeError}
               </div>
             )}
 

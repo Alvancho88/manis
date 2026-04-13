@@ -85,6 +85,7 @@ async function processSingleImage(
           },
         ],
         max_tokens: 1024,
+        temperature: 0.1,
       }),
     });
  
