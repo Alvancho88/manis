@@ -81,6 +81,8 @@ const content = {
     scanning_steps: ["Reading menu...", "Identifying food items...", "Calculating nutrition values...", "Almost done..."],
     success_found: "items found!",
     success_none: "No items detected",
+    top3_disclaimer: "We are showing you the Top 3 Healthiest Choices from what was found in your food photo. These are the safest options for your blood sugar.",
+    analyze_new_food: "Analyse New Food",
   },
   ms: {
     page_title: "Semak & Cadangan Makanan",
@@ -150,6 +152,8 @@ const content = {
     scanning_steps: ["Membaca menu...", "Mengenal pasti item makanan...", "Mengira nilai nutrisi...", "Hampir selesai..."],
     success_found: "item dijumpai!",
     success_none: "Tiada item dikesan",
+    top3_disclaimer: "Kami menunjukkan kepada anda 3 Pilihan Paling Sihat daripada apa yang dijumpai dalam foto makanan anda. Ini adalah pilihan paling selamat untuk gula darah anda.",
+    analyze_new_food: "Analisis Makanan Baru",
   },
   zh: {
     page_title: "食物检查与推荐",
@@ -219,6 +223,8 @@ const content = {
     scanning_steps: ["正在读取菜单...", "正在识别食物...", "正在计算营养值...", "即将完成..."],
     success_found: "个食物已找到！",
     success_none: "未检测到食物",
+    top3_disclaimer: "我们为您展示了食物照片中发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
+    analyze_new_food: "分析新食物",
   },
 }
 
@@ -665,15 +671,16 @@ export default function RecommendationPage() {
     Promise.all(filesToProcess.map((f) => compressImage(f))).then((compressed) => {
       const newUrls = compressed.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
-      // Track only the newly added files for incremental scanning (issue #2)
-      setNewFiles(prev => [...prev, ...compressed])
       setUploadedFiles(prev => [...prev, ...compressed])
       setIsUploading(false)
-      // Don't reset results/cache — allow re-analyze with new photos added (issue #2)
-      // Only hide category/results UI so the analyze button re-appears
+      // Reset all analysis state so next Analyse re-scans everything from scratch
+      setNewFiles([])
+      setPreviousOcr("")
+      setApiResultsCache(null)
       setShowCategories(false)
       setSelectedCategory(null)
       setResults(null)
+      setAnalyzeError(null)
     })
   }, [uploadedImages.length])
 
@@ -710,11 +717,9 @@ export default function RecommendationPage() {
     let succeeded = false
     try {
       const formData = new FormData()
-      // Issue #2: send previous OCR as context + only scan newly added files
-      const filesToScan = newFiles.length > 0 ? newFiles : uploadedFiles
-      const previousOcrContext = previousOcr ? `Previously scanned items:\n${previousOcr}\n\nAdditional items from new photos:` : ""
-      formData.append("userText", [previousOcrContext, textInput].filter(Boolean).join("\n"))
-      filesToScan.forEach(file => formData.append("file", file))
+      // Always scan all uploaded files + current text input for a clean consistent result
+      if (textInput.trim()) formData.append("userText", textInput.trim())
+      uploadedFiles.forEach(file => formData.append("file", file))
 
       const res = await fetch("/api/predict", { method: "POST", body: formData })
       if (!res.ok) {
@@ -739,12 +744,6 @@ export default function RecommendationPage() {
           tip: { en: item.tip, ms: item.tip, zh: item.tip },
         }))
       }
-
-      // Build combined OCR string from all scanned items for next incremental run (issue #2)
-      const allItems = Object.values(cache).flat().map(item => item.name).join("\n")
-      setPreviousOcr(allItems)
-      // Reset newFiles — all current files are now "previous" for the next scan
-      setNewFiles([])
 
       setApiResultsCache(cache)
       succeeded = true
@@ -796,9 +795,7 @@ export default function RecommendationPage() {
   }
 
   const hasContent = uploadedImages.length > 0 || textInput.trim().length > 0
-  // Issue #5: show analyze button when there's content and no results displayed yet
-  // Also show it after a new photo is added (newFiles.length > 0) even if categories were shown
-  const showAnalyzeButton = hasContent && !isAnalyzing && !results && (!showCategories || newFiles.length > 0)
+  const showAnalyzeButton = hasContent && !isAnalyzing && !results && !showCategories && successCount === null
 
   return (
     <PageLayout>
@@ -968,7 +965,18 @@ export default function RecommendationPage() {
                 <p className="text-muted-foreground mb-4">{t.text_input_hint}</p>
                 <textarea
                   value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
+                  onChange={(e) => {
+                    setTextInput(e.target.value)
+                    // Reset analysis whenever text changes so Analyse button reappears
+                    if (showCategories || results || apiResultsCache) {
+                      setShowCategories(false)
+                      setSelectedCategory(null)
+                      setResults(null)
+                      setApiResultsCache(null)
+                      setPreviousOcr("")
+                      setNewFiles([])
+                    }
+                  }}
                   placeholder={t.text_placeholder}
                   className="w-full h-[200px] md:h-[250px] p-4 rounded-xl border border-border bg-background text-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
@@ -1100,7 +1108,7 @@ export default function RecommendationPage() {
                     className="inline-flex items-center gap-2 bg-[#8b3a62] text-white font-bold px-6 py-3 rounded-xl hover:opacity-90"
                   >
                     <Upload className="w-5 h-5" />
-                    {t.back_to_upload}
+                    {t.analyze_new_food}
                   </button>
                 </div>
               </div>
@@ -1123,9 +1131,16 @@ export default function RecommendationPage() {
                     </span>
                   ))}
                 </div>
-                <div className="bg-muted rounded-xl px-4 py-3 mb-6 flex items-start gap-2 text-sm text-muted-foreground">
+                <div className="bg-muted rounded-xl px-4 py-3 mb-4 flex items-start gap-2 text-sm text-muted-foreground">
                   <Info className="w-4 h-4 shrink-0 mt-0.5" />
                   {t.disclaimer}
+                </div>
+                {/* Top 3 disclaimer — elderly-friendly, large text */}
+                <div className="bg-[var(--risk-low-bg)] border border-[var(--risk-low)]/30 rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
+                  <Star className="w-6 h-6 text-[var(--risk-low)] shrink-0 mt-0.5" />
+                  <p className="text-lg font-semibold text-[var(--risk-low)] leading-relaxed">
+                    {t.top3_disclaimer}
+                  </p>
                 </div>
                 <div className="space-y-4">
                   {results.map((food, i) => (
@@ -1153,7 +1168,7 @@ export default function RecommendationPage() {
                     className="flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg px-8 py-4 rounded-2xl hover:bg-muted"
                   >
                     <Upload className="w-5 h-5" />
-                    {t.back_to_upload}
+                    {t.analyze_new_food}
                   </button>
                 </div>
               </div>
