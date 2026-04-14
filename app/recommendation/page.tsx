@@ -362,13 +362,17 @@ function getSugarLevel(sugar: string): "low" | "medium" | "high" {
 function computeRiskFromValues(sugarStr: string, giStr: string, apiRisk: string): "low" | "medium" | "high" {
   const sugar = parseFloat(sugarStr.replace(/[^0-9.]/g, ''))
   const gi = parseInt(giStr.replace(/[^0-9]/g, ''), 10)
+
   if (!isNaN(sugar) && !isNaN(gi)) {
-    if (sugar <= 5 && gi <= 55) return "low"
-    if (sugar > 22.5 && gi >= 70) return "high"
-    // medium for anything in between
-    return "medium"
+    // HIGH: Either Sugar > 22.5 OR GI >= 70
+    if (sugar > 22.5 || gi >= 70) return "high";
+    
+    // LOW: Both must be low (Sugar <= 5 AND GI <= 55)
+    if (sugar <= 5 && gi <= 55) return "low";
+    
+    // MEDIUM: Everything else
+    return "medium";
   }
-  // fall back to API-provided risk
   return (apiRisk?.toLowerCase() as "low" | "medium" | "high") ?? "medium"
 }
 
@@ -390,49 +394,51 @@ type FoodItem = {
   tip: { en: string; ms: string; zh: string }
 }
 
-
-
+// Location: Inside FoodResultCard function (Around line 301)
 function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode }) {
-  const sugarLevel = getSugarLevel(food.sugar)
+  const sugarValue = parseFloat(food.sugar.replace(/[^0-9.]/g, ''))
   const giValue = parseInt(food.gi.replace(/[^0-9]/g, ''), 10)
+  
+  // Apply the same thresholds used in the risk calculation
+  const isHighSugar = sugarValue > 22.5
   const isHighGI = giValue >= 70
-  const isHighSugar = sugarLevel === "high"
+  
   const tipText = food.tip[lang] || food.tip.en
-  // Use computed risk based on thresholds (issue #3: only red when truly high risk)
+  
+  // This variable now correctly turns true if EITHER is high
   const computedRisk = computeRiskFromValues(food.sugar, food.gi, food.risk)
   const isHighRisk = computedRisk === "high"
   
   return (
     <div className={`bg-card rounded-2xl border-2 shadow-sm overflow-hidden ${isBest ? "border-primary" : "border-border"}`}>
-      {isBest && (
-        <div className="bg-primary px-4 py-2 flex items-center gap-2">
-          <Star className="w-5 h-5 text-primary-foreground" />
-          <span className="text-primary-foreground font-bold text-base">{t.best_choice}</span>
-        </div>
-      )}
+      {/* ... Star Badge Code ... */}
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-xl font-bold">{food.name}</h3>
           <RiskBadge risk={computedRisk} t={t} />
         </div>
+        
         <div className="flex flex-wrap gap-4 mb-4 text-base">
-          <div className={`rounded-xl px-4 py-2 ${isHighSugar ? 'bg-[var(--risk-high-bg)]' : 'bg-muted'}`}>
+          {/* Sugar Box: Turns red if > 22.5 */}
+          <div className={`rounded-xl px-4 py-2 ${isHighSugar ? 'bg-red-50 border border-red-200' : 'bg-muted'}`}>
             <span className="font-semibold text-foreground">{t.nutrition_sugar}:</span>
             <span className={`ml-1 ${isHighSugar ? 'text-red-700 font-extrabold' : ''}`}>{food.sugar}</span>
           </div>
-          <div className="bg-muted rounded-xl px-4 py-2">
-            <span className="font-semibold text-foreground">{t.nutrition_cal}:</span>
-            <span className="ml-1">{food.calories} kcal</span>
-          </div>
-          <div className={`rounded-xl px-4 py-2 ${isHighGI ? 'bg-[var(--risk-high-bg)]' : 'bg-muted'}`}>
+
+          {/* GI Box: Turns red if >= 70 */}
+          <div className={`rounded-xl px-4 py-2 ${isHighGI ? 'bg-red-50 border border-red-200' : 'bg-muted'}`}>
             <span className="font-semibold text-foreground">{t.nutrition_gi}:</span>
             <span className={`ml-1 ${isHighGI ? 'text-red-700 font-extrabold' : ''}`}>{food.gi}</span>
           </div>
+          
+          {/* ... Calories Box ... */}
         </div>
-        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? 'bg-[var(--risk-high-bg)]' : 'bg-accent/20'}`}>
+
+        {/* Health Tip Box: Turns red if isHighRisk is true */}
+        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? 'bg-red-50 border border-red-200' : 'bg-accent/20'}`}>
           <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? 'text-red-700' : 'text-accent-foreground'}`} />
           <p className={`text-base ${isHighRisk ? 'text-red-700 font-extrabold' : 'text-foreground'}`}>
-            <span className={`${isHighRisk ? '' : 'font-bold'}`}>{t.tip_label}:</span> {tipText}
+            <span className="font-bold">{t.tip_label}:</span> {tipText}
           </p>
         </div>
       </div>
