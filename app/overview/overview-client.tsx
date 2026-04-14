@@ -50,8 +50,10 @@ const content = {
     trends_note: "In just 10 years, the number of Malaysians living with diabetes has nearly doubled. A rising line doesn't have to be our future. By starting small healthy habits today, we can work together to turn this trend around.",
     select_year: "Year",
     ethnicity_title: "Health in Our Communities",
+    ethnicity_subtitle1: "Data from Malaysia National Health and Morbidity Survey (NHMS), 2023",
     ethnicity_subtitle: "Understanding how diabetes affects our different communities helps us provide better care for everyone.",
     ethnicity_y_label: "Percentage (%)",
+    click_bar: "👆 Tap any bar or label to learn more",
     legend_high: "High Prevalence (>8%)",
     legend_medium: "Medium Prevalence (4-8%)",
     legend_low: "Lower Prevalence (<4%)",
@@ -62,6 +64,7 @@ const content = {
     edu_title: "Understand Diabetes",
     edu_learn_more: "Learn more",
     edu_show_less: "Show less",
+    click_card: "👇 Tap a card to learn more",
     edu_sections: [
       {
         icon: AlertCircle,
@@ -70,6 +73,7 @@ const content = {
         iconColor: "#185FA5",
         titleColor: "#0C447C",
         title: "What is diabetes?",
+        shortTitle: "Introduction",
         points: [
           "Sugar = Energy for your body.",
           "Insulin is the \"key\" that lets sugar into your cells.",
@@ -103,13 +107,14 @@ const content = {
         iconColor: "#854F0B",
         titleColor: "#633806",
         title: "Symptoms to watch for",
+        shortTitle: "Symptoms",
         imageTiles: [
-          { label: "Very thirsty", image: "/images/edu/symptom-thirsty.png" },
-          { label: "Urinate often", image: "/images/edu/symptom-urinate.png" },
-          { label: "Tired & weak", image: "/images/edu/symptom-tired.png" },
-          { label: "Blurry vision", image: "/images/edu/symptom-vision.png" },
-          { label: "Slow healing", image: "/images/edu/symptom-healing.png" },
-          { label: "Numbness", image: "/images/edu/symptom-numbness.png" },
+          { label: "Very thirsty", image: "/images/edu/symptom-thirsty.png", desc: "Feeling very thirsty even after drinking plenty of water. Your body is trying to flush out extra sugar." },
+          { label: "Urinate often", image: "/images/edu/symptom-urinate.png", desc: "Needing to use the toilet much more often than usual, especially during the middle of the night." },
+          { label: "Tired & weak", image: "/images/edu/symptom-tired.png", desc: "Feeling very weak or sleepy even after a good night's rest because your body isn't using energy correctly" },
+          { label: "Blurry vision", image: "/images/edu/symptom-vision.png", desc: "Things may look fuzzy or out of focus. High sugar levels can cause the lenses in your eyes to swell." },
+          { label: "Slow healing", image: "/images/edu/symptom-healing.png", desc: "Cuts, scratches, or bruises that take a long time to go away or seem to get infected easily." },
+          { label: "Numbness", image: "/images/edu/symptom-numbness.png", desc: "A 'pins and needles' feeling or loss of sensation in your hands and feet. This happens because high sugar can damage the nerves that help you feel touch." },
         ],
         tileBg: "#FAEEDA",
         tileLabelColor: "#633806",
@@ -143,6 +148,7 @@ const content = {
         iconColor: "#0F6E56",
         titleColor: "#085041",
         title: "Risk factors",
+        shortTitle: "Risk factors",
         points: [
           "Unhealthy diet & lack of exercise",
           "Being overweight, especially belly fat",
@@ -175,13 +181,14 @@ const content = {
         iconColor: "#534AB7",
         titleColor: "#3C3489",
         title: "Prevention & healthy habits",
+        shortTitle: "Prevention",
         imageTiles: [
-          { label: "Drink water", image: "/images/edu/prevention-water.png" },
-          { label: "Less rice", image: "/images/edu/prevention-rice.png" },
-          { label: "Walk daily", image: "/images/edu/prevention-walk.png" },
-          { label: "Smaller plate", image: "/images/edu/prevention-plate.png" },
-          { label: "Yearly check", image: "/images/edu/prevention-check.png" },
-          { label: "Sleep well", image: "/images/edu/prevention-sleep.png" },
+          { label: "Drink water", image: "/images/edu/prevention-water.png", desc: "Choosing water over sugary drinks can help control blood sugar and reduce calorie intake." },
+          { label: "Less rice", image: "/images/edu/prevention-rice.png", desc: "Eating less refined carbohydrates like white rice or swapping them for whole grains and brown rice can help manage blood sugar levels." },
+          { label: "Walk daily", image: "/images/edu/prevention-walk.png", desc: "Regular physical activity helps your body use insulin more effectively. Walk 30 minutes, 5 days a week." },
+          { label: "Smaller plate", image: "/images/edu/prevention-plate.png", desc: "Using a smaller plate can help you eat less without feeling deprived." },
+          { label: "Yearly check", image: "/images/edu/prevention-check.png", desc: "Regular health screenings especially blood sugar tests can help detect diabetes early." },
+          { label: "Sleep well", image: "/images/edu/prevention-sleep.png", desc: "Getting enough sleep is important for overall health and blood sugar control." },
         ],
         tileBg: "#EEEDFE",
         tileLabelColor: "#3C3489",
@@ -199,12 +206,13 @@ const content = {
         iconColor: "#993556",
         titleColor: "#72243E",
         title: "Living with diabetes",
+        shortTitle: "Living with diabetes",
         intro: "Already diagnosed? Here is what to stay on top of:",
         imageTiles: [
-          { label: "Take medication daily", image: "/images/edu/living-medication.png" },
-          { label: "Monitor blood sugar", image: "/images/edu/living-monitor.png" },
-          { label: "Clinic follow-up", image: "/images/edu/living-followup.png" },
-          { label: "Annual checks", image: "/images/edu/living-checks.png" },
+          { label: "Take medication daily", image: "/images/edu/living-medication.png", desc: "If prescribed, taking your diabetes medication every day is crucial for managing your condition. Do not skip doses." },
+          { label: "Monitor blood sugar", image: "/images/edu/living-monitor.png", desc: "Regularly checking your blood sugar levels helps you understand how food, exercise, and medication affect your glucose." },
+          { label: "Clinic follow-up", image: "/images/edu/living-followup.png", desc: "Attending your scheduled appointments with your healthcare team ensures you receive the best care for your diabetes." },
+          { label: "Annual checks", image: "/images/edu/living-checks.png", desc: "Regular comprehensive health exams such as eye, foot, and kidney screenings help monitor for complications and ensure your diabetes management plan is effective." },
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
@@ -239,8 +247,10 @@ const content = {
     trends_note: "Dalam masa 10 tahun sahaja, bilangan rakyat Malaysia yang menghidap diabetes hampir dua kali ganda. Garis yang meningkat tidak semestinya masa depan kita. Dengan memulakan tabiat sihat kecil hari ini, kita boleh bekerjasama untuk membalikkan trend ini.",
     select_year: "Tahun",
     ethnicity_title: "Kesihatan dalam Komuniti Kita",
+    ethnicity_subtitle1: "Data dari Malaysia National Health and Morbidity Survey (NHMS) terbaharu yang mempunyai data diabetes, 2023",
     ethnicity_subtitle: "Memahami bagaimana diabetes mempengaruhi komuniti kita yang berbeza membantu kita memberikan penjagaan yang lebih baik untuk semua.",
     ethnicity_y_label: "Peratusan (%)",
+    click_bar: "👆 Klik pada bar atau label untuk maklumat lanjut",
     legend_high: "Risiko Tinggi (>8%)",
     legend_medium: "Risiko Sederhana (4-8%)",
     legend_low: "Risiko Rendah (<4%)",
@@ -251,6 +261,7 @@ const content = {
     edu_title: "Fahami Diabetes",
     edu_learn_more: "Klik untuk maklumat lanjut",
     edu_show_less: "Sembunyikan",
+    click_card: "👇 Klik pada kad untuk maklumat lanjut",
     edu_sections: [
       {
         icon: AlertCircle,
@@ -259,6 +270,7 @@ const content = {
         iconColor: "#185FA5",
         titleColor: "#0C447C",
         title: "Apa itu diabetes?",
+        shortTitle: "Apa itu?",
         points: [
           "Badan anda memerlukan gula (glukosa) untuk tenaga",
           "Insulin adalah \"kunci\" yang membenarkan gula masuk ke dalam sel anda",
@@ -292,13 +304,14 @@ const content = {
         iconColor: "#854F0B",
         titleColor: "#633806",
         title: "Gejala yang perlu dipantau",
+        shortTitle: "Gejala",
         imageTiles: [
-          { label: "Sangat dahaga", image: "/images/edu/symptom-thirsty.png" },
-          { label: "Kerap kencing", image: "/images/edu/symptom-urinate.png" },
-          { label: "Penat & lemah", image: "/images/edu/symptom-tired.png" },
-          { label: "Penglihatan kabur", image: "/images/edu/symptom-vision.png" },
-          { label: "Luka lambat sembuh", image: "/images/edu/symptom-healing.png" },
-          { label: "Kebas & kesemutan", image: "/images/edu/symptom-numbness.png" },
+          { label: "Sangat dahaga", image: "/images/edu/symptom-thirsty.png", desc: "Merasa sangat dahaga walaupun sudah minum banyak air. Tubuh anda berusaha untuk membuang gula ekstra." },
+          { label: "Kerap kencing", image: "/images/edu/symptom-urinate.png", desc: "Kerap perlu kencing, terutama pada malam hari. Gula darah tinggi menyebabkan tubuh anda membuang lebih banyak air." },
+          { label: "Penat & lemah", image: "/images/edu/symptom-tired.png", desc: "Merasa sangat penat dan lemah walaupun tidak melakukan aktiviti fizikal yang berat." },
+          { label: "Penglihatan kabur", image: "/images/edu/symptom-vision.png", desc: "Penglihatan menjadi kabur atau tidak tajam. Gula darah tinggi boleh mempengaruhi fungsi mata." },
+          { label: "Luka lambat sembuh", image: "/images/edu/symptom-healing.png", desc: "Luka atau cedera yang biasanya cepat sembuh menjadi lambat pulih." },
+          { label: "Kebas & kesemutan", image: "/images/edu/symptom-numbness.png", desc: "Merasa kebas atau kesemutan di tangan atau kaki. Ini adalah tanda awal kerosakan saraf." },
         ],
         tileBg: "#FAEEDA",
         tileLabelColor: "#633806",
@@ -332,6 +345,7 @@ const content = {
         iconColor: "#0F6E56",
         titleColor: "#085041",
         title: "Faktor risiko",
+        shortTitle: "Faktor risiko",
         points: [
           "Makanan tidak sihat & kurang senaman",
           "Berat badan berlebihan, terutama di bahagian perut",
@@ -364,13 +378,14 @@ const content = {
         iconColor: "#534AB7",
         titleColor: "#3C3489",
         title: "Pencegahan & tabiat sihat",
+        shortTitle: "Pencegahan",
         imageTiles: [
-          { label: "Minum air kosong", image: "/images/edu/prevention-water.png" },
-          { label: "Kurang nasi", image: "/images/edu/prevention-rice.png" },
-          { label: "Berjalan kaki", image: "/images/edu/prevention-walk.png" },
-          { label: "Pinggan lebih kecil", image: "/images/edu/prevention-plate.png" },
-          { label: "Semak tahunan", image: "/images/edu/prevention-check.png" },
-          { label: "Tidur cukup", image: "/images/edu/prevention-sleep.png" },
+          { label: "Minum air kosong", image: "/images/edu/prevention-water.png", desc: "Memilih air kosong daripada minuman bergula dapat membantu mengawal gula darah dan mengurangkan pengambilan kalori." },
+          { label: "Kurang nasi", image: "/images/edu/prevention-rice.png", desc: "Mengurangkan pengambilan nasi boleh membantu mengawal gula darah." },
+          { label: "Berjalan kaki", image: "/images/edu/prevention-walk.png", desc: "Aktiviti fizikal seperti berjalan kaki boleh meningkatkan sensitiviti insulin dan mengawal gula darah." },
+          { label: "Pinggan lebih kecil", image: "/images/edu/prevention-plate.png", desc: "Menggunakan pinggan yang lebih kecil boleh membantu mengurangkan pengambilan kalori." },
+          { label: "Semak tahunan", image: "/images/edu/prevention-check.png", desc: "Saringan tahunan boleh membantu mengesan diabetes atau prediabetes dengan awal." },
+          { label: "Tidur cukup", image: "/images/edu/prevention-sleep.png", desc: "Tidur yang cukup penting untuk kesejahteraan keseluruhan dan kawalan gula darah." },
         ],
         tileBg: "#EEEDFE",
         tileLabelColor: "#3C3489",
@@ -388,12 +403,13 @@ const content = {
         iconColor: "#993556",
         titleColor: "#72243E",
         title: "Menjalani hidup dengan diabetes",
+        shortTitle: "Hidup dengan diabetes",
         intro: "Sudah didiagnosis? Berikut adalah perkara yang perlu diberi perhatian:",
         imageTiles: [
-          { label: "Ambil ubat setiap hari", image: "/images/edu/living-medication.png" },
-          { label: "Pantau gula darah", image: "/images/edu/living-monitor.png" },
-          { label: "Susulan klinik", image: "/images/edu/living-followup.png" },
-          { label: "Pemeriksaan tahunan", image: "/images/edu/living-checks.png" },
+          { label: "Ambil ubat setiap hari", image: "/images/edu/living-medication.png", desc: "Jika telah dipreskripsikan, mengambil ubat diabetes anda setiap hari sangat penting untuk menguruskan kondisi anda. Jangan melewatkan dosis." },
+          { label: "Pantau gula darah", image: "/images/edu/living-monitor.png", desc: "Memantau gula darah secara berkala membantu anda memahami bagaimana makanan dan aktiviti mempengaruhi tahap gula darah anda." },
+          { label: "Susulan klinik", image: "/images/edu/living-followup.png", desc: "Menjaga janji temu dengan doktor anda adalah penting untuk memastikan diabetes anda dikawal dengan baik." },
+          { label: "Pemeriksaan tahunan", image: "/images/edu/living-checks.png", desc: "Pemeriksaan tahunan boleh membantu mengesan sebarang komplikasi yang mungkin timbul akibat diabetes." },
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
@@ -428,8 +444,10 @@ const content = {
     trends_note: "短短10年间，马来西亚糖尿病患者人数几乎翻倍。上升的趋势不一定是我们的未来。从今天开始养成健康习惯，我们可以共同努力扭转这一趋势。",
     select_year: "年份",
     ethnicity_title: "我们社区的健康",
+    ethnicity_subtitle1: "来自最新包含糖尿病数据的马来西亚国家健康与疾病调查（NHMS）的数据, 2023年",
     ethnicity_subtitle: "了解糖尿病如何影响我们不同的社区，有助于我们为每个人提供更好的护理。",
     ethnicity_y_label: "百分比 (%)",
+    click_bar: "👆 点击任何条形或标签了解更多",
     legend_high: "高风险 (>8%)",
     legend_medium: "中等风险 (4-8%)",
     legend_low: "较低风险 (<4%)",
@@ -440,6 +458,7 @@ const content = {
     edu_title: "了解糖尿病",
     edu_learn_more: "了解更多",
     edu_show_less: "收起",
+    click_card: "👇 点击卡片了解更多",
     edu_sections: [
       {
         icon: AlertCircle,
@@ -448,6 +467,7 @@ const content = {
         iconColor: "#185FA5",
         titleColor: "#0C447C",
         title: "什么是糖尿病？",
+        shortTitle: "介绍",
         points: [
           "您的身体需要糖（葡萄糖）来提供能量",
           "胰岛素是让糖进入细胞的\"钥匙\"",
@@ -481,13 +501,14 @@ const content = {
         iconColor: "#854F0B",
         titleColor: "#633806",
         title: "需要注意的症状",
+        shortTitle: "症状",
         imageTiles: [
-          { label: "非常口渴", image: "/images/edu/symptom-thirsty.png" },
-          { label: "频繁排尿", image: "/images/edu/symptom-urinate.png" },
-          { label: "疲倦虚弱", image: "/images/edu/symptom-tired.png" },
-          { label: "视力模糊", image: "/images/edu/symptom-vision.png" },
-          { label: "伤口难愈", image: "/images/edu/symptom-healing.png" },
-          { label: "麻木刺痛", image: "/images/edu/symptom-numbness.png" },
+          { label: "非常口渴", image: "/images/edu/symptom-thirsty.png", desc: "即使喝了很多水也感觉非常口渴。您的身体正在试图排出多余的糖分。" },
+          { label: "频繁排尿", image: "/images/edu/symptom-urinate.png", desc: "需要更频繁地排尿，尤其是夜间。" },
+          { label: "疲倦虚弱", image: "/images/edu/symptom-tired.png", desc: "感到异常疲倦或虚弱，这可能是由于血糖水平不稳定造成的。" },
+          { label: "视力模糊", image: "/images/edu/symptom-vision.png", desc: "视力变得模糊，这可能是由于高血糖影响了眼睛的晶状体。" },
+          { label: "伤口难愈", image: "/images/edu/symptom-healing.png", desc: "伤口愈合缓慢，这可能是由于高血糖影响了免疫系统。" },
+          { label: "麻木刺痛", image: "/images/edu/symptom-numbness.png", desc: "手脚感到麻木或刺痛，这可能是由于高血糖损害了神经。" },
         ],
         tileBg: "#FAEEDA",
         tileLabelColor: "#633806",
@@ -521,6 +542,7 @@ const content = {
         iconColor: "#0F6E56",
         titleColor: "#085041",
         title: "风险因素",
+        shortTitle: "风险因素",
         points: [
           "摄入过多糖分、白米或加工食品",
           "日常活动不足",
@@ -555,13 +577,14 @@ const content = {
         iconColor: "#534AB7",
         titleColor: "#3C3489",
         title: "预防与健康习惯",
+        shortTitle: "预防",
         imageTiles: [
-          { label: "喝白开水", image: "/images/edu/prevention-water.png" },
-          { label: "少吃白米", image: "/images/edu/prevention-rice.png" },
-          { label: "每日步行", image: "/images/edu/prevention-walk.png" },
-          { label: "小碗进食", image: "/images/edu/prevention-plate.png" },
-          { label: "每年检查", image: "/images/edu/prevention-check.png" },
-          { label: "充足睡眠", image: "/images/edu/prevention-sleep.png" },
+          { label: "喝白开水", image: "/images/edu/prevention-water.png", desc: "选择白开水而不是含糖饮料可以帮助控制血糖并减少热量摄入。" },
+          { label: "少吃白米", image: "/images/edu/prevention-rice.png", desc: "减少精制碳水化合物的摄入，如白米，有助于控制血糖。" },
+          { label: "每日步行", image: "/images/edu/prevention-walk.png", desc: "每天进行适量的步行运动有助于提高胰岛素敏感性并控制血糖。" },
+          { label: "小碗进食", image: "/images/edu/prevention-plate.png", desc: "使用较小的碗碟可以帮助控制食物份量，从而更好地管理血糖。" },
+          { label: "每年检查", image: "/images/edu/prevention-check.png", desc: "定期进行健康检查可以及早发现并管理糖尿病风险。" },
+          { label: "充足睡眠", image: "/images/edu/prevention-sleep.png", desc: "保证充足的睡眠有助于维持正常的血糖水平和整体健康。" },
         ],
         tileBg: "#EEEDFE",
         tileLabelColor: "#3C3489",
@@ -579,12 +602,13 @@ const content = {
         iconColor: "#993556",
         titleColor: "#72243E",
         title: "与糖尿病共存",
+        shortTitle: "与糖尿病共存",
         intro: "已确诊？以下是需要注意的事项：",
         imageTiles: [
-          { label: "每日按时服药", image: "/images/edu/living-medication.png" },
-          { label: "监测血糖", image: "/images/edu/living-monitor.png" },
-          { label: "定期复诊", image: "/images/edu/living-followup.png" },
-          { label: "年度检查", image: "/images/edu/living-checks.png" },
+          { label: "每日按时服药", image: "/images/edu/living-medication.png", desc: "如果医生开了药，每天按时服用对管理病情至关重要。不要漏服。" },
+          { label: "监测血糖", image: "/images/edu/living-monitor.png", desc: "定期监测血糖水平有助于了解病情并调整治疗方案。" },
+          { label: "定期复诊", image: "/images/edu/living-followup.png", desc: "按照医生的建议定期复诊，以评估病情进展和治疗效果。" },
+          { label: "年度检查", image: "/images/edu/living-checks.png", desc: "每年进行一次全面的健康检查，以及时发现并处理可能的并发症。" },
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
@@ -649,8 +673,10 @@ function ImgOrPlaceholder({ src, alt, className }: { src: string; alt: string; c
   )
 }
 
-function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof content.en.edu_sections[0]; learnMoreLabel: string; showLessLabel: string }) {
+function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel }: { section: typeof content.en.edu_sections[0]; learnMoreLabel: string; showLessLabel: string; clickCardLabel: string }) {
   const [open, setOpen] = useState(false)
+  const [activeTileIndex, setActiveTileIndex] = useState<number | null>(null)
+
   return (
     <div
       className="rounded-2xl bg-background flex flex-col overflow-hidden"
@@ -672,7 +698,7 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
           </h3>
         </div>
 
-        <div className="border-t border-border/30" />
+        <div className="border-t border-border/100" />
 
         {/* Main bullet points */}
         {"points" in section && section.points && (
@@ -765,19 +791,41 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
 
         {/* Image tiles — label only (symptoms, prevention, living) */}
         {"imageTiles" in section && section.imageTiles && (
-          <div className="grid grid-cols-2 gap-3">
-            {section.imageTiles.map((tile, i) => (
-              <div
-                key={i}
-                className="rounded-xl p-2 flex flex-col items-center gap-2 text-center"
-                style={{ backgroundColor: section.tileBg }}
-              >
-                <ImgOrPlaceholder src={tile.image} alt={tile.label} className="w-full h-20" />
-                <p className="text-base font-medium leading-tight" style={{ color: section.tileLabelColor }}>
-                  {tile.label}
-                </p>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            <p className="text-lg font-medium text-muted-foreground flex items-center gap-2"> {clickCardLabel}</p>
+            <div className="grid grid-cols-2 gap-3 items-start">
+              {section.imageTiles.map((tile: any, i: number) => {
+                const isActive = activeTileIndex === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTileIndex(isActive ? null : i)}
+                    className="rounded-xl p-3 flex flex-col items-center gap-2 text-center transition-all duration-200 
+                    border-2 w-full cursor-pointer hover:shadow-md active:scale-95"
+                    style={{ 
+                      backgroundColor: section.tileBg,
+                      // Add a border when active to show it's selected
+                      border: isActive ? `2px solid ${section.titleColor}` : '2px solid transparent'
+                    }}
+                  >
+                    <ImgOrPlaceholder src={tile.image} alt={tile.label} className="w-full h-20 transition-transform hover:scale-105" />
+                    <p className="text-base font-medium leading-tight" style={{ color: section.tileLabelColor }}>
+                      {tile.label}
+                    </p>
+                    
+                    {/* Expanded content when tapped */}
+                    {isActive && (
+                      <div className="mt-2 text-base text-left w-full animate-in fade-in slide-in-from-top-2">
+                        <div className="border-t border-black/10 pt-2 mb-1" />
+                        <p style={{ color: section.tileLabelColor }}>
+                          {tile.desc || "Tap again to close. (Add 'desc' to this item in your content object!)"}
+                        </p>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -833,7 +881,7 @@ function EduCard({ section, learnMoreLabel, showLessLabel }: { section: typeof c
           {open && (
             <div className="flex flex-col gap-2 pt-1 border-t border-border/20">
               {(section.learnMore as string[]).map((para, idx) => (
-                <p key={idx} className="text-base leading-relaxed text-foreground">{para}</p>
+                <p key={idx} className="text-lg leading-relaxed text-foreground">{para}</p>
               ))}
             </div>
           )}
@@ -960,6 +1008,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
   return (
     <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 shadow-sm mt-6">
       <h2 className="text-2xl sm:text-3xl font-bold mb-1">{t.ethnicity_title}</h2>
+      <p className="text-xl text-foreground mb-6">{t.ethnicity_subtitle1}</p>
       <p className="text-lg text-muted-foreground mb-6">{t.ethnicity_subtitle}</p>
 
       <ResponsiveContainer width="100%" height={360}>
@@ -1059,7 +1108,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
       {/* Tap hint, only shown before any selection */}
       {!selected && (
         <p className="text-center text-lg text-muted-foreground mt-5">
-          👆 Tap any bar or label to learn more
+          {t.click_bar}
         </p>
       )}
     </div>
@@ -1068,6 +1117,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
 
 export default function OverviewClient({ dataByYear, availableYears, nationalTrend, ethnicityData }: OverviewClientProps) {
   const [activeTab, setActiveTab] = useState<"prevalence" | "trends">("prevalence")
+  const [activeEduIndex, setActiveEduIndex] = useState(0)
 
   return (
     <PageLayout>
@@ -1149,17 +1199,39 @@ export default function OverviewClient({ dataByYear, availableYears, nationalTre
             </div>
 
             {/* Education Section */}
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">{t.edu_title}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="scroll-mt-10" id="education-section">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">{t.edu_title}</h2>
+              
+              {/* Education Navigation Tabs */}
+              <div className="flex flex-wrap justify-center gap-3 mb-8">
                 {t.edu_sections.map((section, idx) => (
-                  <EduCard
+                  <button
                     key={idx}
-                    section={section}
-                    learnMoreLabel={t.edu_learn_more}
-                    showLessLabel={t.edu_show_less}
-                  />
+                    onClick={() => setActiveEduIndex(idx)}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all font-medium text-base md:text-lg"
+                    style={{
+                      borderColor: activeEduIndex === idx ? section.borderColor : "var(--border)",
+                      backgroundColor: activeEduIndex === idx ? section.borderColor : "var(--card)",
+                      color: activeEduIndex === idx ? "#ffffff" : "var(--foreground)",
+                    }}
+                  >
+                    <section.icon 
+                      className="w-5 h-5" 
+                      style={{ color: activeEduIndex === idx ? "#ffffff" : "var(--muted-foreground)" }} 
+                    />
+                    {section.shortTitle ?? section.title}
+                  </button>
                 ))}
+              </div>
+
+              {/* Display only the active card */}
+              <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <EduCard
+                  section={t.edu_sections[activeEduIndex]}
+                  learnMoreLabel={t.edu_learn_more}
+                  showLessLabel={t.edu_show_less}
+                  clickCardLabel={t.click_card}
+                />
               </div>
             </div>
           </div>
