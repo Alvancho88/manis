@@ -85,6 +85,7 @@ async function processSingleImage(
           },
         ],
         max_tokens: 1024,
+        temperature: 0.1,
       }),
     });
  
@@ -106,9 +107,9 @@ async function analyzeWithGemini(
 CONTEXT:
 Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
-
+ 
 CRITICAL RULE:
-- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it. 
+- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it.
 
 TASK:
 1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item. Do NOT add items not present in the input.
