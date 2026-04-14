@@ -229,106 +229,106 @@ const content = {
 }
 
 // Common Malaysian foods for quick selection - with full data like food page
-const commonFoods = [
-  { name: "Nasi Lemak", image: "/images/food-nasi-lemak.jpg", sugar: "8g", calories: "644", gi: "64", risk: "medium", portion: "1 plate (350g)", tip: { en: "Enjoy in smaller portions, less sambal.", ms: "Nikmati dalam bahagian lebih kecil, kurang sambal.", zh: "少量食用，减少参巴酱。" } },
-  { name: "Roti Canai", image: "/images/food-roti-canai.jpg", sugar: "4g", calories: "301", gi: "82", risk: "high", portion: "2 pieces", tip: { en: "High GI, eat less. Choose dhal over curry.", ms: "GI tinggi, makan lebih sedikit. Pilih dhal berbanding kari.", zh: "高GI，少吃。选扁豆而非咖喱。" } },
-  { name: "Mee Goreng", image: "/images/food-mee-goreng.jpg", sugar: "5g", calories: "660", gi: "60", risk: "medium", portion: "1 plate (350g)", tip: { en: "Add more vegetables, request less oil when ordering.", ms: "Tambah lebih banyak sayuran, minta kurang minyak.", zh: "多加蔬菜，点餐时要求少油。" } },
-  { name: "Chicken Rice", image: "/images/food-brown-rice.jpg", sugar: "6g", calories: "702", gi: "65", risk: "medium", portion: "1 plate (350g)", tip: { en: "Choose steamed chicken over roasted. Ask for less rice.", ms: "Pilih ayam kukus berbanding panggang. Minta kurang nasi.", zh: "选择清蒸鸡而非烤鸡。少要点米饭。" } },
-  { name: "Cendol", image: "/images/food-cendol.jpg", sugar: "42g", calories: "380", gi: "78", risk: "high", portion: "1 bowl", tip: { en: "Very high sugar. Avoid or limit to a few spoonfuls only.", ms: "Gula sangat tinggi. Elakkan atau hadkan kepada beberapa sudu sahaja.", zh: "含糖量极高。避免食用或只吃几勺。" } },
-  { name: "Teh Tarik", image: "/images/food-teh-tarik.jpg", sugar: "18g", calories: "120", gi: "65", risk: "medium", portion: "1 glass (200ml)", tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" } },
-]
+// const commonFoods = [
+//   { name: "Nasi Lemak", image: "/images/food-nasi-lemak.jpg", sugar: "8g", calories: "644", gi: "64", risk: "medium", portion: "1 plate (350g)", tip: { en: "Enjoy in smaller portions, less sambal.", ms: "Nikmati dalam bahagian lebih kecil, kurang sambal.", zh: "少量食用，减少参巴酱。" } },
+//   { name: "Roti Canai", image: "/images/food-roti-canai.jpg", sugar: "4g", calories: "301", gi: "82", risk: "high", portion: "2 pieces", tip: { en: "High GI, eat less. Choose dhal over curry.", ms: "GI tinggi, makan lebih sedikit. Pilih dhal berbanding kari.", zh: "高GI，少吃。选扁豆而非咖喱。" } },
+//   { name: "Mee Goreng", image: "/images/food-mee-goreng.jpg", sugar: "5g", calories: "660", gi: "60", risk: "medium", portion: "1 plate (350g)", tip: { en: "Add more vegetables, request less oil when ordering.", ms: "Tambah lebih banyak sayuran, minta kurang minyak.", zh: "多加蔬菜，点餐时要求少油。" } },
+//   { name: "Chicken Rice", image: "/images/food-brown-rice.jpg", sugar: "6g", calories: "702", gi: "65", risk: "medium", portion: "1 plate (350g)", tip: { en: "Choose steamed chicken over roasted. Ask for less rice.", ms: "Pilih ayam kukus berbanding panggang. Minta kurang nasi.", zh: "选择清蒸鸡而非烤鸡。少要点米饭。" } },
+//   { name: "Cendol", image: "/images/food-cendol.jpg", sugar: "42g", calories: "380", gi: "78", risk: "high", portion: "1 bowl", tip: { en: "Very high sugar. Avoid or limit to a few spoonfuls only.", ms: "Gula sangat tinggi. Elakkan atau hadkan kepada beberapa sudu sahaja.", zh: "含糖量极高。避免食用或只吃几勺。" } },
+//   { name: "Teh Tarik", image: "/images/food-teh-tarik.jpg", sugar: "18g", calories: "120", gi: "65", risk: "medium", portion: "1 glass (200ml)", tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" } },
+// ]
 
-// Mock analysis results by category
-const mockResultsByCategory = {
-  appetizer: [
-    {
-      name: "Popiah",
-      risk: "low",
-      sugar: "3g",
-      calories: "150",
-      gi: "45",
-      tip: { en: "Great choice! Fresh vegetables wrapped in thin skin. Low in sugar and calories.", ms: "Pilihan bagus! Sayuran segar dibungkus dalam kulit nipis. Rendah gula dan kalori.", zh: "很好的选择！新鲜蔬菜裹在薄皮里。糖分和卡路里低。" },
-    },
-    {
-      name: "Satay (3 sticks)",
-      risk: "medium",
-      sugar: "5g",
-      calories: "220",
-      gi: "55",
-      tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限制在3-4串。" },
-    },
-  ],
-  main: [
-    {
-      name: "Brown Rice with Fish",
-      risk: "low",
-      sugar: "2g",
-      calories: "380",
-      gi: "50",
-      tip: { en: "Excellent choice! Brown rice has more fiber and steamed fish is healthy.", ms: "Pilihan hebat! Nasi perang lebih banyak serat dan ikan kukus sihat.", zh: "极佳选择！糙米纤维更多，清蒸鱼很健康。" },
-    },
-    {
-      name: "Nasi Lemak",
-      risk: "medium",
-      sugar: "8g",
-      calories: "644",
-      gi: "64",
-      tip: { en: "Enjoy in smaller portions. Ask for less sambal and skip fried items.", ms: "Nikmati dalam bahagian kecil. Minta sambal yang kurang dan elakkan yang digoreng.", zh: "少量食用。少放参巴酱，不吃油炸食品。" },
-    },
-    {
-      name: "Roti Canai",
-      risk: "high",
-      sugar: "4g",
-      calories: "301",
-      gi: "82",
-      tip: { en: "High GI - causes blood sugar to spike quickly. Eat less often.", ms: "GI tinggi - menyebabkan gula darah naik cepat. Makan kurang kerap.", zh: "高GI - 血糖迅速升高。少吃。" },
-    },
-  ],
-  dessert: [
-    {
-      name: "Fresh Fruits",
-      risk: "low",
-      sugar: "12g",
-      calories: "80",
-      gi: "40",
-      tip: { en: "Best dessert choice! Natural sugars with fiber. Choose papaya, guava over mango.", ms: "Pilihan pencuci mulut terbaik! Gula semula jadi dengan serat. Pilih betik, jambu berbanding mangga.", zh: "最佳甜点选择！天然糖分配纤维。选择木瓜、番石榴而非芒果。" },
-    },
-    {
-      name: "Cendol",
-      risk: "high",
-      sugar: "42g",
-      calories: "380",
-      gi: "78",
-      tip: { en: "Very high in sugar from gula melaka. Enjoy rarely and in small portions.", ms: "Sangat tinggi gula dari gula melaka. Nikmati jarang dan dalam bahagian kecil.", zh: "椰糖含糖量很高。偶尔享用，份量要小。" },
-    },
-  ],
-  drink: [
-    {
-      name: "Plain Water / Teh O Kosong",
-      risk: "low",
-      sugar: "0g",
-      calories: "0",
-      gi: "0",
-      tip: { en: "Perfect choice! Zero sugar and keeps you hydrated.", ms: "Pilihan sempurna! Sifar gula dan memastikan anda terhidrat.", zh: "完美选择！零糖分，保持水分。" },
-    },
-    {
-      name: "Teh Tarik",
-      risk: "medium",
-      sugar: "18g",
-      calories: "120",
-      gi: "65",
-      tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" },
-    },
-    {
-      name: "Air Sirap",
-      risk: "high",
-      sugar: "35g",
-      calories: "140",
-      gi: "85",
-      tip: { en: "Very high sugar syrup drink. Best avoided or only small sips.", ms: "Minuman sirap sangat tinggi gula. Elakkan atau minum sedikit sahaja.", zh: "糖浆含糖量非常高。最好避免或只喝一小口。" },
-    },
-  ],
-}
+// // Mock analysis results by category
+// const mockResultsByCategory = {
+//   appetizer: [
+//     {
+//       name: "Popiah",
+//       risk: "low",
+//       sugar: "3g",
+//       calories: "150",
+//       gi: "45",
+//       tip: { en: "Great choice! Fresh vegetables wrapped in thin skin. Low in sugar and calories.", ms: "Pilihan bagus! Sayuran segar dibungkus dalam kulit nipis. Rendah gula dan kalori.", zh: "很好的选择！新鲜蔬菜裹在薄皮里。糖分和卡路里低。" },
+//     },
+//     {
+//       name: "Satay (3 sticks)",
+//       risk: "medium",
+//       sugar: "5g",
+//       calories: "220",
+//       gi: "55",
+//       tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限制在3-4串。" },
+//     },
+//   ],
+//   main: [
+//     {
+//       name: "Brown Rice with Fish",
+//       risk: "low",
+//       sugar: "2g",
+//       calories: "380",
+//       gi: "50",
+//       tip: { en: "Excellent choice! Brown rice has more fiber and steamed fish is healthy.", ms: "Pilihan hebat! Nasi perang lebih banyak serat dan ikan kukus sihat.", zh: "极佳选择！糙米纤维更多，清蒸鱼很健康。" },
+//     },
+//     {
+//       name: "Nasi Lemak",
+//       risk: "medium",
+//       sugar: "8g",
+//       calories: "644",
+//       gi: "64",
+//       tip: { en: "Enjoy in smaller portions. Ask for less sambal and skip fried items.", ms: "Nikmati dalam bahagian kecil. Minta sambal yang kurang dan elakkan yang digoreng.", zh: "少量食用。少放参巴酱，不吃油炸食品。" },
+//     },
+//     {
+//       name: "Roti Canai",
+//       risk: "high",
+//       sugar: "4g",
+//       calories: "301",
+//       gi: "82",
+//       tip: { en: "High GI - causes blood sugar to spike quickly. Eat less often.", ms: "GI tinggi - menyebabkan gula darah naik cepat. Makan kurang kerap.", zh: "高GI - 血糖迅速升高。少吃。" },
+//     },
+//   ],
+//   dessert: [
+//     {
+//       name: "Fresh Fruits",
+//       risk: "low",
+//       sugar: "12g",
+//       calories: "80",
+//       gi: "40",
+//       tip: { en: "Best dessert choice! Natural sugars with fiber. Choose papaya, guava over mango.", ms: "Pilihan pencuci mulut terbaik! Gula semula jadi dengan serat. Pilih betik, jambu berbanding mangga.", zh: "最佳甜点选择！天然糖分配纤维。选择木瓜、番石榴而非芒果。" },
+//     },
+//     {
+//       name: "Cendol",
+//       risk: "high",
+//       sugar: "42g",
+//       calories: "380",
+//       gi: "78",
+//       tip: { en: "Very high in sugar from gula melaka. Enjoy rarely and in small portions.", ms: "Sangat tinggi gula dari gula melaka. Nikmati jarang dan dalam bahagian kecil.", zh: "椰糖含糖量很高。偶尔享用，份量要小。" },
+//     },
+//   ],
+//   drink: [
+//     {
+//       name: "Plain Water / Teh O Kosong",
+//       risk: "low",
+//       sugar: "0g",
+//       calories: "0",
+//       gi: "0",
+//       tip: { en: "Perfect choice! Zero sugar and keeps you hydrated.", ms: "Pilihan sempurna! Sifar gula dan memastikan anda terhidrat.", zh: "完美选择！零糖分，保持水分。" },
+//     },
+//     {
+//       name: "Teh Tarik",
+//       risk: "medium",
+//       sugar: "18g",
+//       calories: "120",
+//       gi: "65",
+//       tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" },
+//     },
+//     {
+//       name: "Air Sirap",
+//       risk: "high",
+//       sugar: "35g",
+//       calories: "140",
+//       gi: "85",
+//       tip: { en: "Very high sugar syrup drink. Best avoided or only small sips.", ms: "Minuman sirap sangat tinggi gula. Elakkan atau minum sedikit sahaja.", zh: "糖浆含糖量非常高。最好避免或只喝一小口。" },
+//     },
+//   ],
+// }
 
 function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   const configs = {
@@ -380,139 +380,6 @@ function getSugarConfig(level: "low" | "medium" | "high") {
   }[level]
 }
 
-// Common food card with full popup like food page
-function CommonFoodCard({ food, t, lang }: { food: typeof commonFoods[0]; t: typeof content.en; lang: LangCode }) {
-  const [open, setOpen] = useState(false)
-  
-  const getRiskConfig = (risk: string) => ({
-    low: { label: t.risk_low, icon: TrendingDown, bg: "bg-[var(--risk-low-bg)]", text: "text-[var(--risk-low)]", border: "border-[var(--risk-low)]/30" },
-    medium: { label: t.risk_medium, icon: Minus, bg: "bg-[var(--risk-medium-bg)]", text: "text-[var(--risk-medium)]", border: "border-[var(--risk-medium)]/40" },
-    high: { label: t.risk_high, icon: TrendingUp, bg: "bg-[var(--risk-high-bg)]", text: "text-[var(--risk-high)]", border: "border-[var(--risk-high)]/30" },
-  }[risk] || { label: "", icon: Minus, bg: "", text: "", border: "" })
-  
-  const rc = getRiskConfig(food.risk)
-  const sugarLevel = getSugarLevel(food.sugar)
-  const sc = getSugarConfig(sugarLevel)
-  
-  return (
-    <>
-      <button 
-        onClick={() => setOpen(true)}
-        className="relative bg-card rounded-2xl border-2 border-border overflow-hidden cursor-pointer group transition-all hover:shadow-lg hover:border-primary text-left w-full active:scale-[0.98]"
-      >
-        <div className="relative h-44 sm:h-40 w-full">
-          <Image src={food.image} alt={food.name} fill className="object-cover" />
-          {/* GI and Sugar badges */}
-          <div className="absolute top-2 right-2 flex flex-col gap-1.5">
-            <span className={`inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-sm border ${rc.bg} ${food.risk === 'high' ? 'text-red-700 font-extrabold' : `${rc.text} font-bold`} ${rc.border}`} title="GI Index">
-              <rc.icon className="w-4 h-4" />
-              GI
-            </span>
-            <span className={`inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-sm border ${sc?.bg} ${sugarLevel === 'high' ? 'text-red-700 font-extrabold' : `${sc?.text} font-bold`} ${sugarLevel === 'high' ? 'border-red-700/30' : sc?.border}`} title="Sugar">
-              {sugarLevel === 'low' && <TrendingDown className="w-4 h-4" />}
-              {sugarLevel === 'medium' && <Minus className="w-4 h-4" />}
-              {sugarLevel === 'high' && <TrendingUp className="w-4 h-4" />}
-              Sugar
-            </span>
-          </div>
-        </div>
-        <div className="p-3 sm:p-4">
-          <h4 className="font-bold text-base text-center mb-2 sm:mb-3">{food.name}</h4>
-          <div className="grid grid-cols-3 gap-1">
-            <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.sugar}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_sugar}</div>
-            </div>
-            <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.calories}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_cal}</div>
-            </div>
-            <div className="bg-muted rounded-lg px-1 py-1.5 sm:px-1.5 sm:py-2 text-center min-w-0">
-              <div className="font-bold text-foreground text-base sm:text-base truncate">{food.gi}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-base truncate">{t.nutrition_gi}</div>
-            </div>
-          </div>
-        </div>
-      </button>
-
-      {/* Detail Modal - same as food page */}
-      {open && (
-        <div className="fixed inset-0 bg-foreground/50 z-50 flex items-center justify-center p-4 sm:p-4" onClick={() => setOpen(false)}>
-          <div className="bg-card rounded-2xl max-w-sm sm:max-w-md w-full shadow-2xl overflow-hidden max-h-[70vh] sm:max-h-[90vh] relative" onClick={(e) => e.stopPropagation()}>
-            {/* Close button - absolute position above all content */}
-            <button
-              onClick={() => setOpen(false)}
-              className="absolute top-2 right-2 z-50 w-8 h-8 sm:w-12 sm:h-12 bg-white sm:bg-card rounded-xl flex items-center justify-center border-2 border-border shadow-lg active:scale-95"
-              aria-label={t.close}
-            >
-              <X className="w-5 h-5 sm:w-7 sm:h-7" />
-            </button>
-            <div className="overflow-y-auto max-h-[70vh] sm:max-h-[90vh]">
-              <div className="relative h-44 sm:h-52 w-full">
-                <Image src={food.image} alt={food.name} fill className="object-cover" />
-              </div>
-            <div className="p-5 sm:p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-2xl sm:text-3xl font-bold">{food.name}</h3>
-<div className="flex flex-col gap-1.5">
-                                  <span className={`inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-base border ${rc.bg} ${food.risk === 'high' ? 'text-red-700 font-extrabold' : `${rc.text} font-bold`} ${rc.border}`} title="GI Index">
-                                    <rc.icon className="w-5 h-5" />
-                                    GI
-                                  </span>
-                                  <span className={`inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-base border ${sc?.bg} ${sugarLevel === 'high' ? 'text-red-700 font-extrabold' : `${sc?.text} font-bold`} ${sugarLevel === 'high' ? 'border-red-700/30' : sc?.border}`} title="Sugar Level">
-                                    {sugarLevel === 'low' && <TrendingDown className="w-5 h-5" />}
-                                    {sugarLevel === 'medium' && <Minus className="w-5 h-5" />}
-                                    {sugarLevel === 'high' && <TrendingUp className="w-5 h-5" />}
-                                    Sugar
-                                  </span>
-                                </div>
-              </div>
-              <p className="text-base text-muted-foreground mb-4">{t.portion}: {food.portion}</p>
-              {(() => {
-                const modalSugarLevel = getSugarLevel(food.sugar)
-                const modalGiValue = parseInt(food.gi.replace(/[^0-9]/g, ''), 10)
-                const modalIsHighGI = modalGiValue >= 70
-                const modalIsHighSugar = modalSugarLevel === "high"
-                const modalTipText = food.tip[lang] || food.tip.en
-                const modalShouldHighlight = modalIsHighSugar || modalIsHighGI
-                return (
-                  <>
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className={`rounded-xl p-3 text-center ${modalIsHighSugar ? 'bg-[var(--risk-high-bg)]' : 'bg-muted'}`}>
-                        <div className={`text-2xl font-bold ${modalIsHighSugar ? 'text-red-700 font-extrabold' : 'text-primary'}`}>{food.sugar}</div>
-                        <div className="text-sm text-muted-foreground mt-1">{t.nutrition_sugar}</div>
-                      </div>
-                      <div className="bg-muted rounded-xl p-3 text-center">
-                        <div className="text-2xl font-bold text-primary">{food.calories} kcal</div>
-                        <div className="text-sm text-muted-foreground mt-1">{t.nutrition_cal}</div>
-                      </div>
-                      <div className={`rounded-xl p-3 text-center ${modalIsHighGI ? 'bg-[var(--risk-high-bg)]' : 'bg-muted'}`}>
-                        <div className={`text-2xl font-bold ${modalIsHighGI ? 'text-red-700 font-extrabold' : 'text-primary'}`}>{food.gi}</div>
-                        <div className="text-sm text-muted-foreground mt-1">{t.nutrition_gi}</div>
-                      </div>
-                    </div>
-                    <div className="text-base text-muted-foreground text-center mb-4 border-2 border-border rounded-xl px-4 py-3">
-                      <div className="font-bold text-foreground">{t.daily_sugar_title}</div>
-                      <div>{t.daily_sugar_women}</div>
-                      <div>{t.daily_sugar_men}</div>
-                    </div>
-                    <div className={`rounded-xl p-4 flex gap-3 ${modalShouldHighlight ? 'bg-[var(--risk-high-bg)]' : 'bg-primary/10'}`}>
-                      <Info className={`w-6 h-6 shrink-0 mt-0.5 ${modalShouldHighlight ? 'text-red-700' : 'text-primary'}`} />
-                      <p className={`text-base ${modalShouldHighlight ? 'text-red-700 font-extrabold' : 'text-foreground'}`}>
-                        <span className={`${modalShouldHighlight ? '' : 'font-bold'}`}>{t.tip_label_full}:</span> {modalTipText}
-                      </p>
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
 
 type FoodItem = {
   name: string
@@ -1173,93 +1040,6 @@ export default function RecommendationPage() {
                 </div>
               </div>
             )}
-
-            {/* Common Malaysian Foods Section - at bottom */}
-            <div className="bg-card rounded-2xl border border-border shadow-sm">
-              <div className="px-4 pt-4 md:pt-6 pb-3">
-                <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-center">{t.common_foods_title}</h3>
-                <p className="text-lg text-muted-foreground text-center">{t.common_foods_subtitle}</p>
-              </div>
-              {/* Sticky Guide Header - sticks to top when scrolling */}
-              <div className="sticky top-16 md:top-20 z-20 bg-background border-b border-border px-1.5 md:px-4 py-2 md:py-3">
-                <div className="space-y-1.5 md:space-y-3">
-                  {/* Row 1: GI Index Guide */}
-                  <div className="flex items-center gap-1 md:gap-2 text-sm">
-                    <span className="font-bold text-primary shrink-0 text-sm md:text-lg">{t.gi_guide_title}:</span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--risk-low-bg)] text-[var(--risk-low)] font-semibold text-xs md:text-base">
-                      <TrendingDown className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(≤55)"}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--risk-medium-bg)] text-[var(--risk-medium)] font-semibold text-xs md:text-base">
-                      <Minus className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(56-69)"}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--risk-high-bg)] text-red-700 font-extrabold text-xs md:text-base">
-                      <TrendingUp className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(≥70)"}
-                    </span>
-                    {/* Desktop only: Daily Sugar Limit inline */}
-                    <span className="hidden md:inline font-bold text-primary shrink-0 ml-auto text-lg">{t.daily_sugar_title}</span>
-                    <span className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--cb-blue)]/15 text-[var(--cb-blue-text)] font-semibold text-base">
-                      <User className="w-5 h-5" />
-                      {"<36g"}
-                    </span>
-                    <span className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--cb-pink)]/15 text-foreground font-semibold text-base">
-                      <User className="w-5 h-5 text-[var(--cb-pink-text)]" />
-                      {"<25g"}
-                    </span>
-                  </div>
-                  {/* Row 2: GI Description */}
-                  <p className="text-xs md:text-base text-muted-foreground italic">{t.gi_description}</p>
-                  {/* Row 3: Sugar Guide */}
-                  <div className="flex items-center gap-1 md:gap-2 text-sm">
-                    <span className="font-bold text-primary shrink-0 text-sm md:text-lg">{t.sugar_guide_title}:</span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--sugar-low-bg)] text-[var(--sugar-low)] font-semibold text-xs md:text-base border border-[var(--sugar-low)]/20">
-                      <TrendingDown className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(≤5g)"}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--sugar-medium-bg)] text-[var(--sugar-medium)] font-semibold text-xs md:text-base border border-[var(--sugar-medium)]/20">
-                      <Minus className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(6-15g)"}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 md:gap-1.5 px-2 md:px-4 py-1 md:py-2 rounded-full bg-[var(--sugar-high-bg)] text-red-700 font-extrabold text-xs md:text-base border border-red-700/20">
-                      <TrendingUp className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {"(≥16g)"}
-                    </span>
-                  </div>
-                  {/* Row 4: Daily Sugar Limit - Mobile only */}
-                  <div className="flex md:hidden items-center gap-1 text-sm">
-                    <span className="font-bold text-primary shrink-0 text-sm">{t.daily_sugar_title}</span>
-                    <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded-full bg-[var(--cb-blue)]/15 text-[var(--cb-blue-text)] font-semibold text-xs">
-                      <User className="w-3.5 h-3.5" />
-                      {"<36g"}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded-full bg-[var(--cb-pink)]/15 text-foreground font-semibold text-xs">
-                      <User className="w-3.5 h-3.5 text-[var(--cb-pink-text)]" />
-                      {"<25g"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {/* Foods Content */}
-              <div className="p-4 md:p-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {commonFoods.map((food, index) => (
-                    <CommonFoodCard key={index} food={food} t={t} lang={lang} />
-                  ))}
-                </div>
-                {/* See More Foods Button */}
-                <div className="flex justify-center mt-6">
-                  <Link
-                    href="/food"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-opacity"
-                  >
-                    {t.see_more_foods}
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
 
             {/* Image Modal */}
             {showImageModal && modalImage && (
