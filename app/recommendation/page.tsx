@@ -411,6 +411,12 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   
   return (
     <div className={`bg-card rounded-2xl border-2 shadow-sm overflow-hidden ${isBest ? "border-primary" : "border-border"}`}>
+      {isBest && (
+        <div className="bg-primary px-4 py-2 flex items-center gap-2">
+          <Star className="w-5 h-5 text-primary-foreground" />
+          <span className="text-primary-foreground font-bold text-base">{t.best_choice}</span>
+        </div>
+      )}
       {/* ... Star Badge Code ... */}
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -432,6 +438,10 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
           </div>
           
           {/* ... Calories Box ... */}
+          {/* <div className="bg-muted rounded-xl px-4 py-2">
+            <span className="font-semibold text-foreground">{t.nutrition_cal}:</span>
+            <span className="ml-1">{food.calories} kcal</span>
+          </div> */}
         </div>
 
         {/* Health Tip Box: Turns red if isHighRisk is true */}
