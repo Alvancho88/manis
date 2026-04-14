@@ -1,5 +1,5 @@
 // app/api/predict/route.ts
-// Uses: Groq (Llama-4-Scout) for OCR  +  Gemini (gemini-3.1-flash-lite-preview) for analysis
+// Uses: Groq (Llama-4-Scout) for OCR  +  Groq (Qwen-2.5-32B) for analysis [Test Build]
  
 import { NextRequest, NextResponse } from "next/server";
  
@@ -14,16 +14,8 @@ function cleanToNumber(value: unknown): number {
   return isNaN(n) ? 0 : n;
 }
  
-// Robust JSON parse:
-// 1. Strips markdown fences
-// 2. Extracts the FIRST complete {...} block by brace depth counting
-//    → survives trailing garbage text after the JSON closes
-// 3. Falls back to full string parse if extraction fails
 function safeParseJson(raw: string): Record<string, unknown[]> {
-  // Strip markdown fences
   const stripped = raw.replace(/```json\s*|```/g, "").trim();
- 
-  // Find first '{' then walk char-by-char tracking depth
   const start = stripped.indexOf("{");
   if (start === -1) throw new Error("No JSON object found in response");
  
@@ -40,18 +32,13 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
     if (ch === "{") depth++;
     if (ch === "}") {
       depth--;
-      if (depth === 0) {
-        // We have the complete JSON object
-        return JSON.parse(stripped.slice(start, i + 1));
-      }
+      if (depth === 0) return JSON.parse(stripped.slice(start, i + 1));
     }
   }
- 
-  // Fallback: try parsing the whole stripped string
   return JSON.parse(stripped);
 }
  
-// ─── OCR via Groq (Llama-4-Scout vision) ─────────────────────────────────────
+// ─── OCR via Groq ────────────────────────────────────────────────────────────
  
 async function processSingleImage(
   arrayBuffer: ArrayBuffer,
@@ -75,7 +62,7 @@ async function processSingleImage(
             content: [
               {
                 type: "text",
-                text: `You are a menu reader. List EVERY single food and drink item name visible on this menu, exactly as written. Include ALL items from ALL sections. Output one item per line. Do NOT skip any item, do NOT add prices or descriptions.`,
+                text: `List EVERY single food and drink item name visible on this menu. Output one item per line.`,
               },
               {
                 type: "image_url",
@@ -97,9 +84,9 @@ async function processSingleImage(
   }
 }
  
-// ─── Analysis via Gemini ──────────────────────────────────────────────────────
+// ─── Analysis via Groq (Qwen-2.5-32B) ────────────────────────────────────────
  
-async function analyzeWithGemini(
+async function analyzeWithGroq(
   combinedOcr: string,
   userText: string
 ): Promise<string> {
@@ -107,9 +94,9 @@ async function analyzeWithGemini(
 CONTEXT:
 Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
- 
+
 CRITICAL RULE:
-- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it.
+- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it. 
 
 TASK:
 1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item. Do NOT add items not present in the input.
@@ -120,7 +107,7 @@ TASK:
    - 'Main Dish': rice dishes, noodles, chicken dishes, fish dishes, meat, hor fun, mee, any substantial meal item.
    - 'Appetizer': small starters and sides — satay, popiah, spring roll, bean sprout, lettuce, tofu side dishes, gizzard, liver, small soups served as starters.
 3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
-   Risk = impact on blood glucose for elderly diabetics.
+   Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
 4. Write a short practical health tip for EVERY item (one sentence, no newlines).
  
 RANKING LOGIC (apply per category):
@@ -138,29 +125,27 @@ IMPORTANT OUTPUT RULES:
 - Each item: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string"}
 `;
  
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-          maxOutputTokens: 2048, // top-3 per category × 4 cats × ~100 tokens each = well under 2048
-        },
-      }),
-    }
-  );
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "qwen/qwen3-32b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    }),
+  });
  
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Gemini error ${res.status}: ${err}`);
+    throw new Error(`Groq Analysis error ${res.status}: ${err}`);
   }
  
   const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  return data?.choices?.[0]?.message?.content ?? "{}";
 }
  
 // ─── Route handler ────────────────────────────────────────────────────────────
@@ -171,7 +156,6 @@ export async function POST(req: NextRequest) {
     const userText = (formData.get("userText") as string) ?? "";
     const files = formData.getAll("file") as File[];
  
-    // OCR: process up to 5 images in parallel
     const ocrResults = await Promise.all(
       files.slice(0, 5).map(async (file) => {
         const buf = await file.arrayBuffer();
@@ -180,10 +164,9 @@ export async function POST(req: NextRequest) {
     );
     const combinedOcr = ocrResults.filter(Boolean).join("\n");
  
-    // Analysis
-    const rawJson = await analyzeWithGemini(combinedOcr, userText);
+    // Analysis using Groq Qwen
+    const rawJson = await analyzeWithGroq(combinedOcr, userText);
  
-    // Parse safely (handles whitespace/newlines inside strings)
     let rawData: Record<string, unknown[]>;
     try {
       rawData = safeParseJson(rawJson);
@@ -195,7 +178,7 @@ export async function POST(req: NextRequest) {
     const finalResults: Record<string, { ranking: unknown[] }> = {};
  
     for (const cat of ["Appetizer", "Main Dish", "Dessert", "Drinks"]) {
-      const items = (rawData[cat] ?? []) as Record<string, unknown>[];
+      const items = (rawData[cat] ?? []) as Record<string, any>[];
  
       for (const item of items) {
         item.sugar = cleanToNumber(item.sugar ?? 0);
@@ -205,18 +188,13 @@ export async function POST(req: NextRequest) {
       }
  
       const sorted = [...items].sort((a, b) => {
-        if (a.risk_score !== b.risk_score)
-          return (a.risk_score as number) - (b.risk_score as number);
-        if (a.sugar !== b.sugar)
-          return (a.sugar as number) - (b.sugar as number);
-        if (a.gi_val !== b.gi_val)
-          return (a.gi_val as number) - (b.gi_val as number);
-        return (a.c as number) - (b.c as number);
+        if (a.risk_score !== b.risk_score) return a.risk_score - b.risk_score;
+        if (a.sugar !== b.sugar) return a.sugar - b.sugar;
+        if (a.gi_val !== b.gi_val) return a.gi_val - b.gi_val;
+        return a.c - b.c;
       });
  
-      sorted.forEach((item) => delete item.risk_score);
- 
-      // Top 3 per category only
+      sorted.forEach((item: any) => delete item.risk_score);
       finalResults[cat] = { ranking: sorted.slice(0, 3) };
     }
  
