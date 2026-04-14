@@ -1,5 +1,5 @@
 // app/api/predict/route.ts
-// Uses: Groq (Llama-4-Scout) for OCR  +  Groq (Qwen-2.5-32B) for analysis [Test Build]
+// Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
  
 import { NextRequest, NextResponse } from "next/server";
  
@@ -38,7 +38,7 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
   return JSON.parse(stripped);
 }
  
-// ─── OCR via Groq ────────────────────────────────────────────────────────────
+// ─── OCR via Groq (Llama-4-Scout) ─────────────────────────────────────────────
  
 async function processSingleImage(
   arrayBuffer: ArrayBuffer,
@@ -84,7 +84,7 @@ async function processSingleImage(
   }
 }
  
-// ─── Analysis via Groq (Qwen-2.5-32B) ────────────────────────────────────────
+// ─── Analysis via Groq (Llama-3.3-70B) ────────────────────────────────────────
  
 async function analyzeWithGroq(
   combinedOcr: string,
@@ -132,8 +132,11 @@ IMPORTANT OUTPUT RULES:
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "qwen/qwen3-32b",
-      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: "You are a health assistant. Always output valid JSON." },
+        { role: "user", content: prompt }
+      ],
       temperature: 0.1,
       response_format: { type: "json_object" }
     }),
@@ -164,7 +167,7 @@ export async function POST(req: NextRequest) {
     );
     const combinedOcr = ocrResults.filter(Boolean).join("\n");
  
-    // Analysis using Groq Qwen
+    // Analysis using Groq Llama 3.3 70B
     const rawJson = await analyzeWithGroq(combinedOcr, userText);
  
     let rawData: Record<string, unknown[]>;
