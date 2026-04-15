@@ -56,7 +56,7 @@ const content = {
     click_bar: "👆 Tap any bar or label to learn more",
     legend_high: "High Prevalence (>8%)",
     legend_medium: "Medium Prevalence (4-8%)",
-    legend_low: "Lower Prevalence (<4%)",
+    legend_low: "Low Prevalence (<4%)",
     highest_rate: "Highest Rate",
     lowest_rate: "Lowest Rate",
     average_rate: "Average Rate",

@@ -110,10 +110,13 @@ TASK:
 5. For EVERY item, include a "best_reason" field: one sentence (max 15 words) explaining why this item is a good or bad choice for blood sugar management in elderly diabetics.
  
 RANKING LOGIC (apply per category):
-- Priority 1: Risk (Low first, then Medium, then High)
+- Priority 1: Risk (Low is highest priority, Medium is high priority, and High is lowest priority)
+- If two or more items have the same risk, for those items with the same risk rank it based on Priority 2: Sugar
 - Priority 2: Sugar (lower first)
+- If two or more items have the same sugar, for those items with the same sugar, rank it based on Priority 3: GI Value
 - Priority 3: GI Value (lowest first)
-- Priority 4 TIE-BREAKER: Calories (lowest first)
+- If tow or more items have the same GI Value, for those items with the same GI Value, rank it based on Priority 4 TIE-BREAKER: Calories
+- Priority 4 TIE-BREAKER: Calories (lowest first) 
  
 IMPORTANT OUTPUT RULES:
 - Output ONLY the top 3 best items per category (already ranked). If a category has fewer than 3 items, output all of them. If a category has 0 items, output an empty array.
