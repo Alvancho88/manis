@@ -1,6 +1,6 @@
 // app/api/predict/route.ts
-// Uses: Groq (Llama-4-Scout) for OCR + Gemini (gemini-2.5-flash-lite-preview) for analysis
-// Fallback: Groq (Llama-3.3-70B) if Gemini fails
+// Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
+// Strategy: Key 2 primary, Key 1 backup for both tasks.
  
 import { NextRequest, NextResponse } from "next/server";
  
@@ -39,21 +39,22 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
   return JSON.parse(stripped);
 }
  
-// ─── OCR via Groq (Llama-4-Scout) ─────────────────────────────────────────────
+// ─── OCR via Groq (Llama-4-Scout) with Key Fallback ───────────────────────────
  
 async function processSingleImage(
   arrayBuffer: ArrayBuffer,
   mimeType: string
 ): Promise<string> {
-  try {
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
-    const dataUrl = `data:${mimeType};base64,${base64}`;
- 
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+  const attemptOcr = async (apiKey: string | undefined) => {
+    if (!apiKey) throw new Error("API Key missing");
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -76,12 +77,22 @@ async function processSingleImage(
         temperature: 0.1,
       }),
     });
- 
-    if (!res.ok) return "";
+    if (!res.ok) throw new Error(`Status ${res.status}`);
     const data = await res.json();
     return data?.choices?.[0]?.message?.content ?? "";
-  } catch {
-    return "";
+  };
+
+  try {
+    // Try KEY 2 first
+    return await attemptOcr(process.env.GROQ_API_KEY_2);
+  } catch (err) {
+    console.warn(`[predict] ⚠️ OCR Primary Key failed, trying backup...`);
+    try {
+      // Try KEY 1 backup
+      return await attemptOcr(process.env.GROQ_API_KEY);
+    } catch {
+      return "";
+    }
   }
 }
  
@@ -132,56 +143,21 @@ IMPORTANT OUTPUT RULES:
 `;
 }
  
-// ─── Analysis via Gemini (gemini-2.5-flash-lite-preview) ──────────────────────
- 
-async function analyzeWithGemini(
-  combinedOcr: string,
-  userText: string
-): Promise<string> {
-  const prompt = buildAnalysisPrompt(combinedOcr, userText);
- 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: "application/json",
-        },
-        systemInstruction: {
-          parts: [{ text: "You are a health assistant. Always output valid JSON only, with no markdown, no code fences, and no extra text." }],
-        },
-      }),
-    }
-  );
- 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini error ${res.status}: ${err}`);
-  }
- 
-  const data = await res.json();
-  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!content) throw new Error("Gemini returned empty content");
-  return content;
-}
- 
-// ─── Analysis via Groq (Llama-3.3-70B) — fallback ────────────────────────────
+// ─── Analysis via Groq (Llama-3.3-70B) ───────────────────────────────────────
  
 async function analyzeWithGroq(
   combinedOcr: string,
-  userText: string
+  userText: string,
+  apiKey: string | undefined
 ): Promise<string> {
+  if (!apiKey) throw new Error("API Key missing");
   const prompt = buildAnalysisPrompt(combinedOcr, userText);
  
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
@@ -203,21 +179,22 @@ async function analyzeWithGroq(
   return data?.choices?.[0]?.message?.content ?? "{}";
 }
  
-// ─── Analysis with Gemini-first, Groq fallback ────────────────────────────────
+// ─── Analysis with Key 2 first, Key 1 fallback ────────────────────────────────
  
 async function analyzeWithFallback(
   combinedOcr: string,
   userText: string
 ): Promise<string> {
   try {
-    const result = await analyzeWithGemini(combinedOcr, userText);
-    console.log("[predict] ✅ Gemini analysis succeeded");
+    // Primary: Key 2
+    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY_2);
+    console.log("[predict] ✅ Analysis succeeded (Key 2)");
     return result;
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.warn(`[predict] ⚠️  Gemini failed — falling back to Groq. Reason: ${reason}`);
-    const result = await analyzeWithGroq(combinedOcr, userText);
-    console.log("[predict] ✅ Groq fallback analysis succeeded");
+    console.warn(`[predict] ⚠️ Analysis Key 2 failed — trying Key 1. Error: ${err}`);
+    // Secondary: Key 1
+    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY);
+    console.log("[predict] ✅ Analysis succeeded (Key 1)");
     return result;
   }
 }
@@ -238,7 +215,6 @@ export async function POST(req: NextRequest) {
     );
     const combinedOcr = ocrResults.filter(Boolean).join("\n");
  
-    // Analysis: Gemini first, silently fall back to Groq Llama-3.3-70B on any error
     const rawJson = await analyzeWithFallback(combinedOcr, userText);
  
     let rawData: Record<string, unknown[]>;
@@ -248,7 +224,12 @@ export async function POST(req: NextRequest) {
       rawData = JSON.parse(rawJson);
     }
  
-    const riskMap: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
+    const riskMap: Record<string, number> = { 
+      "Low": 1, "Low Risk": 1, 
+      "Medium": 2, "Medium Risk": 2, 
+      "High": 3, "High Risk": 3 
+    };
+
     const finalResults: Record<string, { ranking: unknown[] }> = {};
  
     for (const cat of ["Appetizer", "Main Dish", "Dessert", "Drinks"]) {
@@ -258,7 +239,7 @@ export async function POST(req: NextRequest) {
         item.sugar = cleanToNumber(item.sugar ?? 0);
         item.gi_val = cleanToNumber(item.gi_val ?? 55);
         item.c = cleanToNumber(item.c ?? 0);
-        item.risk_score = riskMap[String(item.risk ?? "Medium")] ?? 2;
+        item.risk_score = riskMap[String(item.risk).trim()] ?? 2;
       }
  
       const sorted = [...items].sort((a, b) => {
@@ -270,20 +251,14 @@ export async function POST(req: NextRequest) {
  
       const top3 = sorted.slice(0, 3);
  
-      // Guarantee best_reason is always present on rank #1 and stripped from rank #2 and #3.
-      // This is done in code so it never depends on the AI getting it right.
       top3.forEach((item: any, idx: number) => {
         delete item.risk_score;
         if (idx === 0) {
-          // Ensure rank #1 always has best_reason; generate a fallback if AI omitted it
           if (!item.best_reason || String(item.best_reason).trim() === "") {
             const riskLabel = String(item.risk ?? "Medium");
-            const sugar = item.sugar ?? 0;
-            const gi = item.gi_val ?? 0;
-            item.best_reason = `Lowest sugar (${sugar}g) and GI (${gi}) in category with ${riskLabel} risk.`;
+            item.best_reason = `Optimized choice with lower sugar and ${riskLabel} glycemic impact.`;
           }
         } else {
-          // Ranks #2 and #3 must never have best_reason
           delete item.best_reason;
         }
       });
@@ -291,16 +266,7 @@ export async function POST(req: NextRequest) {
       finalResults[cat] = { ranking: top3 };
     }
  
-    // Count total input items: items from OCR + items from user text
-    const ocrItems = combinedOcr
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    const userTextItems = userText
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    const totalInputItems = ocrItems.length + userTextItems.length;
+    const totalInputItems = (combinedOcr + userText).split(/[\n,;]+/).filter(s => s.trim()).length;
 
     return NextResponse.json({ ...finalResults, totalInputItems });
   } catch (err: unknown) {
