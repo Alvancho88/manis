@@ -1,5 +1,6 @@
 // app/api/predict/route.ts
-// Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
+// Uses: Groq (Llama-4-Scout) for OCR + Gemini (gemini-2.5-flash-lite-preview) for analysis
+// Fallback: Groq (Llama-3.3-70B) if Gemini fails
  
 import { NextRequest, NextResponse } from "next/server";
  
@@ -84,20 +85,17 @@ async function processSingleImage(
   }
 }
  
-// ─── Analysis via Groq (Llama-3.3-70B) ────────────────────────────────────────
+// ─── Shared prompt builder ─────────────────────────────────────────────────────
  
-async function analyzeWithGroq(
-  combinedOcr: string,
-  userText: string
-): Promise<string> {
-  const prompt = `
+function buildAnalysisPrompt(combinedOcr: string, userText: string): string {
+  return `
 CONTEXT:
 Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
-
+ 
 CRITICAL RULE:
 - ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it. 
-
+ 
 TASK:
 1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item. Do NOT add items not present in the input.
 2. Categorize each item into exactly one of: 'Appetizer', 'Main Dish', 'Dessert', 'Drinks'.
@@ -126,6 +124,52 @@ IMPORTANT OUTPUT RULES:
 - MANDATORY: The FIRST item in each non-empty category array MUST have best_reason field: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
 - Items ranked 2nd or 3rd do NOT have best_reason: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string"}
 `;
+}
+ 
+// ─── Analysis via Gemini (gemini-2.5-flash-lite-preview) ──────────────────────
+ 
+async function analyzeWithGemini(
+  combinedOcr: string,
+  userText: string
+): Promise<string> {
+  const prompt = buildAnalysisPrompt(combinedOcr, userText);
+ 
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json",
+        },
+        systemInstruction: {
+          parts: [{ text: "You are a health assistant. Always output valid JSON only, with no markdown, no code fences, and no extra text." }],
+        },
+      }),
+    }
+  );
+ 
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini error ${res.status}: ${err}`);
+  }
+ 
+  const data = await res.json();
+  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!content) throw new Error("Gemini returned empty content");
+  return content;
+}
+ 
+// ─── Analysis via Groq (Llama-3.3-70B) — fallback ────────────────────────────
+ 
+async function analyzeWithGroq(
+  combinedOcr: string,
+  userText: string
+): Promise<string> {
+  const prompt = buildAnalysisPrompt(combinedOcr, userText);
  
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -153,6 +197,25 @@ IMPORTANT OUTPUT RULES:
   return data?.choices?.[0]?.message?.content ?? "{}";
 }
  
+// ─── Analysis with Gemini-first, Groq fallback ────────────────────────────────
+ 
+async function analyzeWithFallback(
+  combinedOcr: string,
+  userText: string
+): Promise<string> {
+  try {
+    const result = await analyzeWithGemini(combinedOcr, userText);
+    console.log("[predict] ✅ Gemini analysis succeeded");
+    return result;
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[predict] ⚠️  Gemini failed — falling back to Groq. Reason: ${reason}`);
+    const result = await analyzeWithGroq(combinedOcr, userText);
+    console.log("[predict] ✅ Groq fallback analysis succeeded");
+    return result;
+  }
+}
+ 
 // ─── Route handler ────────────────────────────────────────────────────────────
  
 export async function POST(req: NextRequest) {
@@ -169,8 +232,8 @@ export async function POST(req: NextRequest) {
     );
     const combinedOcr = ocrResults.filter(Boolean).join("\n");
  
-    // Analysis using Groq Llama 3.3 70B
-    const rawJson = await analyzeWithGroq(combinedOcr, userText);
+    // Analysis: Gemini first, silently fall back to Groq Llama-3.3-70B on any error
+    const rawJson = await analyzeWithFallback(combinedOcr, userText);
  
     let rawData: Record<string, unknown[]>;
     try {
@@ -209,3 +272,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+ 
