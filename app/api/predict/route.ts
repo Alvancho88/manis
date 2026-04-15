@@ -109,6 +109,7 @@ TASK:
 3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
    Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
 4. Write a short practical health tip for EVERY item (one sentence, no newlines).
+5. For the FIRST (best) item in EACH category ONLY, write a "best_reason" field explaining why it is the best choice for blood sugar management (one sentence, max 15 words). This field should ONLY be present on the first item of each category.
  
 RANKING LOGIC (apply per category):
 - Priority 1: Sugar (lowest first)
@@ -121,8 +122,10 @@ IMPORTANT OUTPUT RULES:
 - Output ONLY valid JSON. No markdown, no code fences, no extra text, nothing after the closing brace.
 - Do NOT put newline or tab characters inside string values. Tips must be a single plain sentence.
 - Use this exact structure:
+- Use this exact structure:
 {"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[]}
-- Each item: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string"}
+- First item in each category: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
+- Other items: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string"}
 `;
  
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
