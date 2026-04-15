@@ -106,7 +106,11 @@ TASK:
    - 'Appetizer': small starters and sides — satay, popiah, spring roll, bean sprout, lettuce, tofu side dishes, gizzard, liver, small soups served as starters.
 3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
    Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
-4. Write a short practical health tip for EVERY item (one sentence, no newlines).
+4. Write a short practical health tip for EVERY item (one sentence, no newlines). 
+    The tip can either be how to order to make the blood sugar not spike if its possible to adjust the portion (eg. like less rice or more vegetable)
+    Or the tip can also  give alternative if theres a swappable ingredients (eg. change white rice to brown rice)
+    Or If there is any sauces or ingredients in the meal that has high sugar content (sambal,etc) let the user know and suggest to not eat those sauce or condiment
+    Or If none of the three above conditions are met, just give a generic why is it good or bad tip
 5. For EVERY item, include a "best_reason" field: one sentence (max 1 sentence[long sentence is fine]) explaining why this item is the best or worst choice for blood sugar management in elderly diabetics.
  
 RANKING LOGIC (apply per category):
