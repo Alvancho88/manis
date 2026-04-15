@@ -86,7 +86,7 @@ async function processSingleImage(
 }
  
 // ─── Shared prompt builder ─────────────────────────────────────────────────────
- 
+
 function buildAnalysisPrompt(combinedOcr: string, userText: string): string {
   return `
 CONTEXT:
@@ -107,13 +107,13 @@ TASK:
 3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
    Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
 4. Write a short practical health tip for EVERY item (one sentence, no newlines).
-5. For EVERY item, include a "best_reason" field: one sentence (max 15 words) explaining why this item is a good or bad choice for blood sugar management in elderly diabetics.
+5. For EVERY item, include a "best_reason" field: one sentence (max 1 sentence[long sentence is fine]) explaining why this item is the best or worst choice for blood sugar management in elderly diabetics.
  
 RANKING LOGIC (apply per category):
 - Priority 1: Risk (Low is highest priority, Medium is high priority, and High is lowest priority)
-- If two or more items have the same risk, for those items with the same risk rank it based on Priority 2: Sugar
+- If two or more items have the same Risk, for those items with the same Risk rank it based on Priority 2: Sugar
 - Priority 2: Sugar (lower first)
-- If two or more items have the same sugar, for those items with the same sugar, rank it based on Priority 3: GI Value
+- If two or more items have the same Sugar, for those items with the same Sugar, rank it based on Priority 3: GI Value
 - Priority 3: GI Value (lowest first)
 - If tow or more items have the same GI Value, for those items with the same GI Value, rank it based on Priority 4 TIE-BREAKER: Calories
 - Priority 4 TIE-BREAKER: Calories (lowest first) 
