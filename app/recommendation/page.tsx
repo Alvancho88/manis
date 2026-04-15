@@ -275,7 +275,7 @@ const content = {
 //       sugar: "5g",
 //       calories: "220",
 //       gi: "55",
-//       tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限制在3-4串。" },
+//       tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限���在3-4串。" },
 //     },
 //   ],
 //   main: [
@@ -459,6 +459,12 @@ function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: 
           <div className={`rounded-xl px-4 py-2 ${isHighSugar ? 'bg-red-50 border border-red-200' : 'bg-muted'}`}>
             <span className="font-semibold text-foreground">{t.nutrition_sugar}:</span>
             <span className={`ml-1 ${isHighSugar ? 'text-red-700 font-extrabold' : ''}`}>{food.sugar}</span>
+          </div>
+
+          {/* Calories Box */}
+          <div className="rounded-xl px-4 py-2 bg-muted">
+            <span className="font-semibold text-foreground">{t.nutrition_cal}:</span>
+            <span className="ml-1">{food.calories} kcal</span>
           </div>
 
           {/* GI Box: Turns red if >= 70, clickable for GI popup */}
@@ -1001,18 +1007,18 @@ export default function RecommendationPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-[#8b3a62]">{t.no_results}</h3>
                 <p className="text-base text-foreground/80 mb-6">{t.no_results_hint}</p>
-                {/* Issue #1: always show both action buttons even when no items in category */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {/* Action buttons - half-width each */}
+                <div className="flex gap-4">
                   <button
                     onClick={handleAnalyzeAnother}
-                    className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl hover:opacity-90"
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90"
                   >
                     <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
                   <button
                     onClick={clearAll}
-                    className="inline-flex items-center gap-2 bg-[#8b3a62] text-white font-bold px-6 py-3 rounded-xl hover:opacity-90"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#8b3a62] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90"
                   >
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
@@ -1072,18 +1078,18 @@ export default function RecommendationPage() {
                   ))}
                 </div>
                 
-                {/* Action buttons - renamed: Back and Reset */}
-                <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center">
+                {/* Action buttons - half-width each to match the card width combined */}
+                <div className="flex gap-4 mt-8">
                   <button
                     onClick={handleAnalyzeAnother}
-                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg px-8 py-4 rounded-2xl hover:opacity-90"
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90"
                   >
                     <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
                   <button
                     onClick={clearAll}
-                    className="flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg px-8 py-4 rounded-2xl hover:bg-muted"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted"
                   >
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
