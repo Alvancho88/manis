@@ -10,7 +10,7 @@ const content = {
   en: {
     hero_tag: "For Malaysian Elderly",
     hero_title: "Prevent Diabetes,\nLive Healthier",
-    hero_subtitle: "Learn about diabetes, check your food, and find nearby clinics — all in simple, easy-to-read steps.",
+    hero_subtitle: "Learn about diabetes, scan the menu and get personalised recommendations — all in simple, easy-to-read steps.",
     hero_cta: "Get Started",
     hero_secondary: "Learn More",
     stats_title: "Diabetes in Malaysia",

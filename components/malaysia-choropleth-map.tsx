@@ -346,11 +346,11 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
               style={{ backgroundColor: config.light }}
             >
               <div className="px-5 py-3 text-center">
-                <p className="text-sm text-gray-500 font-medium uppercase tracking-wide mb-1">{labels.prevalence}</p>
+                <p className="text-base text-gray-500 font-medium uppercase tracking-wide mb-1">{labels.prevalence}</p>
                 <p className="text-3xl font-bold" style={{ color: "#1a3a6b" }}>{d.prevalence.toFixed(1)}%</p>
               </div>
               <div className="px-5 py-3 text-center">
-                <p className="text-sm text-gray-500 font-medium uppercase tracking-wide mb-1">{labels.patients}</p>
+                <p className="text-base text-gray-500 font-medium uppercase tracking-wide mb-1">{labels.patients}</p>
                 <p className="text-3xl font-bold" style={{ color: "#1a3a6b" }}>{d.patients.toLocaleString()}</p>
               </div>
             </div>
@@ -365,14 +365,14 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
       {/* Statistics row */}
       <div className="grid grid-cols-2 gap-4 mt-6">
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">{t.highest_rate}</p>
+          <p className="text-base text-muted-foreground">{t.highest_rate}</p>
           <p className="text-2xl sm:text-3xl font-bold text-[#8b3a62]">{highestState ? `${highestState[1].prevalence.toFixed(1)}%` : "—"}</p>
-          <p className="text-sm text-muted-foreground">{highestState ? `(${highestState[0]})` : ""}</p>
+          <p className="text-base text-muted-foreground">{highestState ? `(${highestState[0]})` : ""}</p>
         </div>
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">{t.lowest_rate}</p>
+          <p className="text-base text-muted-foreground">{t.lowest_rate}</p>
           <p className="text-2xl sm:text-3xl font-bold text-[#1a5276]">{lowestState ? `${lowestState[1].prevalence.toFixed(1)}%` : "—"}</p>
-          <p className="text-sm text-muted-foreground">{lowestState ? `(${lowestState[0]})` : ""}</p>
+          <p className="text-base text-muted-foreground">{lowestState ? `(${lowestState[0]})` : ""}</p>
         </div>
       </div>
     </div>
