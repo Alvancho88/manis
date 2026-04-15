@@ -107,7 +107,7 @@ TASK:
 3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
    Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
 4. Write a short practical health tip for EVERY item (one sentence, no newlines).
-5. CRITICAL: For the FIRST (rank #1) item in EACH of the 4 categories (Appetizer, Main Dish, Dessert, Drinks), you MUST include a "best_reason" field. This field explains why this item is the healthiest choice in its category for blood sugar management (one sentence, max 15 words). The best_reason field is REQUIRED for all 4 category leaders - do NOT skip any category.
+5. For EVERY item, include a "best_reason" field: one sentence (max 15 words) explaining why this item is a good or bad choice for blood sugar management in elderly diabetics.
  
 RANKING LOGIC (apply per category):
 - Priority 1: Sugar (lowest first)
@@ -118,11 +118,10 @@ RANKING LOGIC (apply per category):
 IMPORTANT OUTPUT RULES:
 - Output ONLY the top 3 best items per category (already ranked). If a category has fewer than 3 items, output all of them. If a category has 0 items, output an empty array.
 - Output ONLY valid JSON. No markdown, no code fences, no extra text, nothing after the closing brace.
-- Do NOT put newline or tab characters inside string values. Tips must be a single plain sentence.
+- Do NOT put newline or tab characters inside string values. Tips and best_reason must be single plain sentences.
 - Use this exact structure:
 {"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[]}
-- MANDATORY: The FIRST item in each non-empty category array MUST have best_reason field: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
-- Items ranked 2nd or 3rd do NOT have best_reason: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string"}
+- Every item must follow this shape: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
 `;
 }
  
@@ -262,8 +261,27 @@ export async function POST(req: NextRequest) {
         return a.c - b.c;
       });
  
-      sorted.forEach((item: any) => delete item.risk_score);
-      finalResults[cat] = { ranking: sorted.slice(0, 3) };
+      const top3 = sorted.slice(0, 3);
+ 
+      // Guarantee best_reason is always present on rank #1 and stripped from rank #2 and #3.
+      // This is done in code so it never depends on the AI getting it right.
+      top3.forEach((item: any, idx: number) => {
+        delete item.risk_score;
+        if (idx === 0) {
+          // Ensure rank #1 always has best_reason; generate a fallback if AI omitted it
+          if (!item.best_reason || String(item.best_reason).trim() === "") {
+            const riskLabel = String(item.risk ?? "Medium");
+            const sugar = item.sugar ?? 0;
+            const gi = item.gi_val ?? 0;
+            item.best_reason = `Lowest sugar (${sugar}g) and GI (${gi}) in category with ${riskLabel} risk.`;
+          }
+        } else {
+          // Ranks #2 and #3 must never have best_reason
+          delete item.best_reason;
+        }
+      });
+ 
+      finalResults[cat] = { ranking: top3 };
     }
  
     return NextResponse.json(finalResults);
