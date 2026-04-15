@@ -110,9 +110,9 @@ TASK:
 5. For EVERY item, include a "best_reason" field: one sentence (max 15 words) explaining why this item is a good or bad choice for blood sugar management in elderly diabetics.
  
 RANKING LOGIC (apply per category):
-- Priority 1: Sugar (lowest first)
-- Priority 2: GI Value (lowest first)
-- Priority 3: Risk (Low first, then Medium, then High)
+- Priority 1: Risk (Low first, then Medium, then High)
+- Priority 2: Sugar (lower first)
+- Priority 3: GI Value (lowest first)
 - Priority 4 TIE-BREAKER: Calories (lowest first)
  
 IMPORTANT OUTPUT RULES:
@@ -284,10 +284,20 @@ export async function POST(req: NextRequest) {
       finalResults[cat] = { ranking: top3 };
     }
  
-    return NextResponse.json(finalResults);
+    // Count total input items: items from OCR + items from user text
+    const ocrItems = combinedOcr
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const userTextItems = userText
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const totalInputItems = ocrItems.length + userTextItems.length;
+
+    return NextResponse.json({ ...finalResults, totalInputItems });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
- 
