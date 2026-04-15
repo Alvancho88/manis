@@ -42,7 +42,7 @@ const content = {
     },
     result_title: "Analysis Result",
     best_choice: "Best Choice",
-    disclaimer: "Ranking based on estimated sugar, calories, and GI values. Results are for general guidance only.",
+    disclaimer: "Ranking based on estimated sugar, and GI values. Results are for general guidance only.",
     tip_label: "Health Tip",
     risk_low: "Low Risk",
     risk_medium: "Medium Risk",
@@ -556,7 +556,8 @@ export default function RecommendationPage() {
       setApiResultsCache(cache)
       succeeded = true
 
-      const totalFound = Object.values(cache).flat().length
+      //const totalFound = Object.values(cache).flat().length
+      const totalFound = data.totalInputItems ?? Object.values(cache).flat().length
       setIsAnalyzing(false)
       setSuccessCount(totalFound)
       await new Promise(resolve => setTimeout(resolve, 2000))
@@ -897,7 +898,7 @@ export default function RecommendationPage() {
                 </div>
                 <div className="bg-slate-100 rounded-xl px-5 py-4 mb-4 flex items-start gap-3 border border-slate-200">
                   <Info className="w-5 h-5 shrink-0 mt-0.5 text-slate-600" />
-                  <p className="text-base font-medium text-slate-700">{t.disclaimer}</p>
+                  <p className="text-lg font-semibold text-[var(--risk-low)] leading-relaxed">{t.disclaimer}</p>
                 </div>
                 <div className="bg-[var(--risk-low-bg)] border border-[var(--risk-low)]/30 rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
                   <Star className="w-6 h-6 text-[var(--risk-low)] shrink-0 mt-0.5" />
