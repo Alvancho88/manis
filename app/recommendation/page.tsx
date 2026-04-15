@@ -6,7 +6,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import Image from "next/image"
 import {
   Camera, Upload, X, Star, TrendingDown, TrendingUp, Minus,
-  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight
+  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, ImageIcon
 } from "lucide-react"
 
 type LangCode = "en" | "ms" | "zh"
@@ -89,6 +89,11 @@ const content = {
     top3_disclaimer: "We are showing you the Top 3 Healthiest Choices from what was found in your food photo. These are the safest options for your blood sugar.",
     analyze_new_food: "Reset",
     best_choice_reason_label: "Why Best Choice",
+    // Action sheet
+    sheet_title: "Add Photo",
+    sheet_camera: "Take Photo",
+    sheet_gallery: "Choose from Gallery",
+    sheet_cancel: "Cancel",
   },
   ms: {
     page_title: "Semak & Cadangan Makanan",
@@ -167,6 +172,10 @@ const content = {
     top3_disclaimer: "Kami menunjukkan kepada anda 3 Pilihan Paling Sihat daripada apa yang dijumpai dalam foto makanan anda. Ini adalah pilihan paling selamat untuk gula darah anda.",
     analyze_new_food: "Set Semula",
     best_choice_reason_label: "Kenapa Pilihan Terbaik",
+    sheet_title: "Tambah Foto",
+    sheet_camera: "Ambil Foto",
+    sheet_gallery: "Pilih dari Galeri",
+    sheet_cancel: "Batal",
   },
   zh: {
     page_title: "食物检查与推荐",
@@ -245,110 +254,12 @@ const content = {
     top3_disclaimer: "我们为您展示了食物照片中发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
     analyze_new_food: "重置",
     best_choice_reason_label: "为何是最佳选择",
+    sheet_title: "添加照片",
+    sheet_camera: "拍照",
+    sheet_gallery: "从相册选择",
+    sheet_cancel: "取消",
   },
 }
-
-// Common Malaysian foods for quick selection - with full data like food page
-// const commonFoods = [
-//   { name: "Nasi Lemak", image: "/images/food-nasi-lemak.jpg", sugar: "8g", calories: "644", gi: "64", risk: "medium", portion: "1 plate (350g)", tip: { en: "Enjoy in smaller portions, less sambal.", ms: "Nikmati dalam bahagian lebih kecil, kurang sambal.", zh: "少量食用，减少参巴酱。" } },
-//   { name: "Roti Canai", image: "/images/food-roti-canai.jpg", sugar: "4g", calories: "301", gi: "82", risk: "high", portion: "2 pieces", tip: { en: "High GI, eat less. Choose dhal over curry.", ms: "GI tinggi, makan lebih sedikit. Pilih dhal berbanding kari.", zh: "高GI，少吃。选扁豆而非咖喱。" } },
-//   { name: "Mee Goreng", image: "/images/food-mee-goreng.jpg", sugar: "5g", calories: "660", gi: "60", risk: "medium", portion: "1 plate (350g)", tip: { en: "Add more vegetables, request less oil when ordering.", ms: "Tambah lebih banyak sayuran, minta kurang minyak.", zh: "多加蔬菜，点餐时要求少油。" } },
-//   { name: "Chicken Rice", image: "/images/food-brown-rice.jpg", sugar: "6g", calories: "702", gi: "65", risk: "medium", portion: "1 plate (350g)", tip: { en: "Choose steamed chicken over roasted. Ask for less rice.", ms: "Pilih ayam kukus berbanding panggang. Minta kurang nasi.", zh: "选择清蒸鸡而非烤鸡。少要点米饭。" } },
-//   { name: "Cendol", image: "/images/food-cendol.jpg", sugar: "42g", calories: "380", gi: "78", risk: "high", portion: "1 bowl", tip: { en: "Very high sugar. Avoid or limit to a few spoonfuls only.", ms: "Gula sangat tinggi. Elakkan atau hadkan kepada beberapa sudu sahaja.", zh: "含糖量极高。避免食用或只吃几勺。" } },
-//   { name: "Teh Tarik", image: "/images/food-teh-tarik.jpg", sugar: "18g", calories: "120", gi: "65", risk: "medium", portion: "1 glass (200ml)", tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" } },
-// ]
-
-// // Mock analysis results by category
-// const mockResultsByCategory = {
-//   appetizer: [
-//     {
-//       name: "Popiah",
-//       risk: "low",
-//       sugar: "3g",
-//       calories: "150",
-//       gi: "45",
-//       tip: { en: "Great choice! Fresh vegetables wrapped in thin skin. Low in sugar and calories.", ms: "Pilihan bagus! Sayuran segar dibungkus dalam kulit nipis. Rendah gula dan kalori.", zh: "很好的选择！新鲜蔬菜裹在薄皮里。糖分和卡路里低。" },
-//     },
-//     {
-//       name: "Satay (3 sticks)",
-//       risk: "medium",
-//       sugar: "5g",
-//       calories: "220",
-//       gi: "55",
-//       tip: { en: "Grilled meat is good, but watch the peanut sauce. Limit to 3-4 sticks.", ms: "Daging panggang bagus, tetapi perhatikan kuah kacang. Hadkan kepada 3-4 cucuk.", zh: "烤肉不错，但要注意花生酱。限���在3-4串。" },
-//     },
-//   ],
-//   main: [
-//     {
-//       name: "Brown Rice with Fish",
-//       risk: "low",
-//       sugar: "2g",
-//       calories: "380",
-//       gi: "50",
-//       tip: { en: "Excellent choice! Brown rice has more fiber and steamed fish is healthy.", ms: "Pilihan hebat! Nasi perang lebih banyak serat dan ikan kukus sihat.", zh: "极佳选择！糙米纤维更多，清蒸鱼很健康。" },
-//     },
-//     {
-//       name: "Nasi Lemak",
-//       risk: "medium",
-//       sugar: "8g",
-//       calories: "644",
-//       gi: "64",
-//       tip: { en: "Enjoy in smaller portions. Ask for less sambal and skip fried items.", ms: "Nikmati dalam bahagian kecil. Minta sambal yang kurang dan elakkan yang digoreng.", zh: "少量食用。少放参巴酱，不吃油炸食品。" },
-//     },
-//     {
-//       name: "Roti Canai",
-//       risk: "high",
-//       sugar: "4g",
-//       calories: "301",
-//       gi: "82",
-//       tip: { en: "High GI - causes blood sugar to spike quickly. Eat less often.", ms: "GI tinggi - menyebabkan gula darah naik cepat. Makan kurang kerap.", zh: "高GI - 血糖迅速升高。少吃。" },
-//     },
-//   ],
-//   dessert: [
-//     {
-//       name: "Fresh Fruits",
-//       risk: "low",
-//       sugar: "12g",
-//       calories: "80",
-//       gi: "40",
-//       tip: { en: "Best dessert choice! Natural sugars with fiber. Choose papaya, guava over mango.", ms: "Pilihan pencuci mulut terbaik! Gula semula jadi dengan serat. Pilih betik, jambu berbanding mangga.", zh: "最佳甜点选择！天然糖分配纤维。选择木瓜、番石榴而非芒果。" },
-//     },
-//     {
-//       name: "Cendol",
-//       risk: "high",
-//       sugar: "42g",
-//       calories: "380",
-//       gi: "78",
-//       tip: { en: "Very high in sugar from gula melaka. Enjoy rarely and in small portions.", ms: "Sangat tinggi gula dari gula melaka. Nikmati jarang dan dalam bahagian kecil.", zh: "椰糖含糖量很高。偶尔享用，份量要小。" },
-//     },
-//   ],
-//   drink: [
-//     {
-//       name: "Plain Water / Teh O Kosong",
-//       risk: "low",
-//       sugar: "0g",
-//       calories: "0",
-//       gi: "0",
-//       tip: { en: "Perfect choice! Zero sugar and keeps you hydrated.", ms: "Pilihan sempurna! Sifar gula dan memastikan anda terhidrat.", zh: "完美选择！零糖分，保持水分。" },
-//     },
-//     {
-//       name: "Teh Tarik",
-//       risk: "medium",
-//       sugar: "18g",
-//       calories: "120",
-//       gi: "65",
-//       tip: { en: "Ask for 'kurang manis' (less sweet). Condensed milk adds sugar.", ms: "Minta 'kurang manis'. Susu pekat menambah gula.", zh: "要求'少甜'。炼乳会增加糖分。" },
-//     },
-//     {
-//       name: "Air Sirap",
-//       risk: "high",
-//       sugar: "35g",
-//       calories: "140",
-//       gi: "85",
-//       tip: { en: "Very high sugar syrup drink. Best avoided or only small sips.", ms: "Minuman sirap sangat tinggi gula. Elakkan atau minum sedikit sahaja.", zh: "糖浆含糖量非常高。最好避免或只喝一小口。" },
-//     },
-//   ],
-// }
 
 function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   const configs = {
@@ -359,39 +270,27 @@ function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   const c = configs[risk as keyof typeof configs] || configs.medium
   const isHigh = risk === "high"
   return (
-    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full border ${c.bg} ${c.text} ${c.border} ${isHigh ? 'font-extrabold' : ''}`}>
+    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full border ${c.bg} ${c.text} ${c.border} ${isHigh ? "font-extrabold" : ""}`}>
       <c.icon className="w-4 h-4" />
       {c.label}
     </span>
   )
 }
 
-// Get sugar level from sugar string (e.g., "8g" -> "medium")
-// Thresholds: Low ≤5g, Medium 5.1–22.5g, High >22.5g
 function getSugarLevel(sugar: string): "low" | "medium" | "high" {
-  const value = parseFloat(sugar.replace(/[^0-9.]/g, ''))
+  const value = parseFloat(sugar.replace(/[^0-9.]/g, ""))
   if (value <= 5) return "low"
   if (value <= 22.5) return "medium"
   return "high"
 }
 
-// Determine overall risk level based on BOTH sugar AND GI (issue #3)
-// Low:    sugar ≤5g   AND GI ≤55
-// Medium: sugar ≤22.5g AND GI ≤69
-// High:   sugar >22.5g AND GI ≥70
 function computeRiskFromValues(sugarStr: string, giStr: string, apiRisk: string): "low" | "medium" | "high" {
-  const sugar = parseFloat(sugarStr.replace(/[^0-9.]/g, ''))
-  const gi = parseInt(giStr.replace(/[^0-9]/g, ''), 10)
-
+  const sugar = parseFloat(sugarStr.replace(/[^0-9.]/g, ""))
+  const gi = parseInt(giStr.replace(/[^0-9]/g, ""), 10)
   if (!isNaN(sugar) && !isNaN(gi)) {
-    // HIGH: Either Sugar > 22.5 OR GI >= 70
-    if (sugar > 22.5 || gi >= 70) return "high";
-    
-    // LOW: Both must be low (Sugar <= 5 AND GI <= 55)
-    if (sugar <= 5 && gi <= 55) return "low";
-    
-    // MEDIUM: Everything else
-    return "medium";
+    if (sugar > 22.5 || gi >= 70) return "high"
+    if (sugar <= 5 && gi <= 55) return "low"
+    return "medium"
   }
   return (apiRisk?.toLowerCase() as "low" | "medium" | "high") ?? "medium"
 }
@@ -404,7 +303,6 @@ function getSugarConfig(level: "low" | "medium" | "high") {
   }[level]
 }
 
-
 type FoodItem = {
   name: string
   risk: string
@@ -415,22 +313,16 @@ type FoodItem = {
   best_reason?: { en: string; ms: string; zh: string }
 }
 
-// Location: Inside FoodResultCard function (Around line 301)
 function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode; showGiPopup: boolean; setShowGiPopup: (show: boolean) => void }) {
-  const sugarValue = parseFloat(food.sugar.replace(/[^0-9.]/g, ''))
-  const giValue = parseInt(food.gi.replace(/[^0-9]/g, ''), 10)
-  
-  // Apply the same thresholds used in the risk calculation
+  const sugarValue = parseFloat(food.sugar.replace(/[^0-9.]/g, ""))
+  const giValue = parseInt(food.gi.replace(/[^0-9]/g, ""), 10)
   const isHighSugar = sugarValue > 22.5
   const isHighGI = giValue >= 70
-  
   const tipText = food.tip[lang] || food.tip.en
   const bestReasonText = food.best_reason ? (food.best_reason[lang] || food.best_reason.en) : null
-  
-  // This variable now correctly turns true if EITHER is high
   const computedRisk = computeRiskFromValues(food.sugar, food.gi, food.risk)
   const isHighRisk = computedRisk === "high"
-  
+
   return (
     <div className={`bg-card rounded-2xl border-2 shadow-sm overflow-hidden ${isBest ? "border-primary" : "border-border"}`}>
       {isBest && (
@@ -444,8 +336,6 @@ function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: 
           <h3 className="text-xl font-bold">{food.name}</h3>
           <RiskBadge risk={computedRisk} t={t} />
         </div>
-
-        {/* Best Choice Reason - shown above nutrition info for best choice */}
         {isBest && bestReasonText && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4">
             <p className="text-base text-primary font-semibold">
@@ -453,35 +343,27 @@ function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: 
             </p>
           </div>
         )}
-        
         <div className="flex flex-wrap gap-4 mb-4 text-base">
-          {/* Sugar Box: Turns red if > 22.5 */}
-          <div className={`rounded-xl px-4 py-2 ${isHighSugar ? 'bg-red-50 border border-red-200' : 'bg-muted'}`}>
+          <div className={`rounded-xl px-4 py-2 ${isHighSugar ? "bg-red-50 border border-red-200" : "bg-muted"}`}>
             <span className="font-semibold text-foreground">{t.nutrition_sugar}:</span>
-            <span className={`ml-1 ${isHighSugar ? 'text-red-700 font-extrabold' : ''}`}>{food.sugar}</span>
+            <span className={`ml-1 ${isHighSugar ? "text-red-700 font-extrabold" : ""}`}>{food.sugar}</span>
           </div>
-
-          {/* Calories Box */}
           <div className="rounded-xl px-4 py-2 bg-muted">
             <span className="font-semibold text-foreground">{t.nutrition_cal}:</span>
             <span className="ml-1">{food.calories} kcal</span>
           </div>
-
-          {/* GI Box: Turns red if >= 70, clickable for GI popup */}
-          <button 
+          <button
             onClick={() => setShowGiPopup(true)}
-            className={`rounded-xl px-4 py-2 ${isHighGI ? 'bg-red-50 border border-red-200' : 'bg-muted'} hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer flex items-center gap-1`}
+            className={`rounded-xl px-4 py-2 ${isHighGI ? "bg-red-50 border border-red-200" : "bg-muted"} hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer flex items-center gap-1`}
           >
             <span className="font-semibold text-foreground underline decoration-dotted">{t.nutrition_gi}:</span>
-            <span className={`${isHighGI ? 'text-red-700 font-extrabold' : ''}`}>{food.gi}</span>
+            <span className={`${isHighGI ? "text-red-700 font-extrabold" : ""}`}>{food.gi}</span>
             <Info className="w-4 h-4 text-primary ml-1" />
           </button>
         </div>
-
-        {/* Health Tip Box: Turns red if isHighRisk is true */}
-        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? 'bg-red-50 border border-red-200' : 'bg-accent/20'}`}>
-          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? 'text-red-700' : 'text-accent-foreground'}`} />
-          <p className={`text-base ${isHighRisk ? 'text-red-700 font-extrabold' : 'text-foreground'}`}>
+        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? "bg-red-50 border border-red-200" : "bg-accent/20"}`}>
+          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? "text-red-700" : "text-accent-foreground"}`} />
+          <p className={`text-base ${isHighRisk ? "text-red-700 font-extrabold" : "text-foreground"}`}>
             <span className="font-bold">{t.tip_label}:</span> {tipText}
           </p>
         </div>
@@ -490,8 +372,6 @@ function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: 
   )
 }
 
-// ─── Client-side image compression ──────────────────────────────────────────
-// Resizes + re-encodes to JPEG before upload so 5 photos stay well under 4MB total
 function compressImage(file: File, maxDimension = 1024, quality = 0.75): Promise<File> {
   return new Promise((resolve) => {
     const img = new window.Image()
@@ -520,7 +400,6 @@ function compressImage(file: File, maxDimension = 1024, quality = 0.75): Promise
   })
 }
 
-// Map Gemini category key → page category key
 const CATEGORY_MAP: Record<string, string> = {
   "Appetizer": "appetizer",
   "Main Dish": "main",
@@ -533,17 +412,13 @@ type ApiResultsCache = Record<string, FoodItem[]>
 export default function RecommendationPage() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  // newFiles: only the photos added since the last analyze (for incremental OCR, issue #2)
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  // AC 1.2.1: current scanning step index (cycles through scanning_steps while isAnalyzing)
   const [scanStep, setScanStep] = useState(0)
-  // AC 1.2.2: total items found – shown briefly in the success state before category picker
   const [successCount, setSuccessCount] = useState<number | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [apiResultsCache, setApiResultsCache] = useState<ApiResultsCache | null>(null)
-  // previousOcr: OCR text from the previous analyze run to combine with new scan (issue #2)
   const [previousOcr, setPreviousOcr] = useState<string>("")
   const [textInput, setTextInput] = useState("")
   const [showCategories, setShowCategories] = useState(false)
@@ -552,12 +427,21 @@ export default function RecommendationPage() {
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState<string | null>(null)
   const [showGiPopup, setShowGiPopup] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
+
+  // ── Mobile action sheet state ──────────────────────────────────────────────
+  const [isMobile, setIsMobile] = useState(false)
+  const [showUploadSheet, setShowUploadSheet] = useState(false)
+
+  const fileRef = useRef<HTMLInputElement>(null)       // gallery / desktop file picker
+  const cameraRef = useRef<HTMLInputElement>(null)     // camera-only (mobile)
 
   const MAX_IMAGES = 5
 
-  // Persist text input across navigation
+  // Detect mobile once on mount (touch device check)
+  useEffect(() => {
+    setIsMobile("ontouchstart" in window || navigator.maxTouchPoints > 0)
+  }, [])
+
   useEffect(() => {
     const savedText = sessionStorage.getItem("rec-text")
     if (savedText) setTextInput(savedText)
@@ -567,31 +451,31 @@ export default function RecommendationPage() {
     sessionStorage.setItem("rec-text", textInput)
   }, [textInput])
 
-  // AC 1.2.1: cycle through scanning step labels every 1.8s while analyzing
   useEffect(() => {
     if (!isAnalyzing) { setScanStep(0); return }
     const id = setInterval(() => setScanStep(prev => (prev + 1) % 4), 1800)
     return () => clearInterval(id)
   }, [isAnalyzing])
 
+  // Close sheet on back-gesture / escape
+  useEffect(() => {
+    if (!showUploadSheet) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowUploadSheet(false) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [showUploadSheet])
+
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return
-    
     const remainingSlots = MAX_IMAGES - uploadedImages.length
     if (remainingSlots <= 0) return
-    
     setIsUploading(true)
-    
     const filesToProcess = Array.from(files).slice(0, remainingSlots)
-    
-    // Compress each image client-side before storing (~1024px max, 75% JPEG quality)
-    // This keeps 5 photos well under Vercel's 4.5MB body limit
     Promise.all(filesToProcess.map((f) => compressImage(f))).then((compressed) => {
       const newUrls = compressed.map(file => URL.createObjectURL(file))
       setUploadedImages(prev => [...prev, ...newUrls])
       setUploadedFiles(prev => [...prev, ...compressed])
       setIsUploading(false)
-      // Reset all analysis state so next Analyse re-scans everything from scratch
       setNewFiles([])
       setPreviousOcr("")
       setApiResultsCache(null)
@@ -601,6 +485,16 @@ export default function RecommendationPage() {
       setAnalyzeError(null)
     })
   }, [uploadedImages.length])
+
+  // ── Button click handler: desktop → file picker, mobile → action sheet ────
+  const handleAddPhotoClick = () => {
+    if (uploadedImages.length >= MAX_IMAGES) return
+    if (isMobile) {
+      setShowUploadSheet(true)
+    } else {
+      fileRef.current?.click()
+    }
+  }
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
@@ -635,7 +529,6 @@ export default function RecommendationPage() {
     let succeeded = false
     try {
       const formData = new FormData()
-      // Always scan all uploaded files + current text input for a clean consistent result
       if (textInput.trim()) formData.append("userText", textInput.trim())
       uploadedFiles.forEach(file => formData.append("file", file))
 
@@ -646,10 +539,6 @@ export default function RecommendationPage() {
       }
 
       const data = await res.json()
-
-      // Transform Gemini output → FoodItem shape the UI expects
-      // Gemini: { "Main Dish": { ranking: [{f, sugar, c, gi_val, risk, tip, best_reason}] } }
-      // UI:     { main: FoodItem[] }
       const cache: ApiResultsCache = {}
       for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
         const raw = data[geminiKey]?.ranking ?? []
@@ -660,7 +549,6 @@ export default function RecommendationPage() {
           calories: `${item.c}`,
           gi: `${item.gi_val}`,
           tip: { en: item.tip, ms: item.tip, zh: item.tip },
-          // Only include best_reason for the first (best) item
           ...(index === 0 && item.best_reason ? { best_reason: { en: item.best_reason, ms: item.best_reason, zh: item.best_reason } } : {}),
         }))
       }
@@ -668,7 +556,6 @@ export default function RecommendationPage() {
       setApiResultsCache(cache)
       succeeded = true
 
-      // AC 1.2.2: stop spinner, show success banner for 2s, then reveal category picker
       const totalFound = Object.values(cache).flat().length
       setIsAnalyzing(false)
       setSuccessCount(totalFound)
@@ -678,7 +565,6 @@ export default function RecommendationPage() {
     } catch (err: unknown) {
       setAnalyzeError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
-      // Only reset analyzing spinner on error path; success path already called setIsAnalyzing(false)
       if (!succeeded) setIsAnalyzing(false)
     }
   }
@@ -758,9 +644,8 @@ export default function RecommendationPage() {
                   <Upload className="w-6 h-6 text-primary" />
                   {t.upload_title}
                 </h3>
-                {/* Elderly-friendly max photos indicator with warning */}
                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className={`text-lg font-bold ${uploadedImages.length >= MAX_IMAGES ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                  <span className={`text-lg font-bold ${uploadedImages.length >= MAX_IMAGES ? "text-amber-600" : "text-muted-foreground"}`}>
                     {t.max_photos} ({uploadedImages.length}/{MAX_IMAGES})
                   </span>
                   {uploadedImages.length >= MAX_IMAGES && (
@@ -770,7 +655,7 @@ export default function RecommendationPage() {
                     </span>
                   )}
                 </div>
-                
+
                 {isUploading ? (
                   <div className="border-2 border-dashed border-primary/40 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[250px]">
                     <Loader2 className="w-16 h-16 text-primary animate-spin mb-4" />
@@ -778,29 +663,25 @@ export default function RecommendationPage() {
                   </div>
                 ) : uploadedImages.length > 0 ? (
                   <div>
-                    {/* Image Grid */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       {uploadedImages.map((img, index) => (
                         <div key={index} className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary group">
                           <Image src={img} alt={`Uploaded ${index + 1}`} fill className="object-cover cursor-pointer" onClick={() => openImageModal(img)} />
-                          {/* Delete button - higher z-index to be clickable */}
                           <button
-                            onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                            onClick={(e) => { e.stopPropagation(); removeImage(index) }}
                             className="absolute top-1 right-1 z-20 bg-foreground text-background rounded-full w-7 h-7 flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity shadow-md"
                             aria-label="Remove image"
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          {/* Zoom overlay - lower z-index */}
                           <div className="absolute inset-0 z-10 bg-foreground/0 group-hover:bg-foreground/20 transition-colors flex items-center justify-center pointer-events-none">
                             <ZoomIn className="w-6 h-6 text-background opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
                       ))}
-                      {/* Add more button */}
                       {uploadedImages.length < MAX_IMAGES && (
                         <button
-                          onClick={() => fileRef.current?.click()}
+                          onClick={handleAddPhotoClick}
                           className="aspect-square rounded-xl border-2 border-dashed border-primary/40 flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors"
                         >
                           <Plus className="w-8 h-8 text-primary mb-1" />
@@ -808,16 +689,14 @@ export default function RecommendationPage() {
                         </button>
                       )}
                     </div>
-                    {/* Hybrid single button - opens file picker on desktop, native prompt on mobile */}
                     <button
-                      onClick={() => fileRef.current?.click()}
+                      onClick={handleAddPhotoClick}
                       disabled={uploadedImages.length >= MAX_IMAGES}
                       className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 px-4 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Camera className="w-6 h-6 shrink-0" />
                       <span>{t.upload_btn}</span>
                     </button>
-                    {/* Delete All Button */}
                     {uploadedImages.length > 1 && (
                       <button
                         onClick={removeAllImages}
@@ -832,7 +711,7 @@ export default function RecommendationPage() {
                   <>
                     <div
                       className="border-2 border-dashed border-primary/40 rounded-2xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer min-h-[200px] flex flex-col items-center justify-center"
-                      onClick={() => fileRef.current?.click()}
+                      onClick={handleAddPhotoClick}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => { e.preventDefault(); handleFileUpload(e.dataTransfer.files) }}
                     >
@@ -840,9 +719,8 @@ export default function RecommendationPage() {
                       <p className="text-lg font-semibold text-foreground mb-2">{t.upload_hint}</p>
                       <p className="text-sm text-muted-foreground">JPG, PNG ({t.max_photos})</p>
                     </div>
-                    {/* Single hybrid button - triggers native prompt on mobile (Take Photo or Photo Library) */}
                     <button
-                      onClick={() => fileRef.current?.click()}
+                      onClick={handleAddPhotoClick}
                       className="mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 px-4 rounded-2xl hover:opacity-90"
                     >
                       <Camera className="w-6 h-6 shrink-0" />
@@ -850,22 +728,25 @@ export default function RecommendationPage() {
                     </button>
                   </>
                 )}
-                {/* File input - on mobile this triggers native prompt: "Take Photo" or "Photo Library" */}
-                <input 
-                  ref={fileRef} 
-                  type="file" 
-                  accept="image/*" 
+
+                {/* Hidden inputs — always in DOM so refs are stable */}
+                {/* Gallery / desktop picker: no capture attribute → opens file explorer on desktop, photo library on mobile */}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
                   multiple
-                  className="hidden" 
-                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
+                  className="hidden"
+                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }}
                 />
-                {/* Camera ref kept for backwards compatibility but now points to same approach */}
-                <input 
-                  ref={cameraRef} 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
+                {/* Camera-only input: capture="environment" → opens rear camera directly on mobile */}
+                <input
+                  ref={cameraRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }}
                 />
               </div>
 
@@ -880,7 +761,6 @@ export default function RecommendationPage() {
                   value={textInput}
                   onChange={(e) => {
                     setTextInput(e.target.value)
-                    // Reset analysis whenever text changes so Analyse button reappears
                     if (showCategories || results || apiResultsCache) {
                       setShowCategories(false)
                       setSelectedCategory(null)
@@ -910,27 +790,20 @@ export default function RecommendationPage() {
               </div>
             )}
 
-            {/* AC 1.2.1: Loading indicator — shown below the input area while analysing */}
+            {/* Loading */}
             {isAnalyzing && (
               <div className="flex flex-col items-center gap-4 py-8">
                 <div className="relative w-20 h-20">
-                  {/* Outer ring */}
                   <svg className="w-20 h-20 animate-spin" viewBox="0 0 80 80" fill="none">
                     <circle cx="40" cy="40" r="34" stroke="var(--color-primary)" strokeOpacity="0.15" strokeWidth="8" />
-                    <circle
-                      cx="40" cy="40" r="34"
-                      stroke="var(--color-primary)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray="53 160"
-                    />
+                    <circle cx="40" cy="40" r="34" stroke="var(--color-primary)" strokeWidth="8" strokeLinecap="round" strokeDasharray="53 160" />
                   </svg>
                 </div>
                 <p className="text-base font-semibold text-primary">{t.scanning_steps[scanStep]}</p>
               </div>
             )}
 
-            {/* Error display — shown below loading area */}
+            {/* Error */}
             {analyzeError && !isAnalyzing && (
               <div className="bg-[var(--risk-high-bg)] border border-red-700/30 rounded-xl px-6 py-4 text-red-700 font-semibold text-base text-center max-w-lg mx-auto">
                 <Info className="inline w-5 h-5 mr-2 mb-0.5" />
@@ -938,24 +811,18 @@ export default function RecommendationPage() {
               </div>
             )}
 
-            {/* AC 1.2.2: Success state — shown briefly after API returns before category picker */}
+            {/* Success */}
             {successCount !== null && (
               <div className="flex flex-col items-center gap-3 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="w-20 h-20 rounded-full bg-[var(--risk-low-bg)] flex items-center justify-center shadow-md">
                   <CheckCircle className="w-10 h-10 text-[var(--risk-low)]" />
                 </div>
                 <p className="text-2xl font-extrabold text-[var(--risk-low)]">
-                  {successCount > 0
-                    ? `${successCount} ${t.success_found}`
-                    : t.success_none}
+                  {successCount > 0 ? `${successCount} ${t.success_found}` : t.success_none}
                 </p>
                 <div className="flex gap-1.5">
                   {[0, 1, 2].map(i => (
-                    <div
-                      key={i}
-                      className="w-2 h-2 rounded-full bg-primary animate-bounce"
-                      style={{ animationDelay: `${i * 0.15}s` }}
-                    />
+                    <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                   ))}
                 </div>
               </div>
@@ -967,31 +834,19 @@ export default function RecommendationPage() {
                 <h2 className="text-2xl font-bold mb-2 text-center">{t.select_category}</h2>
                 <p className="text-muted-foreground text-center mb-6">{t.select_category_hint}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <button
-                    onClick={() => handleCategorySelect("appetizer")}
-                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
-                  >
+                  <button onClick={() => handleCategorySelect("appetizer")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
                     <Salad className="w-12 h-12 text-primary" />
                     <span className="text-xl font-bold">{t.categories.appetizer}</span>
                   </button>
-                  <button
-                    onClick={() => handleCategorySelect("main")}
-                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
-                  >
+                  <button onClick={() => handleCategorySelect("main")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
                     <Utensils className="w-12 h-12 text-primary" />
                     <span className="text-xl font-bold">{t.categories.main}</span>
                   </button>
-                  <button
-                    onClick={() => handleCategorySelect("dessert")}
-                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
-                  >
+                  <button onClick={() => handleCategorySelect("dessert")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
                     <Cake className="w-12 h-12 text-primary" />
                     <span className="text-xl font-bold">{t.categories.dessert}</span>
                   </button>
-                  <button
-                    onClick={() => handleCategorySelect("drink")}
-                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
-                  >
+                  <button onClick={() => handleCategorySelect("drink")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
                     <GlassWater className="w-12 h-12 text-primary" />
                     <span className="text-xl font-bold">{t.categories.drink}</span>
                   </button>
@@ -999,7 +854,7 @@ export default function RecommendationPage() {
               </div>
             )}
 
-            {/* No Results / Unrecognized Handling */}
+            {/* No Results */}
             {results && results.length === 0 && (
               <div className="bg-[var(--cb-pink)] border border-[#8b3a62]/30 rounded-2xl p-4 md:p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-[#8b3a62]/10 rounded-full flex items-center justify-center">
@@ -1007,19 +862,12 @@ export default function RecommendationPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-[#8b3a62]">{t.no_results}</h3>
                 <p className="text-base text-foreground/80 mb-6">{t.no_results_hint}</p>
-                {/* Action buttons - half-width each */}
                 <div className="flex gap-4">
-                  <button
-                    onClick={handleAnalyzeAnother}
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90"
-                  >
+                  <button onClick={handleAnalyzeAnother} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90">
                     <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
-                  <button
-                    onClick={clearAll}
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#8b3a62] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90"
-                  >
+                  <button onClick={clearAll} className="flex-1 flex items-center justify-center gap-2 bg-[#8b3a62] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90">
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
@@ -1031,66 +879,41 @@ export default function RecommendationPage() {
             {results && results.length > 0 && (
               <div>
                 <h2 className="text-3xl font-bold mb-3">{t.result_title} - {t.categories[selectedCategory as keyof typeof t.categories]}</h2>
-                {/* Legend for risk levels with GI explanation */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   {[
                     { bg: "bg-[var(--risk-low-bg)]", text: "text-[var(--risk-low)]", label: t.risk_low, icon: TrendingDown, isHigh: false },
                     { bg: "bg-[var(--risk-medium-bg)]", text: "text-[var(--risk-medium)]", label: t.risk_medium, icon: Minus, isHigh: false },
                     { bg: "bg-[var(--risk-high-bg)]", text: "text-red-700", label: t.risk_high, icon: TrendingUp, isHigh: true },
                   ].map((l) => (
-                    <span key={l.label} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base ${l.isHigh ? 'font-extrabold' : 'font-semibold'} ${l.bg} ${l.text}`}>
+                    <span key={l.label} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base ${l.isHigh ? "font-extrabold" : "font-semibold"} ${l.bg} ${l.text}`}>
                       <l.icon className="w-5 h-5" />
                       {l.label}
                     </span>
                   ))}
-                  {/* GI short explanation in legend */}
-                  <button 
-                    onClick={() => setShowGiPopup(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => setShowGiPopup(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
                     <Info className="w-5 h-5" />
                     {t.gi_short_explanation}
                   </button>
                 </div>
-                {/* Disclaimer - elderly-friendly larger text and clearer color */}
                 <div className="bg-slate-100 rounded-xl px-5 py-4 mb-4 flex items-start gap-3 border border-slate-200">
                   <Info className="w-5 h-5 shrink-0 mt-0.5 text-slate-600" />
                   <p className="text-base font-medium text-slate-700">{t.disclaimer}</p>
                 </div>
-                {/* Top 3 disclaimer — elderly-friendly, large text */}
                 <div className="bg-[var(--risk-low-bg)] border border-[var(--risk-low)]/30 rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
                   <Star className="w-6 h-6 text-[var(--risk-low)] shrink-0 mt-0.5" />
-                  <p className="text-lg font-semibold text-[var(--risk-low)] leading-relaxed">
-                    {t.top3_disclaimer}
-                  </p>
+                  <p className="text-lg font-semibold text-[var(--risk-low)] leading-relaxed">{t.top3_disclaimer}</p>
                 </div>
                 <div className="space-y-4">
                   {results.map((food, i) => (
-                    <FoodResultCard 
-                      key={i} 
-                      food={food} 
-                      isBest={i === 0} 
-                      t={t} 
-                      lang={lang}
-                      showGiPopup={showGiPopup}
-                      setShowGiPopup={setShowGiPopup}
-                    />
+                    <FoodResultCard key={i} food={food} isBest={i === 0} t={t} lang={lang} showGiPopup={showGiPopup} setShowGiPopup={setShowGiPopup} />
                   ))}
                 </div>
-                
-                {/* Action buttons - half-width each to match the card width combined */}
                 <div className="flex gap-4 mt-8">
-                  <button
-                    onClick={handleAnalyzeAnother}
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90"
-                  >
+                  <button onClick={handleAnalyzeAnother} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90">
                     <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
-                  <button
-                    onClick={clearAll}
-                    className="flex-1 flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted"
-                  >
+                  <button onClick={clearAll} className="flex-1 flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted">
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
@@ -1100,30 +923,18 @@ export default function RecommendationPage() {
 
             {/* GI Popup Modal */}
             {showGiPopup && (
-              <div 
-                className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4"
-                onClick={() => setShowGiPopup(false)}
-              >
-                <div 
-                  className="bg-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
+              <div className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4" onClick={() => setShowGiPopup(false)}>
+                <div className="bg-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <h3 className="text-2xl font-bold text-foreground">{t.gi_popup_title}</h3>
-                      <button
-                        onClick={() => setShowGiPopup(false)}
-                        className="p-2 hover:bg-muted rounded-full transition-colors"
-                      >
+                      <button onClick={() => setShowGiPopup(false)} className="p-2 hover:bg-muted rounded-full transition-colors">
                         <X className="w-6 h-6" />
                       </button>
                     </div>
-                    
                     <p className="text-base text-foreground mb-4 leading-relaxed">{t.gi_popup_description}</p>
-                    
                     <h4 className="text-lg font-bold text-foreground mb-2">{t.gi_popup_why_important}</h4>
                     <p className="text-base text-foreground mb-6 leading-relaxed">{t.gi_popup_importance}</p>
-                    
                     <div className="space-y-2 mb-6">
                       <div className="flex items-center gap-2 bg-[var(--risk-low-bg)] px-4 py-3 rounded-xl">
                         <TrendingDown className="w-5 h-5 text-[var(--risk-low)]" />
@@ -1141,11 +952,7 @@ export default function RecommendationPage() {
                         <span className="text-sm text-muted-foreground ml-auto">Limit intake</span>
                       </div>
                     </div>
-                    
-                    <button
-                      onClick={() => setShowGiPopup(false)}
-                      className="w-full bg-primary text-primary-foreground font-bold text-lg py-3 rounded-xl hover:opacity-90"
-                    >
+                    <button onClick={() => setShowGiPopup(false)} className="w-full bg-primary text-primary-foreground font-bold text-lg py-3 rounded-xl hover:opacity-90">
                       {t.close}
                     </button>
                   </div>
@@ -1155,27 +962,82 @@ export default function RecommendationPage() {
 
             {/* Image Modal */}
             {showImageModal && modalImage && (
-              <div 
-                className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4"
-                onClick={() => setShowImageModal(false)}
-              >
+              <div className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4" onClick={() => setShowImageModal(false)}>
                 <div className="relative max-w-4xl w-full max-h-[90vh]">
-                  <button
-                    onClick={() => setShowImageModal(false)}
-                    className="absolute -top-12 right-0 text-background hover:text-muted p-2"
-                  >
+                  <button onClick={() => setShowImageModal(false)} className="absolute -top-12 right-0 text-background hover:text-muted p-2">
                     <X className="w-8 h-8" />
                   </button>
                   <div className="relative w-full h-[80vh] rounded-2xl overflow-hidden">
-                    <Image 
-                      src={modalImage} 
-                      alt="Full size meal" 
-                      fill 
-                      className="object-contain bg-background" 
-                    />
+                    <Image src={modalImage} alt="Full size meal" fill className="object-contain bg-background" />
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* ── Mobile Upload Action Sheet ─────────────────────────────────────────── */}
+            {showUploadSheet && (
+              <>
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+                  onClick={() => setShowUploadSheet(false)}
+                />
+                {/* Sheet */}
+                <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
+                  <div className="bg-card rounded-t-3xl shadow-2xl overflow-hidden mx-0 pb-safe">
+                    {/* Handle bar */}
+                    <div className="flex justify-center pt-3 pb-1">
+                      <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                    </div>
+
+                    {/* Title */}
+                    <p className="text-center text-base font-semibold text-muted-foreground px-6 pb-3 pt-1">
+                      {t.sheet_title}
+                    </p>
+
+                    <div className="px-4 pb-3 space-y-2">
+                      {/* Take Photo */}
+                      <button
+                        onClick={() => {
+                          setShowUploadSheet(false)
+                          // Small delay so sheet finishes animating out before camera opens
+                          setTimeout(() => cameraRef.current?.click(), 150)
+                        }}
+                        className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-colors text-left"
+                      >
+                        <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Camera className="w-6 h-6 text-primary" />
+                        </div>
+                        <span className="text-lg font-semibold text-foreground">{t.sheet_camera}</span>
+                      </button>
+
+                      {/* Choose from Gallery */}
+                      <button
+                        onClick={() => {
+                          setShowUploadSheet(false)
+                          setTimeout(() => fileRef.current?.click(), 150)
+                        }}
+                        className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-colors text-left"
+                      >
+                        <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <ImageIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        <span className="text-lg font-semibold text-foreground">{t.sheet_gallery}</span>
+                      </button>
+                    </div>
+
+                    {/* Cancel — visually separated */}
+                    <div className="px-4 pb-6 pt-1">
+                      <button
+                        onClick={() => setShowUploadSheet(false)}
+                        className="w-full py-4 rounded-2xl bg-muted hover:bg-muted/80 active:bg-muted/60 transition-colors text-lg font-bold text-foreground"
+                      >
+                        {t.sheet_cancel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )
