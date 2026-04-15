@@ -6,9 +6,8 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import Image from "next/image"
 import {
   Camera, Upload, X, Star, TrendingDown, TrendingUp, Minus,
-  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, User
+  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight
 } from "lucide-react"
-import Link from "next/link"
 
 type LangCode = "en" | "ms" | "zh"
 
@@ -25,7 +24,7 @@ const content = {
     ],
     upload_title: "Upload or Take Photo",
     upload_hint: "Tap to upload or take a photo of your meal",
-    upload_btn: "Choose Photo",
+    upload_btn: "Add Photo",
     camera_btn: "Take Photo",
     uploading: "Uploading...",
     click_to_view: "Click to view full image",
@@ -50,17 +49,23 @@ const content = {
     risk_high: "High Risk",
     nutrition_sugar: "Sugar",
     nutrition_cal: "Calories",
-    nutrition_gi: "GI Index",
-    analyze_another: "Analyse Another Category",
+    nutrition_gi: "Glycaemic Index",
+    analyze_another: "Back",
     back_to_upload: "Upload New Photo",
-    max_photos: "Max 5 photos",
+    max_photos: "Maximum 5 Photos",
+    max_photos_warning: "You have reached the limit of 5 photos. Please remove a photo to add more.",
     photos_count: "photos",
     delete_all: "Delete All",
     common_foods_title: "Popular Malaysian Foods",
     common_foods_subtitle: "Click any food for more info",
     see_more_foods: "See More Foods",
-    gi_guide_title: "GI Index Guide",
+    gi_guide_title: "Glycaemic Index Guide",
     gi_description: "GI measures how fast food raises blood sugar.",
+    gi_short_explanation: "GI shows how quickly food raises your blood sugar level.",
+    gi_popup_title: "What is Glycaemic Index (GI)?",
+    gi_popup_description: "The Glycaemic Index (GI) is a rating system that measures how quickly foods containing carbohydrates affect your blood sugar levels. Foods are ranked on a scale of 0 to 100, with pure glucose being 100. Understanding GI is especially important for people with diabetes or those managing their blood sugar levels.",
+    gi_popup_why_important: "Why is GI Important?",
+    gi_popup_importance: "Choosing low GI foods can help: maintain steady blood sugar levels, reduce risk of diabetes complications, control appetite and manage weight, and provide sustained energy throughout the day.",
     gi_low: "Low GI (0-55)",
     gi_medium: "Medium GI (56-69)",
     gi_high: "High GI (70+)",
@@ -82,7 +87,8 @@ const content = {
     success_found: "items found!",
     success_none: "No items detected",
     top3_disclaimer: "We are showing you the Top 3 Healthiest Choices from what was found in your food photo. These are the safest options for your blood sugar.",
-    analyze_new_food: "Analyse New Food",
+    analyze_new_food: "Reset",
+    best_choice_reason_label: "Why Best Choice",
   },
   ms: {
     page_title: "Semak & Cadangan Makanan",
@@ -96,7 +102,7 @@ const content = {
     ],
     upload_title: "Muat Naik atau Ambil Foto",
     upload_hint: "Ketik untuk muat naik atau ambil foto makanan anda",
-    upload_btn: "Pilih Foto",
+    upload_btn: "Tambah Foto",
     camera_btn: "Ambil Foto",
     uploading: "Memuat naik...",
     click_to_view: "Klik untuk lihat imej penuh",
@@ -121,17 +127,23 @@ const content = {
     risk_high: "Risiko Tinggi",
     nutrition_sugar: "Gula",
     nutrition_cal: "Kalori",
-    nutrition_gi: "Indeks GI",
-    analyze_another: "Analisis Kategori Lain",
+    nutrition_gi: "Indeks Glisemik",
+    analyze_another: "Kembali",
     back_to_upload: "Muat Naik Foto Baru",
-    max_photos: "Maks 5 foto",
+    max_photos: "Maksimum 5 Foto",
+    max_photos_warning: "Anda telah mencapai had 5 foto. Sila buang foto untuk menambah lagi.",
     photos_count: "foto",
     delete_all: "Padam Semua",
     common_foods_title: "Makanan Malaysia Popular",
     common_foods_subtitle: "Klik mana-mana makanan untuk maklumat lanjut",
     see_more_foods: "Lihat Lebih Banyak Makanan",
-    gi_guide_title: "Panduan Indeks GI",
+    gi_guide_title: "Panduan Indeks Glisemik",
     gi_description: "GI mengukur seberapa cepat makanan meningkatkan gula darah.",
+    gi_short_explanation: "GI menunjukkan seberapa cepat makanan menaikkan gula darah anda.",
+    gi_popup_title: "Apakah Indeks Glisemik (GI)?",
+    gi_popup_description: "Indeks Glisemik (GI) adalah sistem penilaian yang mengukur seberapa cepat makanan yang mengandungi karbohidrat mempengaruhi paras gula darah anda. Makanan dinilai pada skala 0 hingga 100, dengan glukosa tulen adalah 100. Memahami GI amat penting bagi penghidap diabetes atau mereka yang mengawal paras gula darah.",
+    gi_popup_why_important: "Mengapa GI Penting?",
+    gi_popup_importance: "Memilih makanan GI rendah boleh membantu: mengekalkan paras gula darah yang stabil, mengurangkan risiko komplikasi diabetes, mengawal selera dan mengurus berat badan, serta memberikan tenaga yang berterusan sepanjang hari.",
     gi_low: "GI Rendah (0-55)",
     gi_medium: "GI Sederhana (56-69)",
     gi_high: "GI Tinggi (70+)",
@@ -153,7 +165,8 @@ const content = {
     success_found: "item dijumpai!",
     success_none: "Tiada item dikesan",
     top3_disclaimer: "Kami menunjukkan kepada anda 3 Pilihan Paling Sihat daripada apa yang dijumpai dalam foto makanan anda. Ini adalah pilihan paling selamat untuk gula darah anda.",
-    analyze_new_food: "Analisis Makanan Baru",
+    analyze_new_food: "Set Semula",
+    best_choice_reason_label: "Kenapa Pilihan Terbaik",
   },
   zh: {
     page_title: "食物检查与推荐",
@@ -167,7 +180,7 @@ const content = {
     ],
     upload_title: "上传或拍照",
     upload_hint: "点击上传或拍摄您的餐食照片",
-    upload_btn: "选择照片",
+    upload_btn: "添加照片",
     camera_btn: "拍照",
     uploading: "上传中...",
     click_to_view: "点击查看大图",
@@ -183,7 +196,7 @@ const content = {
       dessert: "甜点",
       drink: "饮料",
     },
-    result_title: "分析结���",
+    result_title: "分析结果",
     best_choice: "最佳选择",
     disclaimer: "排名基于估计的糖分、卡路里和GI值。结果仅供一般指导。",
     tip_label: "健康提示",
@@ -192,17 +205,23 @@ const content = {
     risk_high: "高风险",
     nutrition_sugar: "糖分",
     nutrition_cal: "卡路里",
-    nutrition_gi: "GI指数",
-    analyze_another: "分析其他类别",
+    nutrition_gi: "升糖指数",
+    analyze_another: "返回",
     back_to_upload: "上传新照片",
     max_photos: "最多5张照片",
+    max_photos_warning: "您已达到5张照片的限制。请删除照片以添加更多。",
     photos_count: "张照片",
     delete_all: "删除全部",
     common_foods_title: "热门马来西亚美食",
     common_foods_subtitle: "点击任意食物获取更多信息",
     see_more_foods: "查看更多食物",
-    gi_guide_title: "GI指数指南",
+    gi_guide_title: "升糖指数指南",
     gi_description: "GI衡量食物升高血糖的速度。",
+    gi_short_explanation: "GI显示食物提高血糖水平的速度。",
+    gi_popup_title: "什么是升糖指数（GI）？",
+    gi_popup_description: "升糖指数（GI）是一个评级系统，用于衡量含碳水化合物的食物对血糖水平的影响速度。食物按0到100的等级排名，纯葡萄糖为100。了解GI对于糖尿病患者或需要管理血糖水平的人尤为重要。",
+    gi_popup_why_important: "为什么GI很重要？",
+    gi_popup_importance: "选择低GI食物可以帮助：保持稳定的血糖水平、降低糖尿病并发症风险、控制食欲和管理体重，以及全天提供持续的能量。",
     gi_low: "低GI (0-55)",
     gi_medium: "中GI (56-69)",
     gi_high: "高GI (70+)",
@@ -224,7 +243,8 @@ const content = {
     success_found: "个食物已找到！",
     success_none: "未检测到食物",
     top3_disclaimer: "我们为您展示了食物照片中发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
-    analyze_new_food: "分析新食物",
+    analyze_new_food: "重置",
+    best_choice_reason_label: "为何是最佳选择",
   },
 }
 
@@ -341,7 +361,7 @@ function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   return (
     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full border ${c.bg} ${c.text} ${c.border} ${isHigh ? 'font-extrabold' : ''}`}>
       <c.icon className="w-4 h-4" />
-      Risk
+      {c.label}
     </span>
   )
 }
@@ -392,10 +412,11 @@ type FoodItem = {
   calories: string
   gi: string
   tip: { en: string; ms: string; zh: string }
+  best_reason?: { en: string; ms: string; zh: string }
 }
 
 // Location: Inside FoodResultCard function (Around line 301)
-function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode }) {
+function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode; showGiPopup: boolean; setShowGiPopup: (show: boolean) => void }) {
   const sugarValue = parseFloat(food.sugar.replace(/[^0-9.]/g, ''))
   const giValue = parseInt(food.gi.replace(/[^0-9]/g, ''), 10)
   
@@ -404,6 +425,7 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
   const isHighGI = giValue >= 70
   
   const tipText = food.tip[lang] || food.tip.en
+  const bestReasonText = food.best_reason ? (food.best_reason[lang] || food.best_reason.en) : null
   
   // This variable now correctly turns true if EITHER is high
   const computedRisk = computeRiskFromValues(food.sugar, food.gi, food.risk)
@@ -417,12 +439,20 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
           <span className="text-primary-foreground font-bold text-base">{t.best_choice}</span>
         </div>
       )}
-      {/* ... Star Badge Code ... */}
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-xl font-bold">{food.name}</h3>
           <RiskBadge risk={computedRisk} t={t} />
         </div>
+
+        {/* Best Choice Reason - shown above nutrition info for best choice */}
+        {isBest && bestReasonText && (
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4">
+            <p className="text-base text-primary font-semibold">
+              <span className="font-bold">{t.best_choice_reason_label}:</span> {bestReasonText}
+            </p>
+          </div>
+        )}
         
         <div className="flex flex-wrap gap-4 mb-4 text-base">
           {/* Sugar Box: Turns red if > 22.5 */}
@@ -431,13 +461,15 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
             <span className={`ml-1 ${isHighSugar ? 'text-red-700 font-extrabold' : ''}`}>{food.sugar}</span>
           </div>
 
-          {/* GI Box: Turns red if >= 70 */}
-          <div className={`rounded-xl px-4 py-2 ${isHighGI ? 'bg-red-50 border border-red-200' : 'bg-muted'}`}>
-            <span className="font-semibold text-foreground">{t.nutrition_gi}:</span>
-            <span className={`ml-1 ${isHighGI ? 'text-red-700 font-extrabold' : ''}`}>{food.gi}</span>
-          </div>
-          
-          {/* ... Calories Box ... */}
+          {/* GI Box: Turns red if >= 70, clickable for GI popup */}
+          <button 
+            onClick={() => setShowGiPopup(true)}
+            className={`rounded-xl px-4 py-2 ${isHighGI ? 'bg-red-50 border border-red-200' : 'bg-muted'} hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer flex items-center gap-1`}
+          >
+            <span className="font-semibold text-foreground underline decoration-dotted">{t.nutrition_gi}:</span>
+            <span className={`${isHighGI ? 'text-red-700 font-extrabold' : ''}`}>{food.gi}</span>
+            <Info className="w-4 h-4 text-primary ml-1" />
+          </button>
         </div>
 
         {/* Health Tip Box: Turns red if isHighRisk is true */}
@@ -513,6 +545,7 @@ export default function RecommendationPage() {
   const [results, setResults] = useState<FoodItem[] | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState<string | null>(null)
+  const [showGiPopup, setShowGiPopup] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
@@ -609,18 +642,20 @@ export default function RecommendationPage() {
       const data = await res.json()
 
       // Transform Gemini output → FoodItem shape the UI expects
-      // Gemini: { "Main Dish": { ranking: [{f, sugar, c, gi_val, risk, tip}] } }
+      // Gemini: { "Main Dish": { ranking: [{f, sugar, c, gi_val, risk, tip, best_reason}] } }
       // UI:     { main: FoodItem[] }
       const cache: ApiResultsCache = {}
       for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
         const raw = data[geminiKey]?.ranking ?? []
-        cache[pageKey] = raw.map((item: { f: string; sugar: number; c: number; gi_val: number; risk: string; tip: string }) => ({
+        cache[pageKey] = raw.map((item: { f: string; sugar: number; c: number; gi_val: number; risk: string; tip: string; best_reason?: string }, index: number) => ({
           name: item.f,
           risk: item.risk?.toLowerCase() ?? "medium",
           sugar: `${item.sugar}g`,
           calories: `${item.c}`,
           gi: `${item.gi_val}`,
           tip: { en: item.tip, ms: item.tip, zh: item.tip },
+          // Only include best_reason for the first (best) item
+          ...(index === 0 && item.best_reason ? { best_reason: { en: item.best_reason, ms: item.best_reason, zh: item.best_reason } } : {}),
         }))
       }
 
@@ -717,7 +752,18 @@ export default function RecommendationPage() {
                   <Upload className="w-6 h-6 text-primary" />
                   {t.upload_title}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4">{t.max_photos} ({uploadedImages.length}/{MAX_IMAGES})</p>
+                {/* Elderly-friendly max photos indicator with warning */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className={`text-lg font-bold ${uploadedImages.length >= MAX_IMAGES ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {t.max_photos} ({uploadedImages.length}/{MAX_IMAGES})
+                  </span>
+                  {uploadedImages.length >= MAX_IMAGES && (
+                    <span className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-base font-semibold px-3 py-1.5 rounded-full">
+                      <Info className="w-5 h-5" />
+                      {t.max_photos_warning}
+                    </span>
+                  )}
+                </div>
                 
                 {isUploading ? (
                   <div className="border-2 border-dashed border-primary/40 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[250px]">
@@ -756,24 +802,15 @@ export default function RecommendationPage() {
                         </button>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => fileRef.current?.click()}
-                        disabled={uploadedImages.length >= MAX_IMAGES}
-                        className="flex-1 flex items-center justify-center gap-2 border border-primary text-primary font-semibold py-3 px-2 rounded-xl hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Upload className="w-5 h-5 shrink-0" />
-                        <span className="truncate">{t.upload_btn}</span>
-                      </button>
-                      <button
-                        onClick={() => cameraRef.current?.click()}
-                        disabled={uploadedImages.length >= MAX_IMAGES}
-                        className="flex-1 flex items-center justify-center gap-2 border border-primary text-primary font-semibold py-3 px-2 rounded-xl hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Camera className="w-5 h-5 shrink-0" />
-                        <span className="truncate">{t.camera_btn}</span>
-                      </button>
-                    </div>
+                    {/* Hybrid single button - opens file picker on desktop, native prompt on mobile */}
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploadedImages.length >= MAX_IMAGES}
+                      className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 px-4 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Camera className="w-6 h-6 shrink-0" />
+                      <span>{t.upload_btn}</span>
+                    </button>
                     {/* Delete All Button */}
                     {uploadedImages.length > 1 && (
                       <button
@@ -797,39 +834,30 @@ export default function RecommendationPage() {
                       <p className="text-lg font-semibold text-foreground mb-2">{t.upload_hint}</p>
                       <p className="text-sm text-muted-foreground">JPG, PNG ({t.max_photos})</p>
                     </div>
-                    <div className="mt-4 flex gap-2 min-w-0">
-                      <button
-                        onClick={() => fileRef.current?.click()}
-                        className="flex-1 min-w-0 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-base py-3 px-2 rounded-2xl hover:opacity-90"
-                      >
-                        <Upload className="w-5 h-5 shrink-0" />
-                        <span className="truncate">{t.upload_btn}</span>
-                      </button>
-                      <button
-                        onClick={() => cameraRef.current?.click()}
-                        className="flex-1 min-w-0 flex items-center justify-center gap-2 border-2 border-primary text-primary font-bold text-base py-3 px-2 rounded-2xl hover:bg-primary/10"
-                      >
-                        <Camera className="w-5 h-5 shrink-0" />
-                        <span className="truncate">{t.camera_btn}</span>
-                      </button>
-                    </div>
+                    {/* Single hybrid button - triggers native prompt on mobile (Take Photo or Photo Library) */}
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      className="mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 px-4 rounded-2xl hover:opacity-90"
+                    >
+                      <Camera className="w-6 h-6 shrink-0" />
+                      <span>{t.upload_btn}</span>
+                    </button>
                   </>
                 )}
-                {/* File input for choosing photos */}
+                {/* File input - on mobile this triggers native prompt: "Take Photo" or "Photo Library" */}
                 <input 
                   ref={fileRef} 
                   type="file" 
-                  accept="image/jpeg,image/png" 
+                  accept="image/*" 
                   multiple
                   className="hidden" 
                   onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
                 />
-                {/* Camera input - uses capture attribute to open camera */}
+                {/* Camera ref kept for backwards compatibility but now points to same approach */}
                 <input 
                   ref={cameraRef} 
                   type="file" 
-                  accept="image/jpeg,image/png" 
-                  capture="environment"
+                  accept="image/*" 
                   className="hidden" 
                   onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }} 
                 />
@@ -979,14 +1007,14 @@ export default function RecommendationPage() {
                     onClick={handleAnalyzeAnother}
                     className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl hover:opacity-90"
                   >
-                    <CheckCircle className="w-5 h-5" />
+                    <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
                   <button
                     onClick={clearAll}
                     className="inline-flex items-center gap-2 bg-[#8b3a62] text-white font-bold px-6 py-3 rounded-xl hover:opacity-90"
                   >
-                    <Upload className="w-5 h-5" />
+                    <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
                 </div>
@@ -997,8 +1025,8 @@ export default function RecommendationPage() {
             {results && results.length > 0 && (
               <div>
                 <h2 className="text-3xl font-bold mb-3">{t.result_title} - {t.categories[selectedCategory as keyof typeof t.categories]}</h2>
-                {/* Legend for risk levels */}
-                <div className="flex flex-wrap gap-3 mb-4">
+                {/* Legend for risk levels with GI explanation */}
+                <div className="flex flex-wrap items-center gap-3 mb-4">
                   {[
                     { bg: "bg-[var(--risk-low-bg)]", text: "text-[var(--risk-low)]", label: t.risk_low, icon: TrendingDown, isHigh: false },
                     { bg: "bg-[var(--risk-medium-bg)]", text: "text-[var(--risk-medium)]", label: t.risk_medium, icon: Minus, isHigh: false },
@@ -1006,13 +1034,22 @@ export default function RecommendationPage() {
                   ].map((l) => (
                     <span key={l.label} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base ${l.isHigh ? 'font-extrabold' : 'font-semibold'} ${l.bg} ${l.text}`}>
                       <l.icon className="w-5 h-5" />
-                      Risk
+                      {l.label}
                     </span>
                   ))}
+                  {/* GI short explanation in legend */}
+                  <button 
+                    onClick={() => setShowGiPopup(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    <Info className="w-5 h-5" />
+                    {t.gi_short_explanation}
+                  </button>
                 </div>
-                <div className="bg-muted rounded-xl px-4 py-3 mb-4 flex items-start gap-2 text-sm text-muted-foreground">
-                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                  {t.disclaimer}
+                {/* Disclaimer - elderly-friendly larger text and clearer color */}
+                <div className="bg-slate-100 rounded-xl px-5 py-4 mb-4 flex items-start gap-3 border border-slate-200">
+                  <Info className="w-5 h-5 shrink-0 mt-0.5 text-slate-600" />
+                  <p className="text-base font-medium text-slate-700">{t.disclaimer}</p>
                 </div>
                 {/* Top 3 disclaimer — elderly-friendly, large text */}
                 <div className="bg-[var(--risk-low-bg)] border border-[var(--risk-low)]/30 rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
@@ -1029,26 +1066,83 @@ export default function RecommendationPage() {
                       isBest={i === 0} 
                       t={t} 
                       lang={lang}
+                      showGiPopup={showGiPopup}
+                      setShowGiPopup={setShowGiPopup}
                     />
                   ))}
                 </div>
                 
-                {/* Action buttons */}
+                {/* Action buttons - renamed: Back and Reset */}
                 <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center">
                   <button
                     onClick={handleAnalyzeAnother}
                     className="flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg px-8 py-4 rounded-2xl hover:opacity-90"
                   >
-                    <CheckCircle className="w-5 h-5" />
+                    <ArrowRight className="w-5 h-5 rotate-180" />
                     {t.analyze_another}
                   </button>
                   <button
                     onClick={clearAll}
                     className="flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg px-8 py-4 rounded-2xl hover:bg-muted"
                   >
-                    <Upload className="w-5 h-5" />
+                    <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* GI Popup Modal */}
+            {showGiPopup && (
+              <div 
+                className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4"
+                onClick={() => setShowGiPopup(false)}
+              >
+                <div 
+                  className="bg-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-2xl font-bold text-foreground">{t.gi_popup_title}</h3>
+                      <button
+                        onClick={() => setShowGiPopup(false)}
+                        className="p-2 hover:bg-muted rounded-full transition-colors"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    
+                    <p className="text-base text-foreground mb-4 leading-relaxed">{t.gi_popup_description}</p>
+                    
+                    <h4 className="text-lg font-bold text-foreground mb-2">{t.gi_popup_why_important}</h4>
+                    <p className="text-base text-foreground mb-6 leading-relaxed">{t.gi_popup_importance}</p>
+                    
+                    <div className="space-y-2 mb-6">
+                      <div className="flex items-center gap-2 bg-[var(--risk-low-bg)] px-4 py-3 rounded-xl">
+                        <TrendingDown className="w-5 h-5 text-[var(--risk-low)]" />
+                        <span className="font-semibold text-[var(--risk-low)]">{t.gi_low}</span>
+                        <span className="text-sm text-muted-foreground ml-auto">Best choice</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-[var(--risk-medium-bg)] px-4 py-3 rounded-xl">
+                        <Minus className="w-5 h-5 text-[var(--risk-medium)]" />
+                        <span className="font-semibold text-[var(--risk-medium)]">{t.gi_medium}</span>
+                        <span className="text-sm text-muted-foreground ml-auto">Moderate</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-[var(--risk-high-bg)] px-4 py-3 rounded-xl">
+                        <TrendingUp className="w-5 h-5 text-red-700" />
+                        <span className="font-extrabold text-red-700">{t.gi_high}</span>
+                        <span className="text-sm text-muted-foreground ml-auto">Limit intake</span>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => setShowGiPopup(false)}
+                      className="w-full bg-primary text-primary-foreground font-bold text-lg py-3 rounded-xl hover:opacity-90"
+                    >
+                      {t.close}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
