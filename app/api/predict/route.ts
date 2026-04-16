@@ -137,13 +137,14 @@ IMPORTANT OUTPUT RULES:
 - Output ONLY the top 3 best items per category (already ranked). If a category has fewer than 3 items, output all of them. If a category has 0 items, output an empty array.
 - Output ONLY valid JSON. No markdown, no code fences, no extra text, nothing after the closing brace.
 - Do NOT put newline or tab characters inside string values. Tips and best_reason must be single plain sentences.
+- Also include a "uniqueFoodCount" field at the root level: the total number of unique, real food items you identified and processed from BOTH Menu OCR and USER MANUAL INPUT (before filtering to top 3). This count should exclude duplicates and non-food text like headings, prices, or menu section names.
 - Use this exact structure:
-{"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[]}
+{"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[], ,"uniqueFoodCount":number}
 - Every item must follow this shape: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
 `;
 }
  
-// ─── Analysis via Groq (Llama-3.3-70B) ───────────────────────────────────────
+// ─── Analysis via Groq (Llama-3.3-70B) ────────────────────────────────a───────
  
 async function analyzeWithGroq(
   combinedOcr: string,
@@ -266,9 +267,12 @@ export async function POST(req: NextRequest) {
       finalResults[cat] = { ranking: top3 };
     }
  
-    const totalInputItems = (combinedOcr + userText).split(/[\n,;]+/).filter(s => s.trim()).length;
+    const uniqueFoodCount = typeof rawData.uniqueFoodCount === 'number' 
+      ? rawData.uniqueFoodCount 
+      : Object.values(rawData).filter(Array.isArray).flat().length;
 
-    return NextResponse.json({ ...finalResults, totalInputItems });
+    return NextResponse.json({ ...finalResults, uniqueFoodCount });
+
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
