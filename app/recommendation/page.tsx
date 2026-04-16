@@ -14,12 +14,12 @@ type LangCode = "en" | "ms" | "zh"
 const content = {
   en: {
     page_title: "Food Check & Recommendation",
-    page_subtitle: "Upload a photo of your meal and get personalized health advice.",
+    page_subtitle: "Upload a photo of your menu and get instant food recommendation and health tips",
     guide_title: "How to Take a Good Photo",
     guide_steps: [
-      { icon: "camera", text: "Hold your phone steady above the food" },
+      { icon: "camera", text: "Hold your phone steady above the menu" },
       { icon: "light", text: "Make sure there is good lighting" },
-      { icon: "split", text: "If there is too much menu items in one photo, take it separately" },
+      { icon: "food", text: "If there is too much menu items in one photo, take it separately" },
       { icon: "clear", text: "Ensure the text is clearly visible" },
     ],
     upload_title: "Upload or Take Photo",
