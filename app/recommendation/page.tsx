@@ -5,7 +5,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 
 import Image from "next/image"
 import {
-  Camera, Upload, X, Star, TrendingDown, TrendingUp, Minus,
+  Camera, Upload, X, Star, TrendingDown, TrendingUp, Minus, Split,
   CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, ImageIcon
 } from "lucide-react"
 
@@ -19,8 +19,8 @@ const content = {
     guide_steps: [
       { icon: "camera", text: "Hold your phone steady above the food" },
       { icon: "light", text: "Make sure there is good lighting" },
-      { icon: "food", text: "Include all dishes in one photo" },
-      { icon: "clear", text: "Ensure the food is clearly visible" },
+      { icon: "split", text: "If there is too much menu items in one photo, take it separately" },
+      { icon: "clear", text: "Ensure the text is clearly visible" },
     ],
     upload_title: "Upload or Take Photo",
     upload_hint: "Tap to upload or take a photo of your menu",
@@ -102,7 +102,7 @@ const content = {
     guide_steps: [
       { icon: "camera", text: "Pegang telefon anda dengan stabil di atas makanan" },
       { icon: "light", text: "Pastikan pencahayaan yang baik" },
-      { icon: "food", text: "Masukkan semua hidangan dalam satu foto" },
+      { icon: "split", text: "Masukkan semua hidangan dalam satu foto" },
       { icon: "clear", text: "Pastikan makanan jelas kelihatan" },
     ],
     upload_title: "Muat Naik atau Ambil Foto",
@@ -184,7 +184,7 @@ const content = {
     guide_steps: [
       { icon: "camera", text: "将手机稳定地放在食物上方" },
       { icon: "light", text: "确保光线充足" },
-      { icon: "food", text: "将所有菜肴放在一张照片中" },
+      { icon: "split", text: "将所有菜肴放在一张照片中" },
       { icon: "clear", text: "确保食物清晰可见" },
     ],
     upload_title: "上传或拍照",
@@ -557,7 +557,7 @@ export default function RecommendationPage() {
       succeeded = true
 
       //const totalFound = Object.values(cache).flat().length
-      const totalFound = data.totalInputItems ?? Object.values(cache).flat().length
+      const totalFound = data.uniqueFoodCount ?? Object.values(cache).flat().length
       setIsAnalyzing(false)
       setSuccessCount(totalFound)
       await new Promise(resolve => setTimeout(resolve, 2000))
