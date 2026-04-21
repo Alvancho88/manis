@@ -64,7 +64,7 @@ async function processSingleImage(
             content: [
               {
                 type: "text",
-                text: `List EVERY single food and drink item name visible on this menu. Output one item per line.`,
+                text: `Extract every food and drink item name from this menu and return the results as a JSON object. The JSON should contain a list called 'items'. Exclude prices, category headers, and descriptions. Only include the specific name of the food or drink. If a line is unclear or contains only noise, ignore.`,
               },
               {
                 type: "image_url",
