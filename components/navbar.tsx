@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils"
 const navItems = [
   { href: "/", icon: Home, label: { en: "Home", ms: "Laman Utama", zh: "首页" } },
   { href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
-  //{ href: "/food", icon: Utensils, label: { en: "Food", ms: "Makanan", zh: "食物" } },
+  { href: "/food", icon: Utensils, label: { en: "Food", ms: "Makanan", zh: "食物" } },
   { href: "/overview", icon: BookOpen, label: { en: "Overview", ms: "Gambaran", zh: "概览" } },
-  //{ href: "/explore", icon: Search, label: { en: "Explore", ms: "Terokai", zh: "探索" } },
-  //{ href: "/healthcare", icon: MapPin, label: { en: "Healthcare", ms: "Klinik", zh: "医疗" } },
+  { href: "/explore", icon: Search, label: { en: "Explore", ms: "Terokai", zh: "探索" } },
+  { href: "/healthcare", icon: MapPin, label: { en: "Healthcare", ms: "Klinik", zh: "医疗" } },
 ]
 
 const languages = [
@@ -72,7 +72,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
           {/* Right side */}
           <div className="flex items-center gap-2">
             {/* Language selector */}
-            {/* <div className="relative">
+            { <div className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-primary/30 text-base font-bold hover:bg-muted transition-colors bg-card text-foreground"
@@ -100,7 +100,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                   ))}
                 </div>
               )}
-            </div> */}
+            </div> }
 
             {/* Mobile menu toggle */}
             <button
