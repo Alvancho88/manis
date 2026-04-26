@@ -1,39 +1,41 @@
 import { db } from "@/db"; // adjust path to your db folder
-import { states, diabetes, trend, ethnicity } from "@/db/schema";
+import { states, metabolic, trend, ethnicity } from "@/db/schema";
 import { desc, eq, sql, avg, min, max, and, gte, lte, asc, ilike } from "drizzle-orm";
 
-export async function getDiabetesDataByYear(year: number) {
+export async function getMetabolicDataByYear(year: number) {
     const data = await db
         .select({
-            stats_id: diabetes.stats_id,
+            stats_id: metabolic.stats_id,
             state: states.state_name,
-            patients: diabetes.patients,
-            prevalence: diabetes.diabetesPrevalence,
-            year: diabetes.year,
-            population: diabetes.population,
+            patients: metabolic.patients,
+            diabetes: metabolic.diabetesPrevalence,
+            hypertension: metabolic.hypertensionPrevalence,
+            hyperlipidemia: metabolic.hyperlipidemiaPrevalence,
+            year: metabolic.year,
         })
-        .from(diabetes)
-        .where(eq(diabetes.year, year))
-        .leftJoin(states, eq(diabetes.state_id, states.state_id));
+        .from(metabolic)
+        .where(eq(metabolic.year, year))
+        .leftJoin(states, eq(metabolic.state_id, states.state_id));
     return data;
 }
 
-export async function getAllDiabetesDataGrouped() {
+export async function getAllMetabolicDataGrouped() {
     const rows = await db
         .select({
         state: states.state_name,
-        patients: diabetes.patients,
-        prevalence: diabetes.diabetesPrevalence,
-        year: diabetes.year,
-        population: diabetes.population,
+        patients: metabolic.patients,
+        diabetes: metabolic.diabetesPrevalence,
+        hypertension: metabolic.hypertensionPrevalence,
+        hyperlipidemia: metabolic.hyperlipidemiaPrevalence,
+        year: metabolic.year,
         })
-        .from(diabetes)
-        .leftJoin(states, eq(diabetes.state_id, states.state_id))
-        .orderBy(asc(diabetes.year));
+        .from(metabolic)
+        .leftJoin(states, eq(metabolic.state_id, states.state_id))
+        .orderBy(asc(metabolic.year));
 
     const dataByYear: Record<
         string,
-        Record<string, { patients: number; prevalence: number; population: number }>
+        Record<string, { patients: number; diabetes: number; hypertension: number; hyperlipidemia: number }>
     > = {};
     const yearSet = new Set<number>();
 
@@ -45,8 +47,9 @@ export async function getAllDiabetesDataGrouped() {
         dataByYear[yearKey][row.state] = {
         patients: row.patients,
         // Drizzle returns pg `decimal` columns as strings — parse here once
-        prevalence: parseFloat(row.prevalence as string),
-        population: row.population,
+        diabetes: parseFloat(row.diabetes as string),
+        hypertension: parseFloat(row.hypertension as string),
+        hyperlipidemia: parseFloat(row.hyperlipidemia as string),
         };
     }
 
@@ -60,7 +63,9 @@ export async function getNationalTrend() {
             trend_id: trend.trend_id,
             year: trend.year,
             patients: trend.patients,
-            prevalence: trend.diabetesPrevalence
+            diabetes: trend.diabetesPrevalence,
+            hypertension: trend.hypertensionPrevalence,
+            hyperlipidemia: trend.hyperlipidemiaPrevalence
         })
         .from(trend)
     return data;
@@ -70,8 +75,10 @@ export async function getEthnicityData() {
     const data = await db
         .select({
             ethnicity_id: ethnicity.id,
-            patients: ethnicity.ethnicity,
-            percentage: ethnicity.Percentage
+            ethnicity: ethnicity.ethnicity,
+            diabetes: ethnicity.diabetesPrevalence,
+            hypertension: ethnicity.hypertensionPrevalence,
+            hyperlipidemia: ethnicity.hyperlipidemiaPrevalence
         })
         .from(ethnicity);
     return data;

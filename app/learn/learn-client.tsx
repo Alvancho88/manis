@@ -3,65 +3,21 @@
 import { PageLayout } from "@/components/page-layout"
 import { useState, useEffect, useRef } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, Cell, LabelList } from "recharts"
-import { AlertCircle, Heart, Activity, Eye, X, ChevronDown, Users, TrendingUp, Skull, HeartPulse, TriangleAlert, CalendarCheck } from "lucide-react"
-import { MalaysiaChoroplethMap, type YearMapData } from "@/components/malaysia-choropleth-map"
+import { AlertCircle, Heart, Activity, Eye, X, ChevronDown, Check, CalendarCheck } from "lucide-react"
 import Image from "next/image"
-
-
-export interface NationalTrendRow {
-  trend_id: number
-  year: number
-  patients: number
-  prevalence: string // decimal comes back as string from Drizzle/pg
-}
-
-export interface EthnicityRow {
-  ethnicity_id: number
-  patients: string
-  percentage: string // decimal as string from Drizzle/pg
-}
-
-interface OverviewClientProps {
-  dataByYear: Record<string, YearMapData>
-  availableYears: string[]
-  nationalTrend: NationalTrendRow[]
-  ethnicityData: EthnicityRow[]
-}
+import { MenuScanCTA } from "@/components/menu-scan-cta"
+import BodyMap from "@/components/body-map"
 
 const content = {
   en: {
-    page_title: "The Big Picture: Diabetes in Malaysia",
-    page_subtitle: "Diabetes is a growing challenge for our nation, but understanding the facts is the first step toward a healthier life.",
+    page_title: "The Three Highs: Starting With Diabetes",
+    page_subtitle: "High Blood Sugar, High Blood Pressure (Hypertension), and High Cholesterol (Hyperlipidemia) are Malaysia's biggest silent health threats. Understanding them is the first step toward a healthier life.",
     stats_title: "Diabetes in Malaysia",
-    stats: [
-      { value: "3rd", label: "Leading cause of death in Malaysia", icon: Skull },
-      { value: "6929", label: "People die from diabetes in 2024", icon: Users },
-      { value: "78%", label: "Of deaths are age 60+", icon: HeartPulse },
-    ],
-    tab_prevalence: "Diabetes Prevalence",
-    tab_trends: "Diabetes Trends",
-    tab_hints: "💡 Tip: Use the buttons below to switch between different views of the data. ",
-    map_title: "Explore the Situation in Your Area",
-    map_subtitle: "Diabetes affects every state differently. Use this map to see how common it is in your area and understand our local health challenges.",
-    trends_title: "Understanding Diabetes Trends in Malaysia",
-    trends_subtitle: "This chart shows how diabetes prevalence has changed over the last decade.",
-    trends_y_label: "Prevalence (%)",
-    trends_y_label2: "Estimated Patients",
-    trends_note: "In just 10 years, the number of Malaysians living with diabetes has nearly doubled. A rising line doesn't have to be our future. By starting small healthy habits today, we can work together to turn this trend around.",
-    select_year: "Year",
-    ethnicity_title: "Health in Our Communities",
-    ethnicity_subtitle1: "Data from Malaysia National Health and Morbidity Survey (NHMS), 2023",
-    ethnicity_subtitle: "Understanding how diabetes affects our different communities helps us provide better care for everyone.",
-    ethnicity_y_label: "Percentage (%)",
-    click_bar: "👆 Tap any bar or label to learn more",
-    legend_high: "High Prevalence (>8%)",
-    legend_medium: "Medium Prevalence (4-8%)",
-    legend_low: "Low Prevalence (<4%)",
-    highest_rate: "Highest Rate",
-    lowest_rate: "Lowest Rate",
-    average_rate: "Average Rate",
-    click_state: "👇 Tap a state for more information",
-    edu_title: "Understand Diabetes",
+    education: "Education",
+    explore: "Exploration",
+    debunk: "Debunking",
+    body_map_title: "How the Three Highs affect your body",
+    edu_title: "Understand Diabetes and Its Partners (The Three Highs)",
     edu_learn_more: "Learn more",
     edu_show_less: "Show less",
     click_card: "👇 Tap a card to learn more",
@@ -98,6 +54,7 @@ const content = {
           "Diabetes is a long-term condition. It cannot be cured, but it can be managed well. Many people with diabetes live full, healthy lives.",
           "Type 2 makes up over 90% of cases in Malaysia and develops slowly over years, often without obvious signs.",
           "Doctors diagnose diabetes using an HbA1c blood test, which shows your average blood sugar over 3 months. A fasting blood sugar test is also commonly used.",
+          "When sugar stays in your blood, it weakens your blood vessel walls. This makes it much easier for High Blood Pressure to cause damage or High Cholesterol to clog your 'pipes.' Managing your sugar is the first step in protecting your heart."
         ],
       },
       {
@@ -122,7 +79,7 @@ const content = {
           bg: "#FAEEDA",
           iconColor: "#854F0B",
           textColor: "#633806",
-          text: "Many people have NO symptoms for years.",
+          text: "Diabetes can show symptoms like thirst, but its partners: High Blood Pressure and Cholesterol are often silent. You may feel perfectly fine while they are damaging your body. Routine checks are the only way to know for sure.",
         },
         seeDoctor: {
           bg: "#E6F1FB",
@@ -149,8 +106,10 @@ const content = {
         titleColor: "#085041",
         title: "Risk factors",
         shortTitle: "Risk factors",
+        intro: "The same unhealthy habits that cause Diabetes often cause High Blood Pressure and High Cholesterol too. If you have one, you are at a higher risk for the others.",
         points: [
-          "Unhealthy diet & lack of exercise",
+          "Unhealthy diet high in sugar, salt, and saturated fat",
+          "Lack of exercise",
           "Being overweight, especially belly fat",
           "Family history of diabetes",
           "Age 40 and above",
@@ -169,9 +128,10 @@ const content = {
           ],
         },
         learnMore: [
-          "Having one or two risk factors does not mean you will definitely get diabetes, but the more you have, the higher your chance.",
-          "Belly fat is a particularly strong risk factor because fat around the organs directly affects how insulin works.",
-          "Even if diabetes runs in your family, lifestyle changes can delay or prevent it. You are not powerless against your genes.",
+          "Having one or two risk factors does not mean you will definitely get any of the Three Highs, but the more you have, the higher your overall risk.",
+          "Belly fat is a particularly strong risk factor. Fat around the organs directly affects how insulin works and increases blood pressure and cholesterol levels.",
+          "A diet high in salt raises blood pressure, while one high in saturated and trans fats raises bad (LDL) cholesterol. Sugar and refined carbs raise blood sugar. Often, the same meal is the culprit for all three.",
+          "Even if these conditions run in your family, lifestyle changes can delay or prevent them. You are not powerless against your genes.",
         ],
       },
       {
@@ -216,7 +176,7 @@ const content = {
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
-        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Managing diabetes is a long journey. It is okay to ask for help from family, doctors, or support groups." },
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Managing diabetes is about protecting your whole body. By monitoring your sugar today, you are also reducing the strain on your heart and kidneys from High Blood Pressure and Cholesterol. You aren't just fighting one disease, you're building a healthier future." },
         learnMore: [
           "Your HbA1c target is usually below 7%, ask your doctor what your personal target is. This single number gives the clearest picture of overall blood sugar control.",
           "If you use insulin or certain medications, always carry a snack in case your blood sugar drops too low (hypoglycaemia). Signs include shaking, sweating, and confusion.",
@@ -224,40 +184,28 @@ const content = {
         ],
       },
     ],
-    disclaimer_text: "These numbers represent real people who deserve support and accurate information. This is why understanding diabetes matters.",
+    myth_title: "Myth VS. Fact",
+    myth_show_less: "Show less",
+    myth_show_more: "Show more",
+    myths: [
+      { myth: "I only need to worry about sugar if I have Diabetes.", fact: "Diabetes rarely travels alone. High blood sugar often damages blood vessels, leading to High Blood Pressure and High Cholesterol. This is why SIHAT tracks all three \"Highs\" together." },
+      { myth: "I must completely stop eating white rice/carbs to be healthy.", fact: "Portion and balance matter more than total restriction. Pairing your rice with fiber (vegetables) and protein slows down sugar absorption." },
+      { myth: "I have High Cholesterol because I eat too much fat; it has nothing to do with my Diabetes.", fact: "High insulin actually triggers the liver to produce more \"bad\" cholesterol (LDL). When your blood sugar is out of control, your cholesterol often follows. Managing your sugar via SIHAT helps improve your heart health." },
+      { myth: "I am thin, so I cannot have the \"Three Highs\".", fact: "You can be \"Thin on the outside, Fat on the inside\" (TOFI). In Malaysia, many people with a healthy weight still have high internal visceral fat, leading to Diabetes and High Cholesterol." },
+      { myth: "I can eat as much fruit as I want because it's natural and healthy.", fact: "Tropical fruits like durian, mango, and rambutan are very high in fructose. For someone with Diabetes, too much fruit can spike sugar AND raise triglycerides (fats in the blood)." },
+      { myth: "Once I start medication, I don't need to watch my diet anymore.", fact: "Medication works with your lifestyle, not instead of it. Maintaining a healthy diet via SIHAT recommendations can often lead to lower dosages and fewer side effects over time." },
+      { myth: "Eating bitter melon (peria) or drinking herbal tea can cure the \"Three Highs\" without medication.", fact: "While some traditional foods have health benefits, they are supplements, not cures. Relying solely on \"natural\" bitter foods while ignoring your data trends is dangerous." },
+      { myth: "I only need to cut salt for my blood pressure and sugar for my diabetes.", fact: "High insulin makes your kidneys hold onto more salt. This means eating too much sugar can actually drive your blood pressure up." },
+    ],
   },
   ms: {
     page_title: "Gambaran",
     page_subtitle: "Fahami data diabetes di Malaysia dan belajar melindungi diri anda.",
     stats_title: "Diabetes di Malaysia",
-    stats: [
-      { value: "4.75M", label: "People living with diabetes", icon: Heart },
-      { value: "3rd", label: "Leading cause of death in Malaysia", icon: Skull },
-      { value: "78%", label: "Of deaths are age 60+", icon: Users },
-    ],
-    tab_prevalence: "Prevalens Diabetes",
-    tab_trends: "Trend Diabetes",
-    tab_hints: "💡 Tip: ",
-    map_title: "Prevalens Diabetes di Malaysia",
-    map_subtitle: "Pesakit diabetes per 1,000 orang dewasa mengikut negeri dan tahun",
-    trends_title: "Trend Diabetes di Malaysia",
-    trends_subtitle: "Trend pesakit diabetes per 1,000 dewasa mengikut negeri sepanjang tahun",
-    trends_y_label: "Prevalens (%)",
-    trends_y_label2: "Anggaran Pesakit",
-    trends_note: "Dalam masa 10 tahun sahaja, bilangan rakyat Malaysia yang menghidap diabetes hampir dua kali ganda. Garis yang meningkat tidak semestinya masa depan kita. Dengan memulakan tabiat sihat kecil hari ini, kita boleh bekerjasama untuk membalikkan trend ini.",
-    select_year: "Tahun",
-    ethnicity_title: "Kesihatan dalam Komuniti Kita",
-    ethnicity_subtitle1: "Data dari Malaysia National Health and Morbidity Survey (NHMS) terbaharu yang mempunyai data diabetes, 2023",
-    ethnicity_subtitle: "Memahami bagaimana diabetes mempengaruhi komuniti kita yang berbeza membantu kita memberikan penjagaan yang lebih baik untuk semua.",
-    ethnicity_y_label: "Peratusan (%)",
-    click_bar: "👆 Klik pada bar atau label untuk maklumat lanjut",
-    legend_high: "Risiko Tinggi (>8%)",
-    legend_medium: "Risiko Sederhana (4-8%)",
-    legend_low: "Risiko Rendah (<4%)",
-    highest_rate: "Kadar Tertinggi",
-    lowest_rate: "Kadar Terendah",
-    average_rate: "Kadar Purata",
-    click_state: "👇 Klik pada negeri untuk maklumat lanjut",
+    education: "Pendidikan",
+    explore: "Penerokaan",
+    debunk: "Membongkar Mitos",
+    body_map_title: "Bagaimana Tiga Tinggi mempengaruhi badan anda",
     edu_title: "Fahami Diabetes",
     edu_learn_more: "Klik untuk maklumat lanjut",
     edu_show_less: "Sembunyikan",
@@ -346,8 +294,10 @@ const content = {
         titleColor: "#085041",
         title: "Faktor risiko",
         shortTitle: "Faktor risiko",
+        intro: "Tabiat tidak sihat yang menyebabkan Diabetes selalunya turut menyebabkan Tekanan Darah Tinggi dan Kolesterol Tinggi. Jika anda menghidap satu, risiko anda untuk mendapat yang lain adalah lebih tinggi.",
         points: [
-          "Makanan tidak sihat & kurang senaman",
+          "Makanan tidak sihat tinggi gula, garam, dan lemak tepu",
+          "Kurang aktiviti fizikal",
           "Berat badan berlebihan, terutama di bahagian perut",
           "Sejarah keluarga diabetes",
           "Umur 40 tahun ke atas",
@@ -366,9 +316,10 @@ const content = {
           ],
         },
         learnMore: [
-          "Mempunyai satu atau dua faktor risiko tidak bermakna anda pasti akan menghidap diabetes — tetapi lebih banyak faktor yang anda ada, lebih tinggi peluangnya.",
-          "Lemak perut adalah faktor risiko yang sangat kuat kerana lemak di sekeliling organ mempengaruhi cara insulin berfungsi.",
-          "Walaupun diabetes ada dalam keluarga anda, perubahan gaya hidup boleh melambatkan atau mencegahnya.",
+          "Mempunyai satu atau dua faktor risiko tidak bermakna anda pasti akan menghidap Tiga Tinggi — tetapi lebih banyak faktor yang anda ada, lebih tinggi risiko keseluruhan anda.",
+          "Lemak perut adalah faktor risiko yang sangat kuat kerana lemak di sekeliling organ mempengaruhi cara insulin berfungsi dan meningkatkan tekanan darah serta paras kolesterol.",
+          "Diet tinggi garam meningkatkan tekanan darah, manakala lemak tepu dan trans meningkatkan kolesterol jahat (LDL). Gula dan karbohidrat olahan meningkatkan gula darah. Selalunya, makanan yang sama menjadi punca ketiga-tiganya.",
+          "Walaupun keadaan ini ada dalam keluarga anda, perubahan gaya hidup boleh melambatkan atau mencegahnya. Anda tidak perlu pasrah dengan gen anda.",
         ],
       },
       {
@@ -421,41 +372,53 @@ const content = {
         ],
       },
     ],
-    disclaimer_text: "Nombor-nombor ini mewakili orang sebenar yang memerlukan sokongan dan maklumat yang tepat. Inilah sebabnya memahami diabetes penting.",
+    myth_title: "Mitos VS. Fakta",
+    myth_show_less: "Tunjukkan kurang",
+    myth_show_more: "Tunjukkan lebih banyak",
+    myths: [
+      { 
+        myth: "Saya hanya perlu risau tentang gula jika saya menghidap Kencing Manis.", 
+        fact: "Kencing manis jarang datang sendirian. Gula darah yang tinggi sering merosakkan salur darah, membawa kepada Darah Tinggi dan Kolesterol Tinggi. Inilah sebabnya MANIS memantau ketiga-tiga '3 Serangkai' bersama-sama." 
+      },
+      { 
+        myth: "Saya mesti berhenti makan nasi putih/karbohidrat sepenuhnya untuk sihat.", 
+        fact: "Saiz hidangan dan keseimbangan lebih penting daripada sekatan sepenuhnya. Menggandakan nasi anda dengan serat (sayur-sayuran) dan protein melambatkan penyerapan gula." 
+      },
+      { 
+        myth: "Kolesterol saya tinggi kerana saya makan terlalu banyak lemak; ia tiada kaitan dengan Kencing Manis saya.", 
+        fact: "Tahap insulin yang tinggi sebenarnya merangsang hati untuk menghasilkan lebih banyak kolesterol 'jahat' (LDL). Apabila gula darah tidak terkawal, kolesterol anda biasanya akan turut naik. Menguruskan gula anda melalui MANIS membantu meningkatkan kesihatan jantung anda." 
+      },
+      { 
+        myth: "Badan saya kurus, jadi saya tidak mungkin terkena penyakit '3 Serangkai'.", 
+        fact: "Anda boleh jadi 'Kurus di luar, Lemak di dalam' (TOFI). Di Malaysia, ramai orang yang mempunyai berat badan sihat sebenarnya mempunyai lemak viseral dalaman yang tinggi, yang membawa kepada Kencing Manis dan Kolesterol Tinggi." 
+      },
+      { 
+        myth: "Saya boleh makan buah sebanyak mana yang saya mahu kerana ia semula jadi dan sihat.", 
+        fact: "Buah-buahan tropika seperti durian, mangga, dan rambutan mempunyai kandungan fruktosa yang sangat tinggi. Bagi penghidap Kencing Manis, terlalu banyak buah boleh melonjakkan gula DAN meningkatkan trigliserida (lemak dalam darah)." 
+      },
+      { 
+        myth: "Sebaik sahaja saya mula mengambil ubat, saya tidak perlu lagi menjaga pemakanan saya.", 
+        fact: "Ubat berfungsi bersama gaya hidup anda, bukan sebagai pengganti. Mengekalkan diet sihat melalui cadangan MANIS boleh membantu mengurangkan dos ubat dan kesan sampingan dari masa ke masa." 
+      },
+      { 
+        myth: "Makan peria atau minum teh herba boleh menyembuhkan '3 Serangkai' tanpa ubat hospital.", 
+        fact: "Walaupun sesetengah makanan tradisional mempunyai khasiat kesihatan, ia adalah suplemen, bukan ubat penyembuh. Bergantung sepenuhnya kepada makanan pahit 'semula jadi' tanpa mempedulikan trend data kesihatan anda adalah berbahaya." 
+      },
+      { 
+        myth: "Saya hanya perlu kurangkan garam untuk darah tinggi dan kurangkan gula untuk kencing manis.", 
+        fact: "Insulin yang tinggi menyebabkan buah pinggang menyimpan lebih banyak garam. Ini bermakna pengambilan gula yang berlebihan sebenarnya boleh menyebabkan tekanan darah anda meningkat." 
+      },
+    ],
   },
   zh: {
     page_title: "概览",
     page_subtitle: "了解马来西亚的糖尿病数据，学习如何保护自己。",
     stats_title: "马来西亚的糖尿病",
-    stats: [
-      { value: "4.75M", label: "People living with diabetes", icon: Heart },
-      { value: "3rd", label: "Leading cause of death in Malaysia", icon: Skull },
-      { value: "78%", label: "Of deaths are age 60+", icon: Users },
-    ],
-    tab_prevalence: "糖尿病患病率",
-    tab_trends: "糖尿病趋势",
-    tab_hints: "💡 Tip: ",
-    map_title: "马来西亚糖尿病患病率",
-    map_subtitle: "按州属和年份每1,000名成年人中的糖尿病患者人数",
-    trends_title: "马来西亚糖尿病趋势",
-    trends_subtitle: "各州每1,000成年人糖尿病患者趋势",
-    trends_y_label: "患病率 (%)",
-    trends_y_label2: "估计患者数",
-    trends_note: "短短10年间，马来西亚糖尿病患者人数几乎翻倍。上升的趋势不一定是我们的未来。从今天开始养成健康习惯，我们可以共同努力扭转这一趋势。",
-    select_year: "年份",
-    ethnicity_title: "我们社区的健康",
-    ethnicity_subtitle1: "来自最新包含糖尿病数据的马来西亚国家健康与疾病调查（NHMS）的数据, 2023年",
-    ethnicity_subtitle: "了解糖尿病如何影响我们不同的社区，有助于我们为每个人提供更好的护理。",
-    ethnicity_y_label: "百分比 (%)",
-    click_bar: "👆 点击任何条形或标签了解更多",
-    legend_high: "高风险 (>8%)",
-    legend_medium: "中等风险 (4-8%)",
-    legend_low: "较低风险 (<4%)",
-    highest_rate: "最高率",
-    lowest_rate: "最低率",
-    average_rate: "平均率",
-    click_state: "👇 点击州属查看详情",
     edu_title: "了解糖尿病",
+    education: "教育",
+    explore: "探索",
+    debunk: "揭穿谬误",
+    body_map_title: "三高如何影响您的身体",
     edu_learn_more: "了解更多",
     edu_show_less: "收起",
     click_card: "👇 点击卡片了解更多",
@@ -543,13 +506,13 @@ const content = {
         titleColor: "#085041",
         title: "风险因素",
         shortTitle: "风险因素",
+        intro: "导致糖尿病的不健康习惯，往往也会导致高血压和高胆固醇。如果您患有其中一种，患其他疾病的风险也会更高。",
         points: [
-          "摄入过多糖分、白米或加工食品",
+          "高糖、高盐、高饱和脂肪的不健康饮食",
           "日常活动不足",
           "超重，尤其是腹部肥胖",
           "家族成员（父母或兄弟姐妹）患有糖尿病",
           "40岁及以上",
-          "曾有妊娠糖尿病史",
         ],
         controllableTiles: {
           canControlLabel: "可以控制",
@@ -565,9 +528,10 @@ const content = {
           ],
         },
         learnMore: [
-          "拥有一两个风险因素并不意味着您一定会得糖尿病——但风险因素越多，患病机会越高。",
-          "腹部脂肪是一个特别强的风险因素，因为器官周围的脂肪直接影响胰岛素的工作方式。",
-          "即使糖尿病在您的家族中有遗传，生活方式的改变也可以延迟或预防它。",
+          "拥有一两个风险因素并不意味着您一定会患上三高——但风险因素越多，整体风险越高。",
+          "腹部脂肪是一个特别强的风险因素，因为器官周围的脂肪直接影响胰岛素的工作方式，并会升高血压和胆固醇水平。",
+          "高盐饮食会升高血压，而饱和脂肪和反式脂肪会升高坏胆固醇（LDL）。糖和精制碳水化合物会升高血糖。通常，同一顿饭就是三者的共同诱因。",
+          "即使这些疾病在您的家族中有遗传，生活方式的改变也可以延迟或预防它们。",
         ],
       },
       {
@@ -620,42 +584,44 @@ const content = {
         ],
       },
     ],
-    disclaimer_text: "这些数字代表真实的人，他们需要支持和准确的信息。这就是为什么了解糖尿病很重要。",
+    myth_title: "谬误 VS. 事实",
+    myth_show_less: "收起",
+    myth_show_more: "展开",
+    myths: [
+      { 
+        myth: "我只有患有糖尿病时才需要担心血糖问题。", 
+        fact: "糖尿病很少孤立存在。高血糖往往会损伤血管，导致高血压和高胆固醇。这就是为什么 MANIS 会同时监测这‘三大高’的原因。" 
+      },
+      { 
+        myth: "为了健康，我必须完全停止吃白饭或碳水化合物。", 
+        fact: "份量控制和饮食均衡比完全禁食更重要。将米饭与纤维（蔬菜）和蛋白质搭配食用可以减缓糖分的吸收。" 
+      },
+      { 
+        myth: "我的胆固醇高是因为我吃太多脂肪；这与我的糖尿病无关。", 
+        fact: "高胰岛素水平实际上会刺激肝脏产生更多‘坏’胆固醇 (LDL)。当您的血糖失控时，胆固醇通常也会随之升高。通过 MANIS 管理血糖有助于改善您的心脏健康。" 
+      },
+      { 
+        myth: "我很瘦，所以我不会患上‘三高’。", 
+        fact: "您可能是‘外瘦内胖’ (TOFI)。在马来西亚，许多体重正常的人其实体内内脏脂肪很高，这会导致糖尿病和高胆固醇。" 
+      },
+      { 
+        myth: "我可以随心所欲地吃水果，因为它们是天然健康的。", 
+        fact: "榴莲、芒果和红毛丹等热带水果的果糖含量非常高。对于糖尿病患者，摄入过多水果会导致血糖飙升并增加甘油三酯（血液中的脂肪）。" 
+      },
+      { 
+        myth: "一旦我开始服药，我就不再需要注意饮食了。", 
+        fact: "药物是配合您的生活方式发挥作用的，而不是替代它。通过 MANIS 的建议保持健康饮食，通常可以随着时间的推移减少药量和副作用。" 
+      },
+      { 
+        myth: "吃苦瓜或喝凉茶可以治愈‘三高’，不需要吃药。", 
+        fact: "虽然某些传统食物对健康有益，但它们是辅助品，而非治疗药物。仅仅依赖‘天然’苦味食物而忽视数据趋势是危险的。" 
+      },
+      { 
+        myth: "我只需要为了血压减盐，为了血糖减糖。", 
+        fact: "高胰岛素会促使肾脏吸收更多的盐分。这意味着摄入过多的糖分实际上会导致您的血压升高。" 
+      },
+    ],
   },
-}
-
-const ETHNICITY_EXPLANATIONS: Record<string, { en: string; ms: string; zh: string }> = {
-  "Indian": {
-    en: "The Indian community currently shows the highest prevalence. This is often linked to a higher genetic sensitivity to insulin and traditional diets rich in refined carbohydrates like white rice and roti canai. Early and regular blood sugar screenings are highly recommended for elders in this community.",
-    ms: "Komuniti India menunjukkan prevalens tertinggi. Ini sering dikaitkan dengan sensitivitas genetik yang lebih tinggi terhadap insulin dan diet tradisional yang kaya akan karbohidrat halus seperti nasi putih dan roti canai. Skrining gula darah secara dini dan teratur sangat disarankan untuk warga emas dalam komunitas ini.",
-    zh: "印度裔社群目前显示出最高的糖尿病患病率。这通常与对胰岛素更高的遗传敏感性以及传统饮食中精制碳水化合物（如白米和印度煎饼）的丰富有关。强烈建议该社区的老年人进行早期和定期的血糖筛查。",
-  },
-  "Malay": {
-    en: "With nearly 1 in 6 affected, the Malay community faces a significant challenge. The high consumption of hidden sugars in traditional 'kuih-muih' and sweet drinks contributes to this trend. Small changes, like choosing 'Kurang Manis' options, can have a big impact.",
-    ms: "Dengan hampir 1 dari 6 orang dewasa yang terpengaruh, komunitas Melayu menghadapi tantangan besar. Konsumsi tinggi gula tersembunyi dalam 'kuih-muih' tradisional dan minuman manis berkontribusi pada tren ini. Perubahan kecil, seperti memilih opsi 'Kurang Manis', dapat memiliki dampak besar.",
-    zh: "近六分之一的成年人受影响，马来裔社区面临重大挑战。传统“kuih-muih”（马来糕点）和甜饮料中隐藏的高糖摄入量促成了这一趋势。小的改变，比如选择“Kurang Manis”（少糖）选项，可以产生很大的影响。",
-  },
-  "Chinese": {
-    en: "The Chinese community has a moderate diabetes rate relative to other groups in Malaysia. While traditional Chinese diets can be balanced, increasing adoption of processed foods and sedentary urban lifestyles have contributed to rising rates in recent years. Maintaining a balanced 'Suku-Suku-Separuh' plate is essential to keep these numbers from rising.",
-    ms: "Komuniti Cina mempunyai kadar diabetes yang sederhana berbanding kumpulan lain di Malaysia. Walaupun diet tradisional Cina boleh diseimbangkan, peningkatan penggunaan makanan yang diproses dan gaya hidup bandar yang tidak aktif telah menyumbang kepada peningkatan kadar dalam beberapa tahun kebelakangan ini. Mengekalkan pinggan 'Suku-Suku-Separuh' yang seimbang adalah penting untuk mengelakkan peningkatan angka ini.",
-    zh: "与其他马来西亚族群相比，华人糖尿病发病率处于中等水平。虽然传统的华人饮食较为均衡，但近年来加工食品的日益普及和久坐不动的都市生活方式导致糖尿病发病率上升。保持均衡的“五谷杂粮”（Suku-Suku-Separuh）饮食习惯对于控制糖尿病发病率至关重要。",
-  },
-  "Bumiputera Sarawak": {
-    en: "Prevalence in Bumiputera Sarawak highlights the impact of changing lifestyles and urbanisation. As traditional active lifestyles shift, focusing on reducing sugary drinks and increasing daily movement is key to protecting the health of our Sarawakian seniors.",
-    ms: "Prevalens dalam kalangan Bumiputera Sarawak menonjolkan kesan perubahan gaya hidup dan pembandaran. Seiring dengan perubahan gaya hidup aktif tradisional, memberi tumpuan kepada pengurangan minuman bergula dan meningkatkan pergerakan harian adalah kunci untuk melindungi kesihatan warga emas Sarawak kita.",
-    zh: "砂拉越土著居民的患病率凸显了生活方式改变和城市化进程的影响。随着传统积极生活方式的转变，减少含糖饮料的摄入并增加日常运动量是保护砂拉越老年人健康的关键。",
-  },
-  "Bumiputera Sabah": {
-    en: "While Bumiputera Sabah currently shows a lower prevalence compared to other groups, the number is still significant. This is the 'Golden Window' to focus on prevention and education to ensure our Sabahan communities remain healthy and strong for generations to come.",
-    ms: "Walaupun Bumiputera Sabah kini menunjukkan prevalens yang lebih rendah berbanding kumpulan lain, jumlahnya masih ketara. Ini adalah 'Tingkap Emas' untuk memberi tumpuan kepada pencegahan dan pendidikan bagi memastikan komuniti Sabah kita kekal sihat dan kuat untuk generasi akan datang.",
-    zh: "虽然沙巴土著目前的患病率低于其他群体，但人数仍然相当可观。现在正是重视预防和教育的“黄金时期”，以确保沙巴社区世世代代保持健康强壮。",
-  },
-}
-
-const DEFAULT_EXPLANATION = {
-  en: "Diabetes prevalence in this group is influenced by a combination of genetic, dietary, and lifestyle factors. Regular health screenings and a balanced diet can help manage and reduce the risk.",
-  ms: "Prevalens diabetes dalam kumpulan ini dipengaruhi oleh gabungan faktor genetik, pemakanan, dan gaya hidup. Saringan kesihatan yang kerap dan diet seimbang boleh membantu mengurus dan mengurangkan risiko.",
-  zh: "该群体的糖尿病患病率受遗传、饮食和生活方式等多种因素影响。定期健康筛查和均衡饮食有助于管理和降低风险。",
 }
 
 // Shared placeholder shown when an image hasn't been added yet
@@ -673,15 +639,18 @@ function ImgOrPlaceholder({ src, alt, className }: { src: string; alt: string; c
   )
 }
 
-function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel }: { section: typeof content.en.edu_sections[0]; learnMoreLabel: string; showLessLabel: string; clickCardLabel: string }) {
-  const [open, setOpen] = useState(false)
-  const [activeTileIndex, setActiveTileIndex] = useState<number | null>(null)
+function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel, open, setOpen, activeTileIndices, setActiveTileIndices }: { 
+  section: typeof content.en.edu_sections[0]; learnMoreLabel: string; showLessLabel: string; clickCardLabel: string;
+  open: boolean; setOpen: (v: boolean | ((prev: boolean) => boolean)) => void; activeTileIndices: Set<number>; setActiveTileIndices: (v: Set<number>) => void; }) {
 
   return (
     <div
-      className="rounded-2xl bg-background flex flex-col overflow-hidden"
-      style={{ border: `2px solid ${section.borderColor}` }}
+      className="rounded-2xl bg-background flex flex-col overflow-hidden shadow-sm"
+      style={{ border: `0.5px solid color-mix(in srgb, ${section.borderColor} 35%, transparent)` }}
     >
+      {/* Accent bar */}
+      <div className="h-1 w-full shrink-0" style={{ backgroundColor: section.borderColor }} />
+
       {/* Card body */}
       <div className="p-6 sm:p-7 flex flex-col gap-4">
 
@@ -699,6 +668,11 @@ function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel }: { s
         </div>
 
         <div className="border-t border-border/100" />
+
+        {/* Intro sentence (shown before bullet points if present) */}
+        {"intro" in section && section.intro && (
+          <p className="text-lg leading-relaxed text-foreground">{section.intro as string}</p>
+        )}
 
         {/* Main bullet points */}
         {"points" in section && section.points && (
@@ -795,11 +769,15 @@ function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel }: { s
             <p className="text-lg font-medium text-muted-foreground flex items-center gap-2"> {clickCardLabel}</p>
             <div className="grid grid-cols-2 gap-3 items-start">
               {section.imageTiles.map((tile: any, i: number) => {
-                const isActive = activeTileIndex === i;
+                const isActive = activeTileIndices.has(i);
                 return (
                   <button
                     key={i}
-                    onClick={() => setActiveTileIndex(isActive ? null : i)}
+                    onClick={() => {
+                      const next = new Set(activeTileIndices);
+                      if (isActive) next.delete(i); else next.add(i);
+                      setActiveTileIndices(next);
+                    }}
                     className="rounded-xl p-3 flex flex-col items-center gap-2 text-center transition-all duration-200 
                     border-2 w-full cursor-pointer hover:shadow-md active:scale-95"
                     style={{ 
@@ -866,373 +844,211 @@ function EduCard({ section, learnMoreLabel, showLessLabel, clickCardLabel }: { s
         )}
 
         {/* Learn more expandable */}
-      {"learnMore" in section && section.learnMore && (
-        <>
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-medium border border-border/100 text-foreground hover:bg-muted transition-colors"
-          >
-            <ChevronDown
-              className="w-4 h-4 transition-transform duration-200"
-              style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-            />
-            {open ? showLessLabel : learnMoreLabel}
-          </button>
-          {open && (
-            <div className="flex flex-col gap-2 pt-1 border-t border-border/20">
-              {(section.learnMore as string[]).map((para, idx) => (
-                <p key={idx} className="text-lg leading-relaxed text-foreground">{para}</p>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+        {"learnMore" in section && section.learnMore && (
+          <>
+            <button
+              onClick={() => setOpen(o => !o)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-medium border border-border/100 text-foreground hover:bg-muted transition-colors"
+            >
+              <ChevronDown
+                className="w-4 h-4 transition-transform duration-200"
+                style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+              />
+              {open ? showLessLabel : learnMoreLabel}
+            </button>
+            {open && (
+              <div className="flex flex-col gap-2 pt-1 border-t border-border/20">
+                {(section.learnMore as string[]).map((para, idx) => (
+                  <p key={idx} className="text-lg leading-relaxed text-foreground">{para}</p>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>     
     </div>
   )
 }
 
-const PREVALENCE_COLOR = "#282626"
-const PATIENTS_COLOR   = "#282626"
-
-function TrendTooltip({
-  active,
-  payload,
-  label,
-  t,
-}: {
-  active?: boolean
-  payload?: { value?: unknown; payload?: { patients: number } }[]
-  label?: number
-  t: { trends_y_label: string; trends_y_label2: string }
-}) {
-  if (!active || !payload?.length) return null
-  const item = payload[0]
-  const prevalence = typeof item.value === "number" ? item.value : 0
-  const patients = item.payload?.patients ?? 0
-  return (
-    <div style={{
-      backgroundColor: "var(--card)",
-      border: "1px solid var(--border)",
-      borderRadius: "12px",
-      padding: "12px 16px",
-      fontSize: "18px",
-    }}>
-      <p style={{ fontWeight: "bold", fontSize: "20px", marginBottom: "8px", color: "var(--foreground)" }}>
-        {label}
-      </p>
-      <p style={{ color: PREVALENCE_COLOR, marginBottom: "4px" }}>
-        <span style={{ fontWeight: 300 }}>{t.trends_y_label}:</span>{" "}
-        {prevalence.toFixed(1)}%
-      </p>
-      <p style={{ color: PATIENTS_COLOR }}>
-        <span style={{ fontWeight: 300 }}>{t.trends_y_label2}:</span>{" "}
-        {patients.toLocaleString()}
-      </p>
-    </div>
-  )
-}
-
-function TrendsChart({ t, nationalTrend }: { t: typeof content.en; nationalTrend: NationalTrendRow[] }) {
-  const chartData = [...nationalTrend]
-    .sort((a, b) => a.year - b.year)
-    .map(row => ({
-      year: row.year,
-      prevalence: parseFloat(row.prevalence as string),
-      patients: row.patients,
-    }))
+function MythCard({ item }: { item: { myth: string; fact: string } }) {
+  const [open, setOpen] = useState(false)
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 shadow-sm">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-1">{t.trends_title}</h2>
-      <p className="text-lg text-muted-foreground mb-6">{t.trends_subtitle}</p>
+    <div
+      className="rounded-2xl border overflow-hidden transition-all duration-200 shadow-sm"
+      style={{
+        borderColor: open ? "#1D9E75" : "var(--border)",
+      }}
+    >
+      {/* Accordion trigger */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-muted"
+      >
+        {/* Icon */}
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200"
+          style={{
+            backgroundColor: "#FCEBEB",
+          }}
+        >
+          <X className="w-4 h-4" style={{ color: "#A32D2D" }} />
+          
+        </div>
 
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="year" tick={{ fontSize: 20 }} />
-          <YAxis
-            yAxisId="prevalence"
-            domain={[0, 25]}
-            tickFormatter={v => `${v}%`}
-            tick={{ fontSize: 18, fill: PREVALENCE_COLOR }}
-            label={{ value: t.trends_y_label, angle: -90, position: "insideLeft", offset: -5, style: { fontSize: 16, fill: PREVALENCE_COLOR } }}
-          />
-          <Tooltip content={({ active, payload, label }) => <TrendTooltip active={active} payload={payload} label={label} t={t} />} />
-          <Line
-            yAxisId="prevalence"
-            type="monotone"
-            dataKey="prevalence"
-            stroke="#4a7fc1"
-            strokeWidth={3}
-            dot={{ fill: "#4a7fc1", r: 5 }}
-            activeDot={{ r: 8 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-      <p className="mt-4 text-lg border-l-4 border-amber-400 pl-4">
-        {t.trends_note}
-      </p>
-    </div>
-  )
-}
+        {/* Myth text */}
+        <span
+          className="flex-1 font-medium text-base md:text-lg leading-snug"
+          style={{ color: open ? "var(--muted-foreground)" : "var(--foreground)",
+            textDecoration: open ? "line-through" : "none" }}
+        >
+          {item.myth}
+        </span>
 
-const ETHNICITY_COLORS = ["#56b4e9", "#e07b4a", "#0072b1", "#a76bbf", "#cc79a7", "#e6da3e"]
+        {/* Chevron */}
+        <ChevronDown
+          className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
 
-function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicityData: EthnicityRow[]}) {
-  const chartData = ethnicityData.map((row) => ({
-    ethnicity: row.patients, // aliased column holds the ethnicity name
-    percentage: parseFloat(row.percentage as string),
-  }))
-  .sort((a, b) => b.percentage - a.percentage)
-
-  const [selected, setSelected] = useState<{ ethnicity: string; percentage: number } | null>(null)
-  const [explanation, setExplanation] = useState<string>("")
-  const explanationRef = useRef<HTMLDivElement>(null)
-
-  const langCode = t.ethnicity_title === "Health in Our Communities" ? "en"
-    : t.ethnicity_title === "Diabetes Mengikut Etnik" ? "ms"
-    : "zh"
-  
-  function handleBarClick(data: { ethnicity: string; percentage: number }) {
-    // If clicking the same bar, deselect it
-    if (selected?.ethnicity === data.ethnicity) {
-      setSelected(null)
-      setExplanation("")
-      return
-    }
-    setSelected(data)
-    const entry = ETHNICITY_EXPLANATIONS[data.ethnicity] ?? DEFAULT_EXPLANATION
-    setExplanation(entry[langCode])
-  }
-  return (
-    <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 shadow-sm mt-6">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-1">{t.ethnicity_title}</h2>
-      <p className="text-xl text-foreground mb-6">{t.ethnicity_subtitle1}</p>
-      <p className="text-lg text-muted-foreground mb-6">{t.ethnicity_subtitle}</p>
-
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart data={chartData} margin={{ left: 10, right: 20, top: 20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="ethnicity" tick={false} height={8} />
-          <YAxis
-            tickFormatter={(v) => `${v}%`}
-            tick={{ fontSize: 18 }}
-            label={{
-              value: t.ethnicity_y_label,
-              angle: -90,
-              position: "insideLeft",
-              offset: -5,
-              style: { fontSize: 16, fill: "var(--muted-foreground)" },
-            }}
-            domain={[0, "auto"]}
-          />
-          <Tooltip
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
-              const { ethnicity, percentage } = payload[0].payload
-              return (
-                <div style={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "12px",
-                  padding: "10px 14px",
-                  fontSize: "18px",
-                }}>
-                  <p style={{ fontWeight: 700, marginBottom: "4px", color: "var(--foreground)" }}>{ethnicity}</p>
-                  <p style={{ color: "var(--muted-foreground)" }}>{percentage.toFixed(1)}%</p>
-                </div>
-              )
-            }}
-          />
-          <Bar dataKey="percentage" radius={[6, 6, 0, 0]} maxBarSize={80} onClick={(data) => handleBarClick(data as { ethnicity: string; percentage: number })} style={{ cursor: "pointer" }}>
-            {chartData.map((entry, index) => (
-              <Cell key={index} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} opacity={selected && selected.ethnicity !== entry.ethnicity ? 0.35 : 1} />
-            ))}
-            <LabelList
-              dataKey="percentage"
-              position="top"
-              formatter={(v: number) => `${v.toFixed(1)}`}
-              style={{ fontSize: 16, fontWeight: 600, fill: "var(--foreground)" }}
-            />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Colour legend */}
-      <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4">
-        {chartData.map((entry, index) => (
-          <button key={index} onClick={() => handleBarClick(entry)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-            <span
-              className="w-3 h-3 rounded-sm shrink-0"
-              style={{ backgroundColor: ETHNICITY_COLORS[index % ETHNICITY_COLORS.length] }}
-            />
-            <span className="text-lg text-muted-foreground">{entry.ethnicity}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Explanation panel */}
-      {explanation && (
-        <div ref={explanationRef} className="mt-6 scroll-mt-6">
-          {/* Header row */}
-          <div
-            className="flex items-center justify-between rounded-t-2xl px-5 py-4"
-            style={{
-              backgroundColor: ETHNICITY_COLORS[chartData.findIndex((d) => d.ethnicity === selected?.ethnicity) % ETHNICITY_COLORS.length]
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🔍</span>
-              <div>
-                <p className="text-white font-bold text-xl leading-tight">{selected?.ethnicity}</p>
-                <p className="text-white text-lg">{selected?.percentage.toFixed(1)}% prevalence</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { setSelected(null); setExplanation("") }}
-              className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/20"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
+      {/* Fact reveal */}
+      {open && (
+        <div
+          className="px-5 pb-5 pt-1 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ backgroundColor: "#E1F5EE" }}
+        >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "#1D9E75" }}>
+            <Check className="w-4 h-4 text-white" />
           </div>
-
-          {/* Body */}
-          <div className="border border-t-0 border-border rounded-b-2xl px-5 py-5 bg-card" style={{ borderColor: "#4a7fc1" }}>
-            <p className="text-lg leading-relaxed text-foreground">{explanation}</p>
-          </div>
+          <p className="text-base md:text-lg leading-relaxed" style={{ color: "#085041" }}>{item.fact}</p>
         </div>
       )}
-
-      {/* Tap hint, only shown before any selection */}
-      {!selected && (
-        <p className="text-center text-lg text-muted-foreground mt-5">
-          {t.click_bar}
-        </p>
-      )}
     </div>
   )
 }
 
-export default function OverviewClient({ dataByYear, availableYears, nationalTrend, ethnicityData }: OverviewClientProps) {
-  const [activeTab, setActiveTab] = useState<"prevalence" | "trends">("prevalence")
-  const [activeEduIndex, setActiveEduIndex] = useState(0)
 
+
+export default function LearnClient() {
+  const [activeEduIndex, setActiveEduIndex] = useState(0)
+  const [learnMoreOpen, setLearnMoreOpen] = useState(false)
+  const [activeTileIndices, setActiveTileIndices] = useState<Set<number>>(new Set())
+  const [showAll, setShowAll] = useState(false)
+
+  function switchCard(idx: number) {
+    setActiveEduIndex(idx)
+    setLearnMoreOpen(false)
+    setActiveTileIndices(new Set())
+  }
+  
   return (
     <PageLayout>
       {(lang) => {
         const t = content[lang]
+        const visibleMyths = showAll ? t.myths : t.myths.slice(0, 5)
         return (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-14 space-y-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-14">
             {/* Header */}
-            <div className="text-center">
+            <div className="text-center mb-8">
               <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto whitespace-normal">{t.page_subtitle}</p>
-            </div>
-
-            {/* Stats Section */}
-            <section className="py-12 md:py-16 bg-card">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 text-balance">{t.stats_title}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  {t.stats.map((stat, i) => (
-                    <div key={i} className="bg-background rounded-2xl p-6 text-center border border-border shadow-sm">
-                      {stat.icon ? (
-                        <stat.icon className="w-16 h-16 text-primary mx-auto mb-3" />
-                      ) : null}
-                      <div className="text-4xl md:text-5xl font-extrabold text-primary mb-2">{stat.value}</div>
-                      <div className="text-base md:text-lg text-muted-foreground font-medium">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <div>
-              <p className="text-base md:text-base mb-1 text-center">{t.tab_hints}</p>
-            </div>
-
-            {/* Tab Buttons - Large for elderly */}
-            <div className="flex justify-center">
-              <div className="inline-flex rounded-2xl border-2 border-border overflow-hidden">
-                <button
-                  onClick={() => setActiveTab("prevalence")}
-                  className={`px-6 sm:px-8 py-4 text-lg font-bold transition-colors ${
-                    activeTab === "prevalence"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {t.tab_prevalence}
-                </button>
-                <button
-                  onClick={() => setActiveTab("trends")}
-                  className={`px-6 sm:px-8 py-4 text-lg font-bold transition-colors ${
-                    activeTab === "trends"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {t.tab_trends}
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            {activeTab === "prevalence" ? (
-              <>
-                <MalaysiaChoroplethMap t={t} lang={lang} dataByYear={dataByYear} availableYears={availableYears} />
-                
-              </>
-            ) : (
-              <TrendsChart t={t} nationalTrend={nationalTrend} />
-            )}
-
-            {/* Ethnicity Bar Chart */}
-            <EthnicityBarChart t={t} ethnicityData={ethnicityData} />
-
-            {/* Disclaimer */}
-            <div className="bg-amber-100 border border-[var(--cb-sage-text)]/20 rounded-2xl p-5 flex gap-4">
-              <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
-              <p className="text-lg font-medium">{t.disclaimer_text}</p>
+              <p className="text-xl md:text-2xl text-muted-foreground">{t.page_subtitle}</p>
             </div>
 
             {/* Education Section */}
             <div className="scroll-mt-10" id="education-section">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">{t.edu_title}</h2>
-              
-              {/* Education Navigation Tabs */}
-              <div className="flex flex-wrap justify-center gap-3 mb-8">
-                {t.edu_sections.map((section, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveEduIndex(idx)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all font-medium text-base md:text-lg"
-                    style={{
-                      borderColor: activeEduIndex === idx ? section.borderColor : "var(--border)",
-                      backgroundColor: activeEduIndex === idx ? section.borderColor : "var(--card)",
-                      color: activeEduIndex === idx ? "#ffffff" : "var(--foreground)",
-                    }}
-                  >
-                    <section.icon 
-                      className="w-5 h-5" 
-                      style={{ color: activeEduIndex === idx ? "#ffffff" : "var(--muted-foreground)" }} 
-                    />
-                    {section.shortTitle ?? section.title}
-                  </button>
+              <div>
+                {/* Section header — left aligned, same edge as tabs and card */}
+                <div className="mb-6">
+                  <p className="text-lg font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{t.education}</p>
+                  <h2 className="text-3xl md:text-3xl font-bold">{t.edu_title}</h2>
+                </div>
+
+                {/* Education Navigation Tabs */}
+                <div className="flex flex-wrap gap-3 mb-8">
+                  {t.edu_sections.map((section, idx) => {
+                    const isActive = activeEduIndex === idx
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => switchCard(idx)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all duration-150 font-medium text-base md:text-lg"
+                        style={{
+                          borderColor: isActive ? section.borderColor : "var(--border)",
+                          backgroundColor: isActive ? section.iconBg : "var(--card)",
+                          color: isActive ? section.titleColor : "var(--foreground)",
+                        }}
+                      >
+                        <div
+                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: isActive ? "white" : section.iconBg }}
+                        >
+                          <section.icon
+                            className="w-4 h-4"
+                            style={{ color: section.iconColor }}
+                          />
+                        </div>
+                        {section.shortTitle ?? section.title}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Display only the active card */}
+                <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <EduCard
+                    section={t.edu_sections[activeEduIndex]}
+                    learnMoreLabel={t.edu_learn_more}
+                    showLessLabel={t.edu_show_less}
+                    clickCardLabel={t.click_card}
+                    open={learnMoreOpen}
+                    setOpen={setLearnMoreOpen}
+                    activeTileIndices={activeTileIndices}
+                    setActiveTileIndices={setActiveTileIndices}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Body Map Section */}
+            <div className="mt-14">
+              <div className="mb-6">
+                <p className="text-lg font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{t.explore}</p>
+                <h2 className="text-3xl font-bold">{t.body_map_title}</h2>
+              </div>
+              <BodyMap/>
+            </div>
+
+            {/* Myth vs Fact Section */}
+            <div className="mt-14">
+              <div className="mb-6">
+                <p className="text-lg font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{t.debunk}</p>
+                <h2 className="text-3xl font-bold">{t.myth_title}</h2>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {visibleMyths.map((item, idx) => (
+                  <MythCard key={idx} item={item} />
                 ))}
               </div>
 
-              {/* Display only the active card */}
-              <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <EduCard
-                  section={t.edu_sections[activeEduIndex]}
-                  learnMoreLabel={t.edu_learn_more}
-                  showLessLabel={t.edu_show_less}
-                  clickCardLabel={t.click_card}
-                />
-              </div>
+              {t.myths.length > 5 && (
+                <button
+                  onClick={() => setShowAll(o => !o)}
+                  className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-base font-medium text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <ChevronDown
+                    className="w-4 h-4 transition-transform duration-200"
+                    style={{ transform: showAll ? "rotate(180deg)" : "rotate(0deg)" }}
+                  />
+                  {showAll ? t.myth_show_less : t.myth_show_more}
+                </button>
+              )}
+            </div>
+
+            {/* ── Menu scan CTA ── */}
+            <div className="mt-14">
+              <MenuScanCTA lang={lang} variant="learn"/>
             </div>
           </div>
         )
