@@ -572,7 +572,7 @@ export default function RecommendationPage() {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category)
-    setShowCategories(false)
+    setShowCategories(true)
     const categoryResults = apiResultsCache?.[category] ?? []
     setResults(categoryResults)
   }
@@ -603,6 +603,7 @@ export default function RecommendationPage() {
 
   const hasContent = uploadedImages.length > 0 || textInput.trim().length > 0
   const showAnalyzeButton = hasContent && !isAnalyzing && !results && !showCategories && successCount === null
+  const showCategoryTabs = showCategories || !!results
 
   return (
     <PageLayout>
@@ -614,27 +615,6 @@ export default function RecommendationPage() {
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
               <p className="text-xl md:text-2xl text-muted-foreground">{t.page_subtitle}</p>
-            </div>
-
-            {/* Photo Guide */}
-            <div className="bg-primary/5 rounded-2xl border border-primary/20 p-4 md:p-6">
-              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-primary">
-                <Camera className="w-7 h-7" />
-                {t.guide_title}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {t.guide_steps.map((step, i) => (
-                  <div key={i} className="bg-card rounded-xl p-4 text-center border border-border">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
-                      {i === 0 && <Camera className="w-6 h-6 text-primary" />}
-                      {i === 1 && <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-                      {i === 2 && <Utensils className="w-6 h-6 text-primary" />}
-                      {i === 3 && <CheckCircle className="w-6 h-6 text-primary" />}
-                    </div>
-                    <p className="text-base font-medium">{step.text}</p>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Upload & Text Input Section */}
@@ -777,6 +757,27 @@ export default function RecommendationPage() {
               </div>
             </div>
 
+            {/* Photo Guide */}
+            <div className="bg-primary/5 rounded-2xl border border-primary/20 p-4 md:p-6">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-primary">
+                <Camera className="w-7 h-7" />
+                {t.guide_title}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {t.guide_steps.map((step, i) => (
+                  <div key={i} className="bg-card rounded-xl p-4 text-center border border-border">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
+                      {i === 0 && <Camera className="w-6 h-6 text-primary" />}
+                      {i === 1 && <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+                      {i === 2 && <Utensils className="w-6 h-6 text-primary" />}
+                      {i === 3 && <CheckCircle className="w-6 h-6 text-primary" />}
+                    </div>
+                    <p className="text-base font-medium">{step.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Analyse Button */}
             {showAnalyzeButton && (
               <div className="flex flex-col items-center gap-4">
@@ -830,26 +831,54 @@ export default function RecommendationPage() {
             )}
 
             {/* Category Selection */}
-            {showCategories && (
+            {showCategoryTabs && (
               <div className="bg-card rounded-2xl border border-border p-4 md:p-6 shadow-sm">
                 <h2 className="text-2xl font-bold mb-2 text-center">{t.select_category}</h2>
                 <p className="text-muted-foreground text-center mb-6">{t.select_category_hint}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <button onClick={() => handleCategorySelect("appetizer")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                    <Salad className="w-12 h-12 text-primary" />
-                    <span className="text-xl font-bold">{t.categories.appetizer}</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                  <button
+                    onClick={() => handleCategorySelect("appetizer")}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all ${
+                      selectedCategory === "appetizer"
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    <Salad className="w-5 h-5 text-primary" />
+                    <span className="text-base font-bold">{t.categories.appetizer}</span>
                   </button>
-                  <button onClick={() => handleCategorySelect("main")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                    <Utensils className="w-12 h-12 text-primary" />
-                    <span className="text-xl font-bold">{t.categories.main}</span>
+                  <button
+                    onClick={() => handleCategorySelect("main")}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all ${
+                      selectedCategory === "main"
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    <Utensils className="w-5 h-5 text-primary" />
+                    <span className="text-base font-bold">{t.categories.main}</span>
                   </button>
-                  <button onClick={() => handleCategorySelect("dessert")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                    <Cake className="w-12 h-12 text-primary" />
-                    <span className="text-xl font-bold">{t.categories.dessert}</span>
+                  <button
+                    onClick={() => handleCategorySelect("dessert")}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all ${
+                      selectedCategory === "dessert"
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    <Cake className="w-5 h-5 text-primary" />
+                    <span className="text-base font-bold">{t.categories.dessert}</span>
                   </button>
-                  <button onClick={() => handleCategorySelect("drink")} className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                    <GlassWater className="w-12 h-12 text-primary" />
-                    <span className="text-xl font-bold">{t.categories.drink}</span>
+                  <button
+                    onClick={() => handleCategorySelect("drink")}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 transition-all ${
+                      selectedCategory === "drink"
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    <GlassWater className="w-5 h-5 text-primary" />
+                    <span className="text-base font-bold">{t.categories.drink}</span>
                   </button>
                 </div>
               </div>
@@ -909,12 +938,8 @@ export default function RecommendationPage() {
                     <FoodResultCard key={i} food={food} isBest={i === 0} t={t} lang={lang} showGiPopup={showGiPopup} setShowGiPopup={setShowGiPopup} />
                   ))}
                 </div>
-                <div className="flex gap-4 mt-8">
-                  <button onClick={handleAnalyzeAnother} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90">
-                    <ArrowRight className="w-5 h-5 rotate-180" />
-                    {t.analyze_another}
-                  </button>
-                  <button onClick={clearAll} className="flex-1 flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted">
+                <div className="mt-8">
+                  <button onClick={clearAll} className="w-full flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted">
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>

@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/", icon: Home, label: { en: "Home", ms: "Laman Utama", zh: "首页" } },
-  { href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
+  //{ href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
   { href: "/food", icon: Utensils, label: { en: "Food", ms: "Makanan", zh: "食物" } },
-  { href: "/overview", icon: BookOpen, label: { en: "Overview", ms: "Gambaran", zh: "概览" } },
+  { href: "/Learn", icon: BookOpen, label: { en: "Learn", ms: "Belajar", zh: "概览" } },
   { href: "/explore", icon: Search, label: { en: "Explore", ms: "Terokai", zh: "探索" } },
-  { href: "/healthcare", icon: MapPin, label: { en: "Healthcare", ms: "Klinik", zh: "医疗" } },
+  //{ href: "/healthcare", icon: MapPin, label: { en: "Healthcare", ms: "Klinik", zh: "医疗" } },
 ]
 
 const languages = [
@@ -39,12 +39,12 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <Image 
               src="/images/manis-logo.png" 
-              alt="MANIS Logo" 
+              alt="SIHAT Logo" 
               width={72} 
               height={72} 
               className="w-14 h-14 md:w-16 md:h-16"
             />
-            <span className="text-primary font-extrabold text-2xl md:text-3xl">MANIS</span>
+            <span className="text-primary font-extrabold text-2xl md:text-3xl">SIHAT</span>
           </Link>
 
           {/* Desktop Nav */}

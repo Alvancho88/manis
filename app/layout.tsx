@@ -10,8 +10,8 @@ const notoSans = Noto_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'MANIS - Modern Analytics & Nutrition Interactive System',
-  description: 'MANIS helps Malaysian elderly understand and manage their sugar intake for diabetes prevention. Sistem Interaktif Analitik & Pemakanan Moden untuk warga emas Malaysia. 面向马来西亚老年人的现代分析与营养互动系统。',
+  title: 'SIHAT - Smart Interactive Health Assistance & Tracking',
+  description: 'SIHAT helps Malaysian elderly understand and manage nutrition and chronic-condition risk factors. Sistem bantuan kesihatan interaktif pintar untuk warga emas Malaysia. 面向马来西亚老年人的智能互动健康辅助与追踪系统。',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -35,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ms">
-      <body className={`${notoSans.variable} font-sans antialiased`}>
+    <html lang="ms" suppressHydrationWarning>
+      <body className={`${notoSans.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
         <Analytics />
       </body>
