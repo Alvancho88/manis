@@ -1,4 +1,5 @@
 // app/api/predict/route.ts
+// Backend used by the recommendation landing page (`app/page.tsx`).
 // Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
 // Strategy: Key 2 primary, Key 1 backup for both tasks.
  
@@ -105,42 +106,43 @@ Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
  
 CRITICAL RULE:
-- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent, hallucinate, assume, or add any food item that is not literally present in the provided text. If you are unsure whether an item was in the input, omit it. 
+- ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent or hallucinate any food item.
  
 TASK:
-1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT. Do NOT skip, merge, or omit any item. Do NOT add items not present in the input.
+1. Process EVERY SINGLE item from BOTH Menu OCR AND USER MANUAL INPUT.
 2. Categorize each item into exactly one of: 'Appetizer', 'Main Dish', 'Dessert', 'Drinks'.
    CATEGORIZATION RULES (follow strictly):
    - 'Drinks': water, plain water, air putih, mineral water, tea, coffee, kopi, teh, juice, cham, barley, cincau, soy bean, milo, coke, 100 plus, limau, lemon tea, any hot or cold beverage you drink through a cup or glass.
    - 'Dessert': sweet cold or iced items served as dessert — ice kacang, ais kacang, ABC, cendol, pudding, kuih, cake, sweet soups, any iced sweet food. IMPORTANT: ice kacang and cendol are DESSERT not Drinks.
    - 'Main Dish': rice dishes, noodles, chicken dishes, fish dishes, meat, hor fun, mee, any substantial meal item.
    - 'Appetizer': small starters and sides — satay, popiah, spring roll, bean sprout, lettuce, tofu side dishes, gizzard, liver, small soups served as starters.
-3. Estimate for each item: Sugar(g), Calories(kcal), GI Value(0-100), Risk (Low/Medium/High).
-   Risk = impact on blood glucose for elderly diabetics. For Risk, Low is if the sugar ≤ 5g OR GI range ≤ 55, Medium is if the sugar 6g – 15g OR GI range 56 – 69, High if the sugar is ≥ 16g or GI range ≥ 70.
-4. Write a short practical health tip for EVERY item (one sentence, no newlines). 
-    The tip can either be how to order to make the blood sugar not spike if its possible to adjust the portion (eg. like less rice or more vegetable)
-    Or the tip can also  give alternative if theres a swappable ingredients (eg. change white rice to brown rice)
-    Or If there is any sauces or ingredients in the meal that has high sugar content (sambal,etc) let the user know and suggest to not eat those sauce or condiment
-    Or If none of the three above conditions are met, just give a generic why is it good or bad tip
-5. For EVERY item, include a "best_reason" field: one sentence (max 1 sentence[long sentence is fine]) explaining why this item is the best or worst choice for blood sugar management in elderly diabetics.
+3. Estimate for each item: Sugar(g), Salt/Sodium(mg), Saturated Fat(g), and Risk (Low/Medium/High).
+   RISK DETERMINATION RULES (The "Three Highs"):
+   - For each indicator, determine the level:
+     - SUGAR: Low (≤5g), Medium (6-15g), High (≥16g)
+     - SALT (Sodium): Low (≤200mg), Medium (201-600mg), High (>600mg)
+     - FAT (Saturated): Low (≤3g), Medium (3.1-7g), High (>7g)
+   - ASSIGN FINAL RISK:
+     - If ANY indicator is High -> Final Risk = "High"
+     - Else if ANY indicator is Medium -> Final Risk = "Medium"
+     - If ALL indicators are Low -> Final Risk = "Low"
+4. Write a short practical health tip for EVERY item (one sentence) focusing on reducing salt, sugar, or fat.
+5. For EVERY item, include a "best_reason" field explaining the choice based on the Three Highs (Hypertension, Hyperglycemia, Hyperlipidemia).
  
 RANKING LOGIC (apply per category):
-- Priority 1: Risk (Low is highest priority, Medium is high priority, and High is lowest priority)
-- If two or more items have the same Risk, for those items with the same Risk rank it based on Priority 2: Sugar
-- Priority 2: Sugar (lower first)
-- If two or more items have the same Sugar, for those items with the same Sugar, rank it based on Priority 3: GI Value
-- Priority 3: GI Value (lowest first)
-- If tow or more items have the same GI Value, for those items with the same GI Value, rank it based on Priority 4 TIE-BREAKER: Calories
-- Priority 4 TIE-BREAKER: Calories (lowest first) 
+- Priority 1: Risk (Low first, then Medium, then High)
+- Priority 2 (tie-breaker for same Risk):
+  1st: Salt (lower mg first)
+  2nd: Sugar (lower g first)
+  3rd: Saturated Fat (lower g first)
  
 IMPORTANT OUTPUT RULES:
 - Output ONLY the top 3 best items per category (already ranked). If a category has fewer than 3 items, output all of them. If a category has 0 items, output an empty array.
 - Output ONLY valid JSON. No markdown, no code fences, no extra text, nothing after the closing brace.
-- Do NOT put newline or tab characters inside string values. Tips and best_reason must be single plain sentences.
 - Also include a "uniqueFoodCount" field at the root level: the total number of unique, real food items you identified and processed from BOTH Menu OCR and USER MANUAL INPUT (before filtering to top 3). This count should exclude duplicates and non-food text like headings, prices, or menu section names.
 - Use this exact structure:
-{"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[], ,"uniqueFoodCount":number}
-- Every item must follow this shape: {"f":"name","sugar":number,"c":number,"gi_val":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
+{"Appetizer":[],"Main Dish":[],"Dessert":[],"Drinks":[],"uniqueFoodCount":number}
+- Every item must follow this shape: {"f":"name","sugar":number,"salt":number,"fat":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
 `;
 }
  
@@ -238,16 +240,16 @@ export async function POST(req: NextRequest) {
  
       for (const item of items) {
         item.sugar = cleanToNumber(item.sugar ?? 0);
-        item.gi_val = cleanToNumber(item.gi_val ?? 55);
-        item.c = cleanToNumber(item.c ?? 0);
+        item.salt = cleanToNumber(item.salt ?? 0);
+        item.fat = cleanToNumber(item.fat ?? 0);
         item.risk_score = riskMap[String(item.risk).trim()] ?? 2;
       }
  
       const sorted = [...items].sort((a, b) => {
         if (a.risk_score !== b.risk_score) return a.risk_score - b.risk_score;
+        if (a.salt !== b.salt) return a.salt - b.salt;
         if (a.sugar !== b.sugar) return a.sugar - b.sugar;
-        if (a.gi_val !== b.gi_val) return a.gi_val - b.gi_val;
-        return a.c - b.c;
+        return a.fat - b.fat;
       });
  
       const top3 = sorted.slice(0, 3);
@@ -256,8 +258,7 @@ export async function POST(req: NextRequest) {
         delete item.risk_score;
         if (idx === 0) {
           if (!item.best_reason || String(item.best_reason).trim() === "") {
-            const riskLabel = String(item.risk ?? "Medium");
-            item.best_reason = `Optimized choice with lower sugar and ${riskLabel} glycemic impact.`;
+            item.best_reason = "Selected for a better balance of lower sodium, sugar, and saturated fat.";
           }
         } else {
           delete item.best_reason;

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 const navItems = [
   { href: "/", icon: Home, label: { en: "Home", ms: "Laman Utama", zh: "首页" } },
   //{ href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
+  //{ href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
   { href: "/food", icon: Utensils, label: { en: "Food", ms: "Makanan", zh: "食物" } },
   { href: "/statistics", icon: ChartNoAxesCombined, label: { en: "Statistics", ms: "Statistik", zh: "统计数据" } },
   { href: "/learn", icon: BookOpen, label: { en: "Learn", ms: "Belajar", zh: "学习" } },
@@ -39,12 +40,12 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <Image 
               src="/images/manis-logo.png" 
-              alt="MANIS Logo" 
+              alt="SIHAT Logo" 
               width={72} 
               height={72} 
               className="w-14 h-14 md:w-16 md:h-16"
             />
-            <span className="text-primary font-extrabold text-2xl md:text-3xl">MANIS</span>
+            <span className="text-primary font-extrabold text-2xl md:text-3xl">SIHAT</span>
           </Link>
 
           {/* Desktop Nav */}
