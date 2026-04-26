@@ -42,14 +42,14 @@ const content = {
     },
     result_title: "Analysis Result",
     best_choice: "Best Choice",
-    disclaimer: "Ranking based on estimated sugar, and GI values. Results are for general guidance only.",
+    disclaimer: "Ranking based on estimated Sugar, Salt, and Saturated Fat levels. Results are for general guidance only and should not replace professional medical advice.",
     tip_label: "Health Tip",
     risk_low: "Low Risk",
     risk_medium: "Medium Risk",
     risk_high: "High Risk",
     nutrition_sugar: "Sugar",
-    nutrition_cal: "Calories",
-    nutrition_gi: "Glycemic Index",
+    nutrition_salt: "Salt/Sodium",
+    nutrition_fat: "Saturated Fat",
     analyze_another: "Back",
     back_to_upload: "Upload New Photo",
     max_photos: "Maximum 5 Photos",
@@ -86,9 +86,9 @@ const content = {
     scanning_steps: ["Reading menu...", "Identifying food items...", "Calculating nutrition values...", "Almost done..."],
     success_found: "items found!",
     success_none: "No items detected",
-    top3_disclaimer: "We are showing you the Top 3 Healthiest Choices from what was found in your food photo. These are the safest options for your blood sugar.",
+    top3_disclaimer: "We are showing you the Top 3 Healthiest Choices identified in your photo. These are the safest options for managing your blood sugar, blood pressure, and cholesterol.",
     analyze_new_food: "Reset",
-    best_choice_reason_label: "Why Best Choice",
+    best_choice_reason_label: "Why we pick this as the Best Choice",
     // Action sheet
     sheet_title: "Add Photo",
     sheet_camera: "Take Photo",
@@ -131,8 +131,8 @@ const content = {
     risk_medium: "Risiko Sederhana",
     risk_high: "Risiko Tinggi",
     nutrition_sugar: "Gula",
-    nutrition_cal: "Kalori",
-    nutrition_gi: "Indeks Glisemik",
+    nutrition_salt: "Garam/Natrium",
+    nutrition_fat: "Lemak Tepu",
     analyze_another: "Kembali",
     back_to_upload: "Muat Naik Foto Baru",
     max_photos: "Maksimum 5 Foto",
@@ -213,8 +213,8 @@ const content = {
     risk_medium: "中等风险",
     risk_high: "高风险",
     nutrition_sugar: "糖分",
-    nutrition_cal: "卡路里",
-    nutrition_gi: "升糖指数",
+    nutrition_salt: "盐/钠",
+    nutrition_fat: "饱和脂肪",
     analyze_another: "返回",
     back_to_upload: "上传新照片",
     max_photos: "最多5张照片",
@@ -277,51 +277,52 @@ function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
   )
 }
 
-function getSugarLevel(sugar: string): "low" | "medium" | "high" {
-  const value = parseFloat(sugar.replace(/[^0-9.]/g, ""))
-  if (value <= 5) return "low"
-  if (value <= 22.5) return "medium"
+function getLevelFromThresholds(value: number, lowMax: number, mediumMax: number): "low" | "medium" | "high" {
+  if (value <= lowMax) return "low"
+  if (value <= mediumMax) return "medium"
   return "high"
 }
 
-function computeRiskFromValues(sugarStr: string, giStr: string, apiRisk: string): "low" | "medium" | "high" {
-  const sugar = parseFloat(sugarStr.replace(/[^0-9.]/g, ""))
-  const gi = parseInt(giStr.replace(/[^0-9]/g, ""), 10)
-  if (!isNaN(sugar) && !isNaN(gi)) {
-    if (sugar > 22.5 || gi >= 70) return "high"
-    if (sugar <= 5 && gi <= 55) return "low"
-    return "medium"
+function computeRiskFromIndicators(sugar: number, salt: number, fat: number, apiRisk: string): "low" | "medium" | "high" {
+  if (!isNaN(sugar) && !isNaN(salt) && !isNaN(fat)) {
+    const sugarLevel = getLevelFromThresholds(sugar, 5, 15)
+    const saltLevel = getLevelFromThresholds(salt, 200, 600)
+    const fatLevel = getLevelFromThresholds(fat, 3, 7)
+    if (sugarLevel === "high" || saltLevel === "high" || fatLevel === "high") return "high"
+    if (sugarLevel === "medium" || saltLevel === "medium" || fatLevel === "medium") return "medium"
+    return "low"
   }
   return (apiRisk?.toLowerCase() as "low" | "medium" | "high") ?? "medium"
 }
 
-function getSugarConfig(level: "low" | "medium" | "high") {
-  return {
-    low: { bg: "bg-[var(--sugar-low-bg)]", text: "text-[var(--sugar-low)]", border: "border-[var(--sugar-low)]/30" },
-    medium: { bg: "bg-[var(--sugar-medium-bg)]", text: "text-[var(--sugar-medium)]", border: "border-[var(--sugar-medium)]/40" },
-    high: { bg: "bg-[var(--sugar-high-bg)]", text: "text-[var(--sugar-high)]", border: "border-[var(--sugar-high)]/30" },
-  }[level]
+function indicatorClass(level: "low" | "medium" | "high") {
+  if (level === "high") return "bg-red-50 border border-red-200 text-red-700"
+  if (level === "medium") return "bg-[var(--risk-medium-bg)] border border-[var(--risk-medium)]/40 text-[var(--risk-medium)]"
+  return "bg-muted text-foreground"
 }
 
 type FoodItem = {
   name: string
   risk: string
   sugar: string
-  calories: string
-  gi: string
+  salt: string
+  fat: string
   tip: { en: string; ms: string; zh: string }
   best_reason?: { en: string; ms: string; zh: string }
 }
 
-function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode; showGiPopup: boolean; setShowGiPopup: (show: boolean) => void }) {
+function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boolean; t: typeof content.en; lang: LangCode }) {
   const sugarValue = parseFloat(food.sugar.replace(/[^0-9.]/g, ""))
-  const giValue = parseInt(food.gi.replace(/[^0-9]/g, ""), 10)
-  const isHighSugar = sugarValue > 22.5
-  const isHighGI = giValue >= 70
+  const saltValue = parseFloat(food.salt.replace(/[^0-9.]/g, ""))
+  const fatValue = parseFloat(food.fat.replace(/[^0-9.]/g, ""))
+  const sugarLevel = getLevelFromThresholds(sugarValue, 5, 15)
+  const saltLevel = getLevelFromThresholds(saltValue, 200, 600)
+  const fatLevel = getLevelFromThresholds(fatValue, 3, 7)
   const tipText = food.tip[lang] || food.tip.en
   const bestReasonText = food.best_reason ? (food.best_reason[lang] || food.best_reason.en) : null
-  const computedRisk = computeRiskFromValues(food.sugar, food.gi, food.risk)
+  const computedRisk = computeRiskFromIndicators(sugarValue, saltValue, fatValue, food.risk)
   const isHighRisk = computedRisk === "high"
+  const isMediumRisk = computedRisk === "medium"
 
   return (
     <div className={`bg-card rounded-2xl border-2 shadow-sm overflow-hidden ${isBest ? "border-primary" : "border-border"}`}>
@@ -344,26 +345,36 @@ function FoodResultCard({ food, isBest, t, lang, showGiPopup, setShowGiPopup }: 
           </div>
         )}
         <div className="flex flex-wrap gap-4 mb-4 text-base">
-          <div className={`rounded-xl px-4 py-2 ${isHighSugar ? "bg-red-50 border border-red-200" : "bg-muted"}`}>
+          <div className={`rounded-xl px-4 py-2 ${indicatorClass(sugarLevel)}`}>
             <span className="font-semibold text-foreground">{t.nutrition_sugar}:</span>
-            <span className={`ml-1 ${isHighSugar ? "text-red-700 font-extrabold" : ""}`}>{food.sugar}</span>
+            <span className={`ml-1 ${sugarLevel !== "low" ? "font-extrabold" : ""}`}>{food.sugar}</span>
           </div>
-          <div className="rounded-xl px-4 py-2 bg-muted">
-            <span className="font-semibold text-foreground">{t.nutrition_cal}:</span>
-            <span className="ml-1">{food.calories} kcal</span>
+          <div className={`rounded-xl px-4 py-2 ${indicatorClass(saltLevel)}`}>
+            <span className="font-semibold text-foreground">{t.nutrition_salt}:</span>
+            <span className={`ml-1 ${saltLevel !== "low" ? "font-extrabold" : ""}`}>{food.salt}</span>
           </div>
-          <button
-            onClick={() => setShowGiPopup(true)}
-            className={`rounded-xl px-4 py-2 ${isHighGI ? "bg-red-50 border border-red-200" : "bg-muted"} hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer flex items-center gap-1`}
-          >
-            <span className="font-semibold text-foreground underline decoration-dotted">{t.nutrition_gi}:</span>
-            <span className={`${isHighGI ? "text-red-700 font-extrabold" : ""}`}>{food.gi}</span>
-            <Info className="w-4 h-4 text-primary ml-1" />
-          </button>
+          <div className={`rounded-xl px-4 py-2 ${indicatorClass(fatLevel)}`}>
+            <span className="font-semibold text-foreground">{t.nutrition_fat}:</span>
+            <span className={`ml-1 ${fatLevel !== "low" ? "font-extrabold" : ""}`}>{food.fat}</span>
+          </div>
         </div>
-        <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? "bg-red-50 border border-red-200" : "bg-accent/20"}`}>
-          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? "text-red-700" : "text-accent-foreground"}`} />
-          <p className={`text-base ${isHighRisk ? "text-red-700 font-extrabold" : "text-foreground"}`}>
+        <div className={`flex items-start gap-2 rounded-xl p-4 ${
+          isHighRisk
+            ? "bg-red-50 border border-red-200"
+            : isMediumRisk
+              ? "bg-[var(--risk-medium-bg)] border border-[var(--risk-medium)]/40"
+              : "bg-accent/20"
+        }`}>
+          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${
+            isHighRisk ? "text-red-700" : isMediumRisk ? "text-[var(--risk-medium)]" : "text-accent-foreground"
+          }`} />
+          <p className={`text-base ${
+            isHighRisk
+              ? "text-red-700 font-extrabold"
+              : isMediumRisk
+                ? "text-[var(--risk-medium)] font-extrabold"
+                : "text-foreground"
+          }`}>
             <span className="font-bold">{t.tip_label}:</span> {tipText}
           </p>
         </div>
@@ -426,7 +437,6 @@ export default function RecommendationPage() {
   const [results, setResults] = useState<FoodItem[] | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState<string | null>(null)
-  const [showGiPopup, setShowGiPopup] = useState(false)
 
   // ── Mobile action sheet state ──────────────────────────────────────────────
   const [isMobile, setIsMobile] = useState(false)
@@ -542,12 +552,12 @@ export default function RecommendationPage() {
       const cache: ApiResultsCache = {}
       for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
         const raw = data[geminiKey]?.ranking ?? []
-        cache[pageKey] = raw.map((item: { f: string; sugar: number; c: number; gi_val: number; risk: string; tip: string; best_reason?: string }, index: number) => ({
+        cache[pageKey] = raw.map((item: { f: string; sugar: number; salt: number; fat: number; risk: string; tip: string; best_reason?: string }, index: number) => ({
           name: item.f,
           risk: item.risk?.toLowerCase() ?? "medium",
           sugar: `${item.sugar}g`,
-          calories: `${item.c}`,
-          gi: `${item.gi_val}`,
+          salt: `${item.salt}mg`,
+          fat: `${item.fat}g`,
           tip: { en: item.tip, ms: item.tip, zh: item.tip },
           ...(index === 0 && item.best_reason ? { best_reason: { en: item.best_reason, ms: item.best_reason, zh: item.best_reason } } : {}),
         }))
@@ -920,10 +930,6 @@ export default function RecommendationPage() {
                       {l.label}
                     </span>
                   ))}
-                  <button onClick={() => setShowGiPopup(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
-                    <Info className="w-5 h-5" />
-                    {t.gi_short_explanation}
-                  </button>
                 </div>
                 <div className="bg-slate-100 rounded-xl px-5 py-4 mb-4 flex items-start gap-3 border border-slate-200">
                   <Info className="w-5 h-5 shrink-0 mt-0.5 text-slate-600" />
@@ -935,7 +941,7 @@ export default function RecommendationPage() {
                 </div>
                 <div className="space-y-4">
                   {results.map((food, i) => (
-                    <FoodResultCard key={i} food={food} isBest={i === 0} t={t} lang={lang} showGiPopup={showGiPopup} setShowGiPopup={setShowGiPopup} />
+                    <FoodResultCard key={i} food={food} isBest={i === 0} t={t} lang={lang} />
                   ))}
                 </div>
                 <div className="mt-8">
@@ -943,45 +949,6 @@ export default function RecommendationPage() {
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
-                </div>
-              </div>
-            )}
-
-            {/* GI Popup Modal */}
-            {showGiPopup && (
-              <div className="fixed inset-0 bg-foreground/80 z-50 flex items-center justify-center p-4" onClick={() => setShowGiPopup(false)}>
-                <div className="bg-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-2xl font-bold text-foreground">{t.gi_popup_title}</h3>
-                      <button onClick={() => setShowGiPopup(false)} className="p-2 hover:bg-muted rounded-full transition-colors">
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-                    <p className="text-base text-foreground mb-4 leading-relaxed">{t.gi_popup_description}</p>
-                    <h4 className="text-lg font-bold text-foreground mb-2">{t.gi_popup_why_important}</h4>
-                    <p className="text-base text-foreground mb-6 leading-relaxed">{t.gi_popup_importance}</p>
-                    <div className="space-y-2 mb-6">
-                      <div className="flex items-center gap-2 bg-[var(--risk-low-bg)] px-4 py-3 rounded-xl">
-                        <TrendingDown className="w-5 h-5 text-[var(--risk-low)]" />
-                        <span className="font-semibold text-[var(--risk-low)]">{t.gi_low}</span>
-                        <span className="text-sm text-muted-foreground ml-auto">Best choice</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-[var(--risk-medium-bg)] px-4 py-3 rounded-xl">
-                        <Minus className="w-5 h-5 text-[var(--risk-medium)]" />
-                        <span className="font-semibold text-[var(--risk-medium)]">{t.gi_medium}</span>
-                        <span className="text-sm text-muted-foreground ml-auto">Moderate</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-[var(--risk-high-bg)] px-4 py-3 rounded-xl">
-                        <TrendingUp className="w-5 h-5 text-red-700" />
-                        <span className="font-extrabold text-red-700">{t.gi_high}</span>
-                        <span className="text-sm text-muted-foreground ml-auto">Limit intake</span>
-                      </div>
-                    </div>
-                    <button onClick={() => setShowGiPopup(false)} className="w-full bg-primary text-primary-foreground font-bold text-lg py-3 rounded-xl hover:opacity-90">
-                      {t.close}
-                    </button>
-                  </div>
                 </div>
               </div>
             )}
