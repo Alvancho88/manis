@@ -1,4 +1,5 @@
 // app/api/predict/route.ts
+// Backend used by the recommendation landing page (`app/page.tsx`).
 // Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
 // Strategy: Key 2 primary, Key 1 backup for both tasks.
  
