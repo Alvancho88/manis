@@ -727,6 +727,7 @@ export default function RecommendationPage() {
                   type="file"
                   accept="image/*"
                   multiple
+                  suppressHydrationWarning
                   className="hidden"
                   onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }}
                 />
@@ -736,6 +737,7 @@ export default function RecommendationPage() {
                   type="file"
                   accept="image/*"
                   capture="environment"
+                  suppressHydrationWarning
                   className="hidden"
                   onChange={(e) => { handleFileUpload(e.target.files); e.target.value = "" }}
                 />
@@ -750,6 +752,7 @@ export default function RecommendationPage() {
                 <p className="text-muted-foreground mb-4">{t.text_input_hint}</p>
                 <textarea
                   value={textInput}
+                  suppressHydrationWarning
                   onChange={(e) => {
                     setTextInput(e.target.value)
                     if (showCategories || results || apiResultsCache) {
