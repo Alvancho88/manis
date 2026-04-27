@@ -28,13 +28,14 @@ export default function RecommendationPage() {
 
       if (!res.ok) throw new Error(data.error || "Check Groq Key 1 or Model Name");
 
-      const parsed = JSON.parse(data.scanned_items);
-      setItems(parsed.items || []);
-      setFullData({ ...data, parsed_items: parsed.items });
+      // scanned_items is already a string[] — no JSON.parse needed
+      const scannedItems: string[] = Array.isArray(data.scanned_items) ? data.scanned_items : [];
+      setItems(scannedItems);
+      setFullData({ ...data });
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setIsAnalyzing(false);
+    setIsAnalyzing(false);
     }
   };
 
