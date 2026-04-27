@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60;
-const TEST_API_KEY = process.env.GROQ_API_KEY;
+
+// API Keys
+const PRIMARY_KEY = process.env.GROQ_API_KEY;
+const BACKUP_KEY = process.env.GROQ_API_KEY_2;
 
 /**
- * processOCR: Uses Llama 4 Scout with a "Proximity Anchor" prompt.
+ * Executes the OCR request with a specific API key.
  */
-async function processOCR(arrayBuffer: ArrayBuffer, mimeType: string) {
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-
+async function executeGroqRequest(apiKey: string, base64: string, mimeType: string) {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${TEST_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -45,32 +46,52 @@ Formatting:
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.1, // Low temperature for high accuracy
+      temperature: 0.1,
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(JSON.stringify(errorData));
+    throw new Error(errorData.error?.message || "Groq API Error");
   }
 
   return await response.json();
 }
 
 /**
- * Robust parsing that handles markdown, conversational text, and JSON arrays.
+ * processOCR: Implements Failover logic between Primary and Backup keys.
+ */
+async function processOCR(arrayBuffer: ArrayBuffer, mimeType: string) {
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  try {
+    // Attempt 1: Primary Key
+    console.log("Attempting OCR with Primary Key...");
+    return await executeGroqRequest(PRIMARY_KEY!, base64, mimeType);
+  } catch (primaryError: any) {
+    console.warn("Primary Key failed, attempting Backup Key...", primaryError.message);
+    
+    if (!BACKUP_KEY) {
+      throw new Error("Primary failed and no Backup Key configured.");
+    }
+
+    // Attempt 2: Backup Key
+    return await executeGroqRequest(BACKUP_KEY, base64, mimeType);
+  }
+}
+
+/**
+ * Robust parsing for JSON items.
  */
 function parseItemsFromResponse(rawContent: string): string[] {
   if (!rawContent || typeof rawContent !== "string") return [];
   const trimmed = rawContent.trim();
 
-  // 1. Direct JSON parse
   try {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed.items)) return parsed.items;
   } catch (e) {}
 
-  // 2. Regex Shield: Extract JSON block if the model talked before the brackets
   const jsonMatch = trimmed.match(/\{[\s\S]*"items"[\s\S]*\}/);
   if (jsonMatch) {
     try {
@@ -79,7 +100,6 @@ function parseItemsFromResponse(rawContent: string): string[] {
     } catch (e) {}
   }
 
-  // 3. Fallback: Plain text split by comma or newline
   return trimmed
     .split(/[,\n]/)
     .map((s) => s.replace(/^[-•*\d.)\s]+/, "").trim())
@@ -125,7 +145,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("OCR Route Error:", error.message);
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message },
+      { error: "OCR Failed", details: error.message },
       { status: 500 }
     );
   }
