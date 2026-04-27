@@ -54,7 +54,7 @@ const content = {
           "Diabetes is a long-term condition. It cannot be cured, but it can be managed well. Many people with diabetes live full, healthy lives.",
           "Type 2 makes up over 90% of cases in Malaysia and develops slowly over years, often without obvious signs.",
           "Doctors diagnose diabetes using an HbA1c blood test, which shows your average blood sugar over 3 months. A fasting blood sugar test is also commonly used.",
-          "When sugar stays in your blood, it weakens your blood vessel walls. This makes it much easier for High Blood Pressure to cause damage or High Cholesterol to clog your 'pipes.' Managing your sugar is the first step in protecting your heart."
+          "When sugar stays in your blood, it weakens your blood vessel walls. This makes it much easier for High Blood Pressure to cause damage or High Cholesterol to clog your \"pipes.\" Managing your sugar is the first step in protecting your heart."
         ],
       },
       {
@@ -199,8 +199,8 @@ const content = {
     ],
   },
   ms: {
-    page_title: "Gambaran",
-    page_subtitle: "Fahami data diabetes di Malaysia dan belajar melindungi diri anda.",
+    page_title: "Tiga Penyakit Tinggi: Bermula dengan Diabetes",
+    page_subtitle: "Gula Darah Tinggi, Tekanan Darah Tinggi (Hipertensi), dan Kolesterol Tinggi (Hiperlipidemia) adalah ancaman kesihatan senyap terbesar di Malaysia. Memahami mereka adalah langkah pertama menuju kehidupan yang lebih sihat.",
     stats_title: "Diabetes di Malaysia",
     education: "Pendidikan",
     explore: "Penerokaan",
@@ -236,13 +236,14 @@ const content = {
           points: [
             { text: "Gula darah lebih tinggi daripada biasa", highlight: false },
             { text: "Tetapi belum diabetes", highlight: false },
-            { text: "Ia boleh dipulihkan — tabiat sihat boleh mengembalikannya ke normal", highlight: true },
+            { text: "Ia boleh dipulihkan， tabiat sihat boleh mengembalikannya ke normal", highlight: true },
           ],
         },
         learnMore: [
           "Diabetes adalah keadaan jangka panjang — ia tidak boleh disembuhkan, tetapi boleh diuruskan dengan baik. Ramai penghidap diabetes menjalani kehidupan yang penuh dan sihat.",
           "Jenis 2 merangkumi lebih 90% kes di Malaysia dan berkembang perlahan selama bertahun-tahun, sering tanpa tanda yang jelas.",
           "Doktor mendiagnosis diabetes menggunakan ujian darah HbA1c, yang menunjukkan purata gula darah anda selama 3 bulan.",
+          "Apabila gula tetap dalam darah, ia melemahkan dinding pembuluh darah anda. Ini memudahkan Tekanan Darah Tinggi menyebabkan kerosakan atau Kolesterol Tinggi menyumbat \"pipa\" anda. Menguruskan gula anda adalah langkah pertama dalam melindungi jantung anda.",
         ],
       },
       {
@@ -267,7 +268,7 @@ const content = {
           bg: "#FAEEDA",
           iconColor: "#854F0B",
           textColor: "#633806",
-          text: "Ramai penghidap diabetes Jenis 2 tidak mempunyai gejala selama bertahun-tahun. Kerosakan boleh berlaku secara senyap.",
+          text: "Diabetes dapat menunjukkan gejala seperti rasa dahaga, tetapi pasangannya: Tekanan Darah Tinggi dan Kolesterol Tinggi seringkali senyap. Anda mungkin merasa baik-baik saja sementara mereka merusak tubuh Anda. Pemeriksaan rutin adalah satu-satunya cara untuk mengetahui dengan pasti.",
         },
         seeDoctor: {
           bg: "#E6F1FB",
@@ -342,7 +343,7 @@ const content = {
         tileLabelColor: "#3C3489",
         note: { bg: "#EEEDFE", textColor: "#3C3489", text: "Perubahan kecil yang dilakukan secara konsisten lebih berkesan daripada perubahan besar yang dilakukan sekali-sekala." },
         learnMore: [
-          "Berjalan kaki dengan pantas adalah salah satu aktiviti paling berkesan untuk kawalan gula darah — tidak perlu pergi ke gimnasium. Malah berjalan 10 minit selepas makan pun membantu.",
+          "Berjalan kaki dengan pantas adalah salah satu aktiviti paling berkesan untuk kawalan gula darah, tidak perlu pergi ke gimnasium. Malah berjalan 10 minit selepas makan pun membantu.",
           "Mengurangkan saiz hidangan sama pentingnya dengan pilihan makanan. Menggunakan pinggan yang lebih kecil adalah cara mudah untuk makan lebih sedikit.",
           "Tekanan juga meningkatkan gula darah. Tidur yang cukup (7–8 jam), hubungan sosial, dan relaksasi memainkan peranan nyata dalam pencegahan diabetes.",
         ],
@@ -364,11 +365,11 @@ const content = {
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
-        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Mengurus diabetes adalah perjalanan yang panjang. Tidak mengapa untuk meminta bantuan daripada keluarga, doktor, atau kumpulan sokongan." },
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "Menguruskan diabetes adalah tentang melindungi seluruh badan anda. Dengan memantau gula anda hari ini, anda juga mengurangkan tekanan pada jantung dan buah pinggang anda daripada Tekanan Darah Tinggi dan Kolesterol. Anda bukan sahaja melawan satu penyakit, anda juga membina masa depan yang lebih sihat." },
         learnMore: [
-          "Sasaran HbA1c anda biasanya di bawah 7% — tanya doktor anda apakah sasaran peribadi anda. Nombor tunggal ini memberikan gambaran paling jelas tentang kawalan gula darah keseluruhan.",
+          "Sasaran HbA1c anda biasanya di bawah 7%, tanya doktor anda apakah sasaran peribadi anda. Nombor tunggal ini memberikan gambaran paling jelas tentang kawalan gula darah keseluruhan.",
           "Jika anda menggunakan insulin atau ubat-ubatan tertentu, sentiasa bawa snek sekiranya gula darah turun terlalu rendah (hipoglisemia). Tanda-tandanya termasuk menggigil, berpeluh, dan keliru.",
-          "Kesejahteraan emosi penting. Tekanan diabetes — rasa kecewa atau keletihan — sangat biasa dan boleh dirawat. Berbicara dengan doktor atau kaunselor anda.",
+          "Kesejahteraan emosi penting. Tekanan diabetes, rasa kecewa atau keletihan, sangat biasa dan boleh dirawat. Berbicara dengan doktor atau kaunselor anda.",
         ],
       },
     ],
@@ -378,7 +379,7 @@ const content = {
     myths: [
       { 
         myth: "Saya hanya perlu risau tentang gula jika saya menghidap Kencing Manis.", 
-        fact: "Kencing manis jarang datang sendirian. Gula darah yang tinggi sering merosakkan salur darah, membawa kepada Darah Tinggi dan Kolesterol Tinggi. Inilah sebabnya MANIS memantau ketiga-tiga '3 Serangkai' bersama-sama." 
+        fact: "Kencing manis jarang datang sendirian. Gula darah yang tinggi sering merosakkan salur darah, membawa kepada Darah Tinggi dan Kolesterol Tinggi. Inilah sebabnya SIHAT memantau ketiga-tiga \"3 Serangkai\" bersama-sama." 
       },
       { 
         myth: "Saya mesti berhenti makan nasi putih/karbohidrat sepenuhnya untuk sihat.", 
@@ -386,11 +387,11 @@ const content = {
       },
       { 
         myth: "Kolesterol saya tinggi kerana saya makan terlalu banyak lemak; ia tiada kaitan dengan Kencing Manis saya.", 
-        fact: "Tahap insulin yang tinggi sebenarnya merangsang hati untuk menghasilkan lebih banyak kolesterol 'jahat' (LDL). Apabila gula darah tidak terkawal, kolesterol anda biasanya akan turut naik. Menguruskan gula anda melalui MANIS membantu meningkatkan kesihatan jantung anda." 
+        fact: "Tahap insulin yang tinggi sebenarnya merangsang hati untuk menghasilkan lebih banyak kolesterol \"jahat\" (LDL). Apabila gula darah tidak terkawal, kolesterol anda biasanya akan turut naik. Menguruskan gula anda melalui SIHAT membantu meningkatkan kesihatan jantung anda." 
       },
       { 
-        myth: "Badan saya kurus, jadi saya tidak mungkin terkena penyakit '3 Serangkai'.", 
-        fact: "Anda boleh jadi 'Kurus di luar, Lemak di dalam' (TOFI). Di Malaysia, ramai orang yang mempunyai berat badan sihat sebenarnya mempunyai lemak viseral dalaman yang tinggi, yang membawa kepada Kencing Manis dan Kolesterol Tinggi." 
+        myth: "Badan saya kurus, jadi saya tidak mungkin terkena penyakit \"3 Serangkai\".", 
+        fact: "Anda boleh jadi \"Kurus di luar, Lemak di dalam\". Di Malaysia, ramai orang yang mempunyai berat badan sihat sebenarnya mempunyai lemak viseral dalaman yang tinggi, yang membawa kepada Kencing Manis dan Kolesterol Tinggi." 
       },
       { 
         myth: "Saya boleh makan buah sebanyak mana yang saya mahu kerana ia semula jadi dan sihat.", 
@@ -398,11 +399,11 @@ const content = {
       },
       { 
         myth: "Sebaik sahaja saya mula mengambil ubat, saya tidak perlu lagi menjaga pemakanan saya.", 
-        fact: "Ubat berfungsi bersama gaya hidup anda, bukan sebagai pengganti. Mengekalkan diet sihat melalui cadangan MANIS boleh membantu mengurangkan dos ubat dan kesan sampingan dari masa ke masa." 
+        fact: "Ubat berfungsi bersama gaya hidup anda, bukan sebagai pengganti. Mengekalkan diet sihat melalui cadangan SIHAT boleh membantu mengurangkan dos ubat dan kesan sampingan dari masa ke masa." 
       },
       { 
-        myth: "Makan peria atau minum teh herba boleh menyembuhkan '3 Serangkai' tanpa ubat hospital.", 
-        fact: "Walaupun sesetengah makanan tradisional mempunyai khasiat kesihatan, ia adalah suplemen, bukan ubat penyembuh. Bergantung sepenuhnya kepada makanan pahit 'semula jadi' tanpa mempedulikan trend data kesihatan anda adalah berbahaya." 
+        myth: "Makan peria atau minum teh herba boleh menyembuhkan \"3 Serangkai\" tanpa ubat hospital.", 
+        fact: "Walaupun sesetengah makanan tradisional mempunyai khasiat kesihatan, ia adalah suplemen, bukan ubat penyembuh. Bergantung sepenuhnya kepada makanan pahit \"semula jadi\" tanpa mempedulikan trend data kesihatan anda adalah berbahaya." 
       },
       { 
         myth: "Saya hanya perlu kurangkan garam untuk darah tinggi dan kurangkan gula untuk kencing manis.", 
@@ -411,8 +412,8 @@ const content = {
     ],
   },
   zh: {
-    page_title: "概览",
-    page_subtitle: "了解马来西亚的糖尿病数据，学习如何保护自己。",
+    page_title: "三高：从糖尿病开始",
+    page_subtitle: "高血糖、 高血压（高血压）和高胆固醇（高脂血症）是马来西亚最大的健康隐形杀手。了解它们是迈向更健康生活的第一步。",
     stats_title: "马来西亚的糖尿病",
     edu_title: "了解糖尿病",
     education: "教育",
@@ -433,8 +434,8 @@ const content = {
         shortTitle: "介绍",
         points: [
           "您的身体需要糖（葡萄糖）来提供能量",
-          "胰岛素是让糖进入细胞的\"钥匙\"",
-          "糖尿病时，钥匙丢失或损坏——糖在血液中积聚",
+          "胰岛素是让糖进入细胞的“钥匙”",
+          "糖尿病时，钥匙丢失或损坏；糖在血液中积聚",
         ],
         types: [
           { label: "1型", bg: "#E6F1FB", textColor: "#0C447C", desc: "身体不产生胰岛素。需要每日注射。通常年轻时发病。", image: "/images/edu/Type1.png" },
@@ -448,13 +449,14 @@ const content = {
           points: [
             { text: "血糖高于正常水平", highlight: false },
             { text: "尚未达到糖尿病标准", highlight: false },
-            { text: "可以逆转——健康习惯可以让血糖恢复正常", highlight: true },
+            { text: "可以逆转，健康习惯可以让血糖恢复正常", highlight: true },
           ],
         },
         learnMore: [
-          "糖尿病是一种长期病症——无法治愈，但可以得到良好控制。许多糖尿病患者过着充实健康的生活。",
+          "糖尿病是一种长期病症；无法治愈，但可以得到良好控制。许多糖尿病患者过着充实健康的生活。",
           "2型糖尿病占马来西亚病例的90%以上，通常在数年内缓慢发展，往往没有明显症状。",
           "医生使用HbA1c血液检测来诊断糖尿病，该检测显示您过去3个月的平均血糖水平。",
+          "当糖长时间停留在血液中时，它会损害您的血管壁。这使得高血压更容易造成损害，或高胆固醇更容易堵塞您的“管道”。控制好血糖是保护心脏的第一步。",
         ],
       },
       {
@@ -479,7 +481,7 @@ const content = {
           bg: "#FAEEDA",
           iconColor: "#854F0B",
           textColor: "#633806",
-          text: "许多2型糖尿病患者多年来没有任何症状。损害可能在无声中发生。",
+          text: "糖尿病可能会有口渴等症状，但它的伴侣：高血压和高胆固醇往往是无声的。您可能感觉良好，而它们却在损害您的身体。定期检查是唯一确定的方法。",
         },
         seeDoctor: {
           bg: "#E6F1FB",
@@ -494,7 +496,7 @@ const content = {
           ],
         },
         learnMore: [
-          "脚部麻木和刺痛是神经损伤（神经病变）的早期迹象——这是长期高血糖的并发症，若忽视可能导致严重的足部问题。",
+          "脚部麻木和刺痛是神经损伤（神经病变）的早期迹象。这是长期高血糖的并发症，若忽视可能导致严重的足部问题。",
           "眼睛、肾脏和心脏损伤也会在多年内无声发生。这就是为什么定期筛查比等待症状出现更重要。",
         ],
       },
@@ -528,7 +530,7 @@ const content = {
           ],
         },
         learnMore: [
-          "拥有一两个风险因素并不意味着您一定会患上三高——但风险因素越多，整体风险越高。",
+          "拥有一两个风险因素并不意味着您一定会患上三高，但风险因素越多，整体风险越高。",
           "腹部脂肪是一个特别强的风险因素，因为器官周围的脂肪直接影响胰岛素的工作方式，并会升高血压和胆固醇水平。",
           "高盐饮食会升高血压，而饱和脂肪和反式脂肪会升高坏胆固醇（LDL）。糖和精制碳水化合物会升高血糖。通常，同一顿饭就是三者的共同诱因。",
           "即使这些疾病在您的家族中有遗传，生活方式的改变也可以延迟或预防它们。",
@@ -554,7 +556,7 @@ const content = {
         tileLabelColor: "#3C3489",
         note: { bg: "#EEEDFE", textColor: "#3C3489", text: "持续做出小改变比偶尔做出大改变更有效。" },
         learnMore: [
-          "快步行走是控制血糖最有效的活动之一——不需要去健身房。甚至饭后散步10分钟也有帮助。",
+          "快步行走是控制血糖最有效的活动之一，不需要去健身房。甚至饭后散步10分钟也有帮助。",
           "减少食物份量与食物选择同样重要。使用较小的碗碟是减少进食量的简单方法。",
           "压力也会升高血糖。充足睡眠（7-8小时）、社交联系和放松在预防糖尿病中都起着真实的作用。",
         ],
@@ -576,11 +578,11 @@ const content = {
         ],
         tileBg: "#FBEAF0",
         tileLabelColor: "#72243E",
-        note: { bg: "#FBEAF0", textColor: "#72243E", text: "控制糖尿病是一段漫长的旅程。向家人、医生或支持团体寻求帮助是完全可以的。" },
+        note: { bg: "#FBEAF0", textColor: "#72243E", text: "管理糖尿病就是保护您的整个身体。通过监测今天的血糖，您还能减轻高血压和高胆固醇对心脏和肾脏的负担。您不仅是在对抗一种疾病，更是在构建一个更健康的未来。" },
         learnMore: [
-          "您的HbA1c目标通常在7%以下——询问医生您的个人目标。这个数字可以最清楚地反映整体血糖控制情况。",
+          "您的HbA1c目标通常在7%以下，询问医生您的个人目标。这个数字可以最清楚地反映整体血糖控制情况。",
           "如果您使用胰岛素或某些药物，请随身携带零食，以防血糖过低（低血糖）。症状包括颤抖、出汗和意识混乱。",
-          "情绪健康很重要。糖尿病困扰——感到沮丧或精疲力竭——非常普遍且可以治疗。请与医生或辅导员交流。",
+          "情绪健康很重要。糖尿病困扰，感到沮丧或精疲力竭是非常普遍且可以治疗。请与医生或辅导员交流。",
         ],
       },
     ],
@@ -590,7 +592,7 @@ const content = {
     myths: [
       { 
         myth: "我只有患有糖尿病时才需要担心血糖问题。", 
-        fact: "糖尿病很少孤立存在。高血糖往往会损伤血管，导致高血压和高胆固醇。这就是为什么 MANIS 会同时监测这‘三大高’的原因。" 
+        fact: "糖尿病很少孤立存在。高血糖往往会损伤血管，导致高血压和高胆固醇。这就是为什么 SIHAT 会同时监测这“三大高”的原因。" 
       },
       { 
         myth: "为了健康，我必须完全停止吃白饭或碳水化合物。", 
@@ -598,11 +600,11 @@ const content = {
       },
       { 
         myth: "我的胆固醇高是因为我吃太多脂肪；这与我的糖尿病无关。", 
-        fact: "高胰岛素水平实际上会刺激肝脏产生更多‘坏’胆固醇 (LDL)。当您的血糖失控时，胆固醇通常也会随之升高。通过 MANIS 管理血糖有助于改善您的心脏健康。" 
+        fact: "高胰岛素水平实际上会刺激肝脏产生更多“坏”胆固醇 (LDL)。当您的血糖失控时，胆固醇通常也会随之升高。通过 SIHAT 管理血糖有助于改善您的心脏健康。" 
       },
       { 
-        myth: "我很瘦，所以我不会患上‘三高’。", 
-        fact: "您可能是‘外瘦内胖’ (TOFI)。在马来西亚，许多体重正常的人其实体内内脏脂肪很高，这会导致糖尿病和高胆固醇。" 
+        myth: "我很瘦，所以我不会患上“三高”。", 
+        fact: "您可能是“外瘦内胖”。在马来西亚，许多体重正常的人其实体内内脏脂肪很高，这会导致糖尿病和高胆固醇。" 
       },
       { 
         myth: "我可以随心所欲地吃水果，因为它们是天然健康的。", 
@@ -610,11 +612,11 @@ const content = {
       },
       { 
         myth: "一旦我开始服药，我就不再需要注意饮食了。", 
-        fact: "药物是配合您的生活方式发挥作用的，而不是替代它。通过 MANIS 的建议保持健康饮食，通常可以随着时间的推移减少药量和副作用。" 
+        fact: "药物是配合您的生活方式发挥作用的，而不是替代它。通过 SIHAT 的建议保持健康饮食，通常可以随着时间的推移减少药量和副作用。" 
       },
       { 
-        myth: "吃苦瓜或喝凉茶可以治愈‘三高’，不需要吃药。", 
-        fact: "虽然某些传统食物对健康有益，但它们是辅助品，而非治疗药物。仅仅依赖‘天然’苦味食物而忽视数据趋势是危险的。" 
+        myth: "吃苦瓜或喝凉茶可以治愈“三高”，不需要吃药。", 
+        fact: "虽然某些传统食物对健康有益，但它们是辅助品，而非治疗药物。仅仅依赖“天然”苦味食物而忽视数据趋势是危险的。" 
       },
       { 
         myth: "我只需要为了血压减盐，为了血糖减糖。", 
@@ -1016,7 +1018,7 @@ export default function LearnClient() {
                 <p className="text-lg font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{t.explore}</p>
                 <h2 className="text-3xl font-bold">{t.body_map_title}</h2>
               </div>
-              <BodyMap/>
+              <BodyMap lang={lang} />
             </div>
 
             {/* Myth vs Fact Section */}

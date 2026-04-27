@@ -39,7 +39,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <Image 
-              src="/images/manis-logo.png" 
+              src="/images/sihat-logo.png" 
               alt="SIHAT Logo" 
               width={72} 
               height={72} 
@@ -80,7 +80,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                 aria-label="Select Language"
               >
                 <Globe className="w-5 h-5 text-primary" />
-                <span>{lang === "en" ? "EN" : lang === "ms" ? "MS" : "中文"}</span>
+                <span>{lang === "en" ? "EN" : lang === "ms" ? "BM" : "中文"}</span>
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50 min-w-[140px]">
@@ -88,7 +88,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                     <button
                       key={l.code}
                       onClick={() => {
-                        // Language change functionality will be implemented in Iteration 2
+                        setLang?.(l.code as LangCode)
                         setLangOpen(false)
                       }}
                       className={cn(

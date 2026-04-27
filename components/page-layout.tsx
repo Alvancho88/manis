@@ -31,7 +31,7 @@ export function PageLayout({ children }: { children: (lang: LangCode) => ReactNo
       <Navbar lang={lang} setLang={setLang} />
       <main className="overflow-x-clip">{children(lang)}</main>
       <footer className="bg-primary border-t-2 border-primary-foreground/20 mt-16 py-8 px-4 text-center text-primary-foreground">
-        <p className="font-bold text-lg mb-1">SIHAT - Smart Interactive Health Assistance & Tracking</p>
+        <p className="font-bold text-lg mb-1">SIHAT - Seniors' Integrated Health Assessment Tool</p>
         <p className="text-primary-foreground/80">
           {lang === "en" && "Information for general awareness only. Please consult a doctor for medical advice."}
           {lang === "ms" && "Maklumat untuk kesedaran umum sahaja. Sila rujuk doktor untuk nasihat perubatan."}

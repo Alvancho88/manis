@@ -47,6 +47,7 @@ const STAT2_COLORS = [
   { accent: "#E24B4A", iconBg: "#FCEBEB", valueCss: "#A32D2D" },
 ]
 
+// Content for statistics page, organized by language for easy access in the component
 const content = {
   en: {
     page_title: "The Big Picture: Diabetes in Malaysia",
@@ -93,28 +94,28 @@ const content = {
     disclaimer_text: "These numbers represent real people who deserve support and accurate information. This is why understanding diabetes matters.",
   },
   ms: {
-    page_title: "Gambaran",
-    page_subtitle: "Fahami data diabetes di Malaysia dan belajar melindungi diri anda.",
+    page_title: "Gambaran Keseluruhan: Diabetes di Malaysia",
+    page_subtitle: "Diabetes adalah cabaran yang semakin meningkat bagi negara kita, tetapi memahami fakta adalah langkah pertama menuju kehidupan yang lebih sihat.",
     stats_eyebrow: "Diabetes di Malaysia",
     stats_heading: "Angka-angka ini lebih dekat dari yang anda sangka",
     stats_title2: "Tiga Penyakit Tinggi di Malaysia",
     stats: [
-      { value: "21.1%", label: "Orang dewasa Malaysia menghidap diabetes", image: "/images/1-in-5.png" },
-      { value: "40%", label: "Warga emas berusia 60+ terjejas", icon: TrendingUp },
+      { value: "1 dalam 5", label: "Orang dewasa Malaysia menghidap diabetes", image: "/images/1-in-5.png" },
+      { value: "2 dalam 5", label: "Warga emas berusia 60+ terjejas", icon: TrendingUp },
       { value: "4.75J", label: "Orang hidup dengan diabetes", icon: Heart },
     ],
     stats2: [
-      { value: "4.75M", label: "People living with diabetes", icon: Heart },
-      { value: "3rd", label: "Leading cause of death in Malaysia", icon: Skull },
-      { value: "78%", label: "Of deaths are age 60+", icon: Users },
+      { value: "3 dalam 4", label: "Warga emas mempunyai hipertensi atau hiperlipidemia (kolesterol tinggi)", icon: HeartPulse },
+      { value: "68%", label: "Warga emas yang hidup dengan dua daripada tiga penyakit tinggi", icon: CircleAlert },
+      { value: "30%", label: "Warga emas yang mempunyai ketiga-tiga keadaan", icon: TriangleAlert },
     ],
     tab_prevalence: "Prevalens Diabetes",
-    tab_trends: "Trend Diabetes",
-    tab_hints: "💡 Tip: ",
-    map_title: "Prevalens Diabetes di Malaysia",
-    map_subtitle: "Pesakit diabetes per 1,000 orang dewasa mengikut negeri dan tahun",
-    trends_title: "Trend Diabetes di Malaysia",
-    trends_subtitle: "Trend pesakit diabetes per 1,000 dewasa mengikut negeri sepanjang tahun",
+    tab_trends: "Aliran \"Tiga Penyakit Tinggi\"",
+    tab_hints: "💡 Tip: Gunakan butang di bawah untuk bertukar antara pandangan data yang berbeza.",
+    map_title: "Terokai Situasi di Kawasan Anda",
+    map_subtitle: "Setiap negeri menghadapi cabaran yang berbeza. Cari rumah anda di peta untuk melihat prevalens tempatan dan temui bagaimana kita dapat saling mendukung.",
+    trends_title: "Aliran \"Tiga Penyakit Tinggi\" di Malaysia",
+    trends_subtitle: "Carta ini menunjukkan bagaimana prevalens diabetes, hipertensi, dan hiperlipidemia (kolesterol tinggi) telah berubah selama dekade terakhir.",
     trends_y_label: "Prevalens (%)",
     tooltip_label: "Diabetes",
     tooltip_label2: "Hipertensi",
@@ -137,28 +138,28 @@ const content = {
     disclaimer_text: "Nombor-nombor ini mewakili orang sebenar yang memerlukan sokongan dan maklumat yang tepat. Inilah sebabnya memahami diabetes penting.",
   },
   zh: {
-    page_title: "概览",
-    page_subtitle: "了解马来西亚的糖尿病数据，学习如何保护自己。",
+    page_title: "全景：马来西亚的糖尿病",
+    page_subtitle: "糖尿病是我们国家日益增长的挑战，但了解事实是迈向更健康生活的第一步。",
     stats_eyebrow: "马来西亚的糖尿病",
     stats_heading: "这些数字比你想象的更贴近生活",
     stats_title2: "马来西亚的三高",
     stats: [
-      { value: "21.1%", label: "马来西亚成年人患有糖尿病", image: "/images/1-in-5.png" },
-      { value: "40%", label: "60岁以上老年人受影响", icon: TrendingUp },
+      { value: "五分之一", label: "马来西亚成年人患有糖尿病", image: "/images/1-in-5.png" },
+      { value: "五分之二", label: "60岁以上老年人受影响", icon: TrendingUp },
       { value: "475万", label: "人患有糖尿病", icon: Heart },
     ],
     stats2: [
-      { value: "4.75M", label: "People living with diabetes", icon: Heart },
-      { value: "3rd", label: "Leading cause of death in Malaysia", icon: Skull },
-      { value: "78%", label: "Of deaths are age 60+", icon: Users },
+      { value: "四分之三", label: "60岁以上老年人患有高血压或高胆固醇", icon: HeartPulse },
+      { value: "68%", label: "60岁以上老年人患有其中两种三高", icon: CircleAlert },
+      { value: "30%", label: "60岁以上老年人患有全部三种疾病", icon: TriangleAlert },
     ],
     tab_prevalence: "糖尿病患病率",
-    tab_trends: "糖尿病趋势",
-    tab_hints: "💡 Tip: ",
-    map_title: "马来西亚糖尿病患病率",
-    map_subtitle: "按州属和年份每1,000名成年人中的糖尿病患者人数",
-    trends_title: "马来西亚糖尿病趋势",
-    trends_subtitle: "各州每1,000成年人糖尿病患者趋势",
+    tab_trends: "三高趋势",
+    tab_hints: "💡 提示：使用下面的按钮在不同的数据视图之间切换。",
+    map_title: "探索您所在地区的情况",
+    map_subtitle: "每个州面临不同的挑战。在地图上找到您的家，查看当地的患病率，并了解我们如何相互支持。",
+    trends_title: "了解马来西亚的三高趋势",
+    trends_subtitle: "这张图表显示了过去十年糖尿病、高血压和高胆固醇的患病率如何变化。",
     trends_y_label: "患病率 (%)",
     tooltip_label: "糖尿病",
     tooltip_label2: "高血压",
@@ -483,7 +484,7 @@ function TrendsChart({ t, nationalTrend }: { t: typeof content.en; nationalTrend
       <p className="text-lg text-muted-foreground mb-6">{t.trends_subtitle}</p>
 
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ left: 10, right: 20, top: 10, bottom: 0 }}>
+        <LineChart data={chartData} margin={{ left: 15, right: 20, top: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="year" tick={{ fontSize: 20 }} />
           <YAxis
@@ -627,7 +628,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
   const explanationRef = useRef<HTMLDivElement>(null)
 
   const langCode = t.ethnicity_title === "Health in Our Communities" ? "en"
-    : t.ethnicity_title === "Diabetes Mengikut Etnik" ? "ms"
+    : t.ethnicity_title === "Kesihatan dalam Komuniti Kita" ? "ms"
     : "zh"
 
   const whatYouCanDo = langCode === "ms" ? "Apa yang boleh anda lakukan"
