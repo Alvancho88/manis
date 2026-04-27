@@ -953,8 +953,8 @@ export default function LearnClient() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-14">
             {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
-              <p className="text-xl md:text-2xl text-muted-foreground">{t.page_subtitle}</p>
+              <h1 className="text-2xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
+              <p className="text-lg md:text-xl text-muted-foreground">{t.page_subtitle}</p>
             </div>
 
             {/* Education Section */}
