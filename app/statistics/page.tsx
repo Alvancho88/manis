@@ -1,11 +1,10 @@
-import OverviewClient from "./overview-client";
-import { getAllDiabetesDataGrouped, getNationalTrend, getEthnicityData } from "@/lib/queries";
+import { get } from "http";
+import OverviewClient from "./statistics-client";
+import { getAllMetabolicDataGrouped, getNationalTrend, getEthnicityData } from "@/lib/queries";
 
-export const dynamic = "force-dynamic";
-
-export default async function OverviewPage() {
+export default async function StatisticsPage() {
   const [{ dataByYear, availableYears }, nationalTrend, ethnicityData] = await Promise.all([
-    getAllDiabetesDataGrouped(),
+    getAllMetabolicDataGrouped(),
     getNationalTrend(),
     getEthnicityData(),
   ]); 

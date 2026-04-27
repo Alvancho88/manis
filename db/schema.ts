@@ -8,14 +8,25 @@ export const states = pgTable("states", {
     state_name: text("name").notNull(),
 });
 
-// Table 2: Diabetes Data (Static Info)
-export const diabetes = pgTable("diabetes", {
+// // Table 2: Three High Data (Static Info)
+// export const diabetes = pgTable("diabetes", {
+//     stats_id: serial("id").primaryKey(),
+//     state_id: integer("state_id").notNull().references(() => states.state_id),
+//     year: integer("year").notNull(),
+//     population: integer("population").notNull(),
+//     patients: integer("patients").notNull(),
+//     diabetesPrevalence: decimal("diabetes_prevalence").notNull(),
+// });
+
+// Table 2: Three High Data (Static Info)
+export const metabolic = pgTable("metabolic", {
     stats_id: serial("id").primaryKey(),
     state_id: integer("state_id").notNull().references(() => states.state_id),
     year: integer("year").notNull(),
-    population: integer("population").notNull(),
     patients: integer("patients").notNull(),
     diabetesPrevalence: decimal("diabetes_prevalence").notNull(),
+    hypertensionPrevalence: decimal("hypertension_prevalence").notNull(),
+    hyperlipidemiaPrevalence: decimal("hyperlipidemia_prevalence").notNull(),
 });
 
 // Table 3: National Trend (Static Info)
@@ -24,11 +35,15 @@ export const trend = pgTable("trend", {
     year: integer("year").notNull(),
     patients: integer("patients").notNull(),
     diabetesPrevalence: decimal("diabetes_prevalence").notNull(),
+    hypertensionPrevalence: decimal("hypertension_prevalence").notNull(),
+    hyperlipidemiaPrevalence: decimal("hyperlipidemia_prevalence").notNull(),
 });
 
-// Table 4: Ethnicity Percentage (Static Info)
+// Table 4: Three High Data by Ethnicity (Static Info)
 export const ethnicity = pgTable("ethnicity", {
     id: serial("id").primaryKey(),
     ethnicity: varchar("ethnicity").notNull(),
-    Percentage: decimal("percentage").notNull(),
+    diabetesPrevalence: decimal("diabetes_prevalence").notNull(),
+    hypertensionPrevalence: decimal("hypertension_prevalence").notNull(),
+    hyperlipidemiaPrevalence: decimal("hyperlipidemia_prevalence").notNull(),
 });

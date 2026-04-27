@@ -4,15 +4,16 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { Home, BookOpen, Utensils, Search, MapPin, Menu, X, Globe, Camera } from "lucide-react"
+import { Home, BookOpen, Utensils, Search, MapPin, Menu, X, Globe, Camera, ChartNoAxesCombined } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/", icon: Home, label: { en: "Home", ms: "Laman Utama", zh: "首页" } },
   //{ href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
+  //{ href: "/recommendation", icon: Camera, label: { en: "Recommendation", ms: "Cadangan", zh: "推荐" } },
   { href: "/food", icon: Utensils, label: { en: "Food", ms: "Makanan", zh: "食物" } },
-  { href: "/Learn", icon: BookOpen, label: { en: "Learn", ms: "Belajar", zh: "概览" } },
-  { href: "/explore", icon: Search, label: { en: "Explore", ms: "Terokai", zh: "探索" } },
+  { href: "/statistics", icon: ChartNoAxesCombined, label: { en: "Statistics", ms: "Statistik", zh: "统计数据" } },
+  { href: "/learn", icon: BookOpen, label: { en: "Learn", ms: "Belajar", zh: "学习" } },
   //{ href: "/healthcare", icon: MapPin, label: { en: "Healthcare", ms: "Klinik", zh: "医疗" } },
 ]
 
@@ -38,7 +39,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <Image 
-              src="/images/manis-logo.png" 
+              src="/images/sihat-logo.png" 
               alt="SIHAT Logo" 
               width={72} 
               height={72} 
@@ -79,7 +80,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                 aria-label="Select Language"
               >
                 <Globe className="w-5 h-5 text-primary" />
-                <span>{lang === "en" ? "EN" : lang === "ms" ? "MS" : "中文"}</span>
+                <span>{lang === "en" ? "EN" : lang === "ms" ? "BM" : "中文"}</span>
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50 min-w-[140px]">
@@ -87,7 +88,7 @@ export function Navbar({ lang = "en", setLang }: { lang?: LangCode; setLang?: (l
                     <button
                       key={l.code}
                       onClick={() => {
-                        // Language change functionality will be implemented in Iteration 2
+                        setLang?.(l.code as LangCode)
                         setLangOpen(false)
                       }}
                       className={cn(
