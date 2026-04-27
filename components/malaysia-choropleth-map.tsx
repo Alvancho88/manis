@@ -430,7 +430,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
         const config = riskConfig[risk]
 
         return (
-          <div className="mt-4 rounded-2xl overflow-hidden shadow-md border-2" style={{ borderColor: config.border }}>
+          <div className="mt-4 rounded-2xl overflow-hidden shadow-md border-2">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: config.bg }}>
               <div className="flex items-center gap-3">
