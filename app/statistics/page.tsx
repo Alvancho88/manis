@@ -1,6 +1,7 @@
-import { get } from "http";
 import OverviewClient from "./statistics-client";
 import { getAllMetabolicDataGrouped, getNationalTrend, getEthnicityData } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 
 export default async function StatisticsPage() {
   const [{ dataByYear, availableYears }, nationalTrend, ethnicityData] = await Promise.all([

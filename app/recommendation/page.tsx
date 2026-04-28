@@ -1,3 +1,8 @@
+// app/recommendation/page.tsx
+// Frontend UI for food analysis and recommendation system
+// Handles image upload, text input, and displays AI-powered nutritional analysis
+// Supports multi-language interface and real-time progress tracking
+
 "use client"
 
 import { PageLayout } from "@/components/page-layout"
@@ -9,8 +14,13 @@ import {
   CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, ImageIcon
 } from "lucide-react"
 
+// Define language codes for multi-language support
 type LangCode = "en" | "ms" | "zh"
 
+// ─── MULTI-LANGUAGE CONTENT ───────────────────────────────────────────────────────
+ 
+// Comprehensive content object supporting English, Malay, and Chinese
+// Contains all UI text, labels, and messages for internationalization
 const content = {
   en: {
     page_title: "Food Check & Recommendation",
@@ -29,7 +39,7 @@ const content = {
     uploading: "Uploading...",
     click_to_view: "Click to view full image",
     text_input_title: "Type Your Food Name",
-    text_input_hint: "No photo? Type the dish name here instead.",
+    text_input_hint: "No photo? Type the dish name here instead. Separate each item with comma.",
     text_placeholder: "E.g., Nasi lemak, Roti canai, Teh tarik...",
     analyze_btn: "Analyse & Recommend",
     select_category: "Select Food Category",
@@ -112,7 +122,7 @@ const content = {
     uploading: "Memuat naik...",
     click_to_view: "Klik untuk lihat imej penuh",
     text_input_title: "Taip Nama Makanan Anda",
-    text_input_hint: "Tiada foto? Taip nama hidangan di sini.",
+    text_input_hint: "Tiada foto? Taip nama hidangan di sini. Pisahkan setiap item dengan koma.",
     text_placeholder: "Cth., Nasi lemak, Roti canai, Teh tarik...",
     analyze_btn: "Analisis & Cadangan",
     select_category: "Pilih Kategori Makanan",
@@ -194,7 +204,7 @@ const content = {
     uploading: "上传中...",
     click_to_view: "点击查看大图",
     text_input_title: "输入食物名称",
-    text_input_hint: "没有照片？在这里输入菜名。",
+    text_input_hint: "没有照片？在这里输入菜名。用逗号分隔每个项目。",
     text_placeholder: "例如：椰浆饭、印度煎饼、拉茶...",
     analyze_btn: "分析推荐",
     select_category: "选择食物类别",
@@ -411,6 +421,10 @@ function compressImage(file: File, maxDimension = 1024, quality = 0.75): Promise
   })
 }
 
+// ─── CATEGORY MAPPING ───────────────────────────────────────────────────────────
+
+// Maps backend category names to frontend category keys
+// Used for translating between API response and UI state
 const CATEGORY_MAP: Record<string, string> = {
   "Appetizer": "appetizer",
   "Main Dish": "main",
@@ -418,49 +432,92 @@ const CATEGORY_MAP: Record<string, string> = {
   "Drinks": "drink",
 }
 
+// Type definition for API results cache
+// Stores categorized food items to avoid re-analysis
 type ApiResultsCache = Record<string, FoodItem[]>
 
+ 
+// ─── MAIN RECOMMENDATION PAGE COMPONENT ───────────────────────────────────────────────
+ 
+/**
+ * Main component for food recommendation and analysis interface
+ * Handles image uploads, text input, AI analysis, and results display
+ * Supports multi-language interface and mobile-responsive design
+ */
 export default function RecommendationPage() {
+  // ─── STATE MANAGEMENT ────────────────────────────────────────────────────────
+  
+  // Image and file management
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
+  
+  // UI state and loading indicators
   const [isUploading, setIsUploading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [scanStep, setScanStep] = useState(0)
   const [successCount, setSuccessCount] = useState<number | null>(null)
+  const [ocrItemCount, setOcrItemCount] = useState<number>(0)
+  const [textItemCount, setTextItemCount] = useState<number>(0)
+  
+  // Results and error handling
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [apiResultsCache, setApiResultsCache] = useState<ApiResultsCache | null>(null)
   const [previousOcr, setPreviousOcr] = useState<string>("")
+  
+  // User input and navigation
   const [textInput, setTextInput] = useState("")
   const [showCategories, setShowCategories] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [results, setResults] = useState<FoodItem[] | null>(null)
+  
+  // Modal and mobile UI state
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState<string | null>(null)
 
-  // ── Mobile action sheet state ──────────────────────────────────────────────
+  // ─── REFS AND CONSTANTS ────────────────────────────────────────────────────────
+  
+  // Mobile action sheet state for touch devices
   const [isMobile, setIsMobile] = useState(false)
   const [showUploadSheet, setShowUploadSheet] = useState(false)
 
+  // File input refs for different upload methods
   const fileRef = useRef<HTMLInputElement>(null)       // gallery / desktop file picker
   const cameraRef = useRef<HTMLInputElement>(null)     // camera-only (mobile)
 
-  const MAX_IMAGES = 5
+  const MAX_IMAGES = 5 // Maximum number of images allowed
 
-  // Detect mobile once on mount (touch device check)
+  // ─── EFFECTS AND HOOKS ───────────────────────────────────────────────────────────
+  
+  /**
+   * Detect mobile device on component mount
+   * Uses touch capability detection for mobile identification
+   */
   useEffect(() => {
     setIsMobile("ontouchstart" in window || navigator.maxTouchPoints > 0)
   }, [])
 
+  /**
+   * Restore text input from sessionStorage on mount
+   * Preserves user input across page refreshes
+   */
   useEffect(() => {
     const savedText = sessionStorage.getItem("rec-text")
     if (savedText) setTextInput(savedText)
   }, [])
 
+  /**
+   * Save text input to sessionStorage on changes
+   * Ensures data persistence across page refreshes
+   */
   useEffect(() => {
     sessionStorage.setItem("rec-text", textInput)
   }, [textInput])
 
+  /**
+   * Manage scanning animation during analysis
+   * Cycles through scanning steps for visual feedback
+   */
   useEffect(() => {
     if (!isAnalyzing) { setScanStep(0); return }
     const id = setInterval(() => setScanStep(prev => (prev + 1) % 4), 1800)
@@ -528,7 +585,7 @@ export default function RecommendationPage() {
     setApiResultsCache(null)
   }
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (lang: string) => {
     setAnalyzeError(null)
     setIsAnalyzing(true)
     setSuccessCount(null)
@@ -536,11 +593,19 @@ export default function RecommendationPage() {
     setSelectedCategory(null)
     setResults(null)
 
+    // Calculate text item count (split by comma)
+    const textItems = textInput.trim() ? textInput.split(',').map(item => item.trim()).filter(item => item.length > 0) : []
+    setTextItemCount(textItems.length)
+    setOcrItemCount(uploadedFiles.length) // Placeholder, will be updated with actual OCR count
+
     let succeeded = false
     try {
       const formData = new FormData()
       if (textInput.trim()) formData.append("userText", textInput.trim())
       uploadedFiles.forEach(file => formData.append("file", file))
+
+      // Get current language from PageLayout context and send to backend
+      formData.append("language", lang)
 
       const res = await fetch("/api/predict", { method: "POST", body: formData })
       if (!res.ok) {
@@ -795,7 +860,7 @@ export default function RecommendationPage() {
             {showAnalyzeButton && (
               <div className="flex flex-col items-center gap-4">
                 <button
-                  onClick={handleAnalyze}
+                  onClick={() => handleAnalyze(lang)}
                   disabled={isAnalyzing}
                   className="flex items-center justify-center gap-3 bg-accent text-accent-foreground font-bold text-xl px-12 py-5 rounded-2xl hover:opacity-90 transition-opacity shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
@@ -815,6 +880,15 @@ export default function RecommendationPage() {
                   </svg>
                 </div>
                 <p className="text-base font-semibold text-primary">{t.scanning_steps[scanStep]}</p>
+                <div className="text-center text-sm text-muted-foreground">
+                  <span>OCR: {ocrItemCount} items</span>
+                  {textItemCount > 0 && (
+                    <>
+                      <span className="mx-2">•</span>
+                      <span>Text: {textItemCount} items</span>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -905,16 +979,10 @@ export default function RecommendationPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-[#8b3a62]">{t.no_results}</h3>
                 <p className="text-base text-foreground/80 mb-6">{t.no_results_hint}</p>
-                <div className="flex gap-4">
-                  <button onClick={handleAnalyzeAnother} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-lg py-4 rounded-2xl hover:opacity-90">
-                    <ArrowRight className="w-5 h-5 rotate-180" />
-                    {t.analyze_another}
-                  </button>
-                  <button onClick={clearAll} className="flex-1 flex items-center justify-center gap-2 bg-[#8b3a62] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90">
-                    <Trash2 className="w-5 h-5" />
-                    {t.analyze_new_food}
-                  </button>
-                </div>
+                <button onClick={clearAll} className="w-full flex items-center justify-center gap-2 bg-[#8b3a62] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90">
+                  <Trash2 className="w-5 h-5" />
+                  {t.analyze_new_food}
+                </button>
               </div>
             )}
 
