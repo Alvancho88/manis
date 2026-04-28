@@ -42,7 +42,7 @@ export function PageLayout({ children }: { children: (lang: LangCode) => ReactNo
             {lang === "en" && "Feedback? Contact us: "}
             {lang === "ms" && "Maklum balas? Hubungi kami: "}
             {lang === "zh" && "反馈？联系我们："}
-            <a href="mailto:MANIS_FIT5120@outlook.com" className="text-primary-foreground hover:underline font-bold">MANIS_FIT5120@outlook.com</a>
+            <a href="mailto:SIHAT_FIT5120@outlook.com" className="text-primary-foreground hover:underline font-bold">MANIS_FIT5120@outlook.com</a>
           </span>
           <span className="hidden sm:inline text-primary-foreground/40">|</span>
           <a 

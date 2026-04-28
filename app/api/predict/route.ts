@@ -195,25 +195,62 @@ async function processSingleImage(arrayBuffer: ArrayBuffer, mimeType: string): P
   }
 }
 
+// ─── MODEL SELECTION ────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the best Groq model for the given language.
+ *
+ * WHY: llama-3.3-70b-versatile has poor Simplified Chinese output — it tends to
+ * hallucinate nonsense characters, mix scripts, or repeat garbled phrases.
+ * mixtral-8x7b-32768 has significantly better multilingual (especially Chinese)
+ * text generation quality on Groq, so we route zh requests to it instead.
+ *
+ * @param language - BCP-47 language code (e.g. 'en', 'ms', 'zh')
+ * @returns Groq model identifier string
+ */
+function getModelForLanguage(language: string): string {
+  if (language === "zh") return "openai/gpt-oss-120b";
+  return "llama-3.3-70b-versatile";
+}
+
 // ─── Shared prompt builder ─────────────────────────────────────────────────────
 
 /**
- * Builds comprehensive analysis prompt for AI model
- * Includes language requirements, categorization rules, and nutritional analysis guidelines
+ * Builds comprehensive analysis prompt for AI model.
+ * Includes language requirements, categorization rules, and nutritional analysis guidelines.
+ *
+ * Language handling notes:
+ * - Each language entry has a human-readable label AND a native-language reinforcement
+ *   instruction. Writing the reinforcement in the target language itself dramatically
+ *   improves model compliance (LLMs respond better to native-script instructions).
+ * - "zh" explicitly specifies "Simplified Chinese (简体中文)" — just saying "Chinese"
+ *   is ambiguous and causes models to output Traditional Chinese, pinyin, or mixed scripts.
+ *
  * @param combinedOcr - OCR results from all images
  * @param userText - Manual input from user
- * @param language - Target language for analysis (defaults to 'en')
+ * @param language - BCP-47 language code (defaults to 'en')
  * @returns Complete prompt string for AI analysis
  */
 function buildAnalysisPrompt(combinedOcr: string, userText: string, language: string = "en"): string {
-  // Language mapping for prompt instructions
-  const languageMap: Record<string, string> = {
-    "en": "English",
-    "ms": "Bahasa Malaysia", 
-    "zh": "Chinese"
+  const languageMap: Record<string, { label: string; reinforcement: string }> = {
+    "en": {
+      label: "English",
+      reinforcement: "All explanations must be written in clear English.",
+    },
+    "ms": {
+      label: "Bahasa Malaysia",
+      reinforcement: "Semua penjelasan mesti ditulis dalam Bahasa Malaysia yang jelas dan betul.",
+    },
+    "zh": {
+      label: "Simplified Chinese (简体中文)",
+      // Reinforcement written in Chinese itself for better model compliance.
+      // Explicitly forbids pinyin and other scripts, and mandates complete Chinese sentences
+      // in the tip and best_reason fields — the two fields that were showing gibberish.
+      reinforcement: "所有解释必须使用简体中文书写。请勿使用拼音、繁体中文、英文或任何其他语言。tip 和 best_reason 字段必须是完整、通顺的简体中文句子。",
+    },
   };
-  
-  const targetLanguage = languageMap[language] || "English";
+
+  const { label: targetLanguage, reinforcement } = languageMap[language] ?? languageMap["en"];
   
   return `
 CONTEXT:
@@ -223,6 +260,7 @@ LANGUAGE: ${targetLanguage} (${language})
  
 CRITICAL LANGUAGE REQUIREMENT:
 - You must provide ALL analysis, tips, recommendations, and best_reason fields entirely in ${targetLanguage}.
+- ${reinforcement}
 - If language is unsupported, default to English.
 - All food item names should remain in their original language, but all explanations must be in ${targetLanguage}.
  
@@ -267,15 +305,18 @@ IMPORTANT OUTPUT RULES:
 `;
 }
 
-// ─── NUTRITIONAL ANALYSIS WITH GROQ (Llama-3.3-70B) ────────────────────────────────
+// ─── NUTRITIONAL ANALYSIS WITH GROQ ────────────────────────────────────────────────
  
 /**
- * Executes nutritional analysis request to Groq API using Llama-3.3-70B model
- * Sends comprehensive prompt with OCR data and user input for health analysis
+ * Executes nutritional analysis request to Groq API.
+ * Automatically selects the best model for the given language — notably,
+ * Chinese (zh) uses mixtral-8x7b-32768 instead of llama-3.3-70b-versatile
+ * because the latter produces garbled/hallucinated Chinese text.
+ *
  * @param combinedOcr - Combined OCR results from all images
  * @param userText - Manual user input of food items
  * @param apiKey - Groq API authentication key
- * @param language - Target language for analysis (defaults to 'en')
+ * @param language - BCP-47 language code (defaults to 'en')
  * @returns Promise resolving to AI analysis response as JSON string
  * @throws Error if API key missing or request fails
  */
@@ -287,6 +328,9 @@ async function analyzeWithGroq(
 ): Promise<string> {
   if (!apiKey) throw new Error("API Key missing");
   const prompt = buildAnalysisPrompt(combinedOcr, userText, language);
+  const model = getModelForLanguage(language);
+
+  console.log(`[predict] Using model: ${model} for language: ${language}`);
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -295,7 +339,7 @@ async function analyzeWithGroq(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model,
       messages: [
         { role: "system", content: "You are a health assistant. Always output valid JSON." },
         { role: "user", content: prompt }
@@ -321,7 +365,7 @@ async function analyzeWithGroq(
  * Tries primary key first, then falls back to backup key if primary fails
  * @param combinedOcr - Combined OCR results from all images
  * @param userText - Manual user input of food items
- * @param language - Target language for analysis (defaults to 'en')
+ * @param language - BCP-47 language code (defaults to 'en')
  * @returns Promise resolving to AI analysis response as JSON string
  */
 async function analyzeWithFallback(
