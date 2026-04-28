@@ -623,8 +623,8 @@ export default function RecommendationPage() {
           <div className="max-w-7xl mx-auto px-4 py-10 md:py-14 space-y-10">
             {/* Header */}
             <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
-              <p className="text-xl md:text-2xl text-muted-foreground">{t.page_subtitle}</p>
+              <h1 className="text-2xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
+              <p className="text-lg md:text-xl text-muted-foreground">{t.page_subtitle}</p>
             </div>
 
             {/* Upload & Text Input Section */}

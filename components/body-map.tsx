@@ -4,12 +4,15 @@ import { useState } from "react"
 import Image from "next/image"
 import { AlertCircle, X } from "lucide-react"
 
+export type SectionBase = { label: string; bg: string; color: string; dot: string }
+
 export type BodyMapEntry = {
   organ: string
   title: string
   accent: string
-  conditions: { label: string; bg: string; color: string; dot: string; text: string }[]
-  watch: string
+  symptoms: SectionBase & { items: string[] }
+  danger: SectionBase & { text: string }
+  tip: { label: string; text: string }
   image?: { src: string; caption: string }
 }
 
@@ -25,170 +28,231 @@ type BodyMapId = keyof BodyMapData
 
 type BodyMapContent = {
   title: string
-  watchLabel: string
   emptyLabel: string
-  legend: { diabetes: string; bloodPressure: string; cholesterol: string }
   data: BodyMapData
+}
+
+// Semantic colors for the new structure
+const COLORS = {
+  symptoms: { bg: "#FFF4E5", color: "#B86B11", dot: "#E08214" }, // Warning/Amber
+  danger: { bg: "#FBEAF0", color: "#72243E", dot: "#993556" },   // Danger/Red
 }
 
 // ─── Static content ────────────────────────────────────────────────────────────
 const bodyMapContent: Record<string, BodyMapContent> = {
   en: {
     title: "How the Three Highs affect your body",
-    watchLabel: "Watch for",
     emptyLabel: "Click a hotspot on the body to see how the Three Highs affect that area",
-    legend: { diabetes: "Diabetes", bloodPressure: "High blood pressure", cholesterol: "High cholesterol" },
     data: {
       brain: {
         organ: "Brain", title: "Stroke & cognitive decline", accent: "#534AB7",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "High blood sugar damages blood vessels in the brain over time, raising stroke risk and slowing cognitive function." },
-          { label: "High blood pressure", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Uncontrolled hypertension puts constant pressure on brain vessels; the leading cause of haemorrhagic stroke." },
-          { label: "High cholesterol", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Plaque buildup in arteries leading to the brain can trigger an ischaemic stroke by cutting off blood flow." },
-        ],
-        watch: "Sudden headache, vision changes, numbness on one side, or confusion; seek emergency help immediately.",
+        symptoms: { ...COLORS.symptoms, label: "Quick Check (Symptoms)", items: [
+          "Sudden numbness in the face, arm, or leg.",
+          "Confusion, trouble speaking, or blurred vision.",
+          "Dizziness or a sudden, severe headache."
+        ]},
+        danger: { ...COLORS.danger, label: "The Triple Threat", text: "High blood pressure weakens brain vessels, while high cholesterol builds up \"plaque.\" When a vessel bursts or clogs, it causes a Stroke. High sugar further slows down the brain’s ability to recover." },
+        tip: { label: "The SIHAT Tip", text: "\"Brain Food\" is real! Using our nutrition tool to choose foods high in Omega-3 helps keep your brain vessels flexible and reduces stroke risk." },
       },
       eyes: {
         organ: "Eyes", title: "Retinopathy & vision loss", accent: "#185FA5",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Excess blood sugar weakens retinal blood vessels, causing leaks or bleeding; the leading cause of blindness in working-age adults." },
-          { label: "High blood pressure", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Hypertension causes hypertensive retinopathy, narrowing retinal vessels and reducing blood flow to the eye." },
-          { label: "High cholesterol", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "High LDL can deposit in the eye's vessels, increasing risk of retinal vein occlusion and sudden vision loss." },
-        ],
-        watch: "Blurry vision, floaters, or dark spots; if you have diabetes, get an annual dilated eye exam.",
+        symptoms: { ...COLORS.symptoms, label: "Quick Check (Symptoms)", items: [
+          "Blurred or \"wavy\" vision.",
+          "Seeing dark spots or \"floaters\" that won't go away.",
+          "Difficulty seeing colors or poor night vision."
+        ]},
+        danger: { ...COLORS.danger, label: "The Triple Threat", text: "The tiny vessels in your eyes are extremely fragile. Diabetes causes them to leak fluid (Retinopathy), and Hypertension adds pressure that causes these leaks to bleed, leading to permanent blindness." },
+        tip: { label: "The SIHAT Tip", text: "Protect your sight at the dinner plate. Stable blood sugar is the #1 way to stop eye damage. Use SIHAT to track your glycemic load." },
+        image: { 
+          src: "/images/body-map/diabetic-eye.jpg", 
+          caption: "Diabetes causes tiny leaks in the eye's blood vessels, which can lead to blurry spots or vision loss." 
+        },
       },
       heart: {
-        organ: "Heart", title: "Heart attack & heart failure", accent: "#993556",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "People with diabetes are 2–3× more likely to develop heart disease. High blood sugar damages coronary arteries and promotes inflammation." },
-          { label: "High blood pressure", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "The heart works harder against high pressure, causing it to thicken and weaken over time — eventually leading to heart failure." },
-          { label: "High cholesterol", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "LDL cholesterol builds up as plaque inside coronary arteries. A plaque rupture causes a heart attack." },
-        ],
-        watch: "Chest tightness, shortness of breath, or pain radiating to the arm or jaw; call emergency services immediately.",
+        organ: "Heart", title: "Heart attack & failure", accent: "#993556",
+        symptoms: { ...COLORS.symptoms, label: "Quick Check (Symptoms)", items: [
+          "Chest pain or a feeling of \"tightness\".",
+          "Shortness of breath during light activity.",
+          "Palpitations or a racing heartbeat."
+        ]},
+        danger: { ...COLORS.danger, label: "The Triple Threat", text: "This is the meeting point of the Three Highs. Diabetes weakens the heart muscle, Hypertension forces the heart to pump against high resistance, and Cholesterol narrows the \"fuel lines\" supplying the heart." },
+        tip: { label: "The SIHAT Tip", text: "Your heart loves fiber! SIHAT helps you find local fiber-rich meals that act like a \"natural broom\" to sweep excess cholesterol out of your arteries." },
+        image: { 
+          src: "/images/body-map/diabetic-heart.jpg", 
+          caption: "Over time, high blood pressure and sugar weaken the heart muscle, making it harder to pump blood to the rest of your body." 
+        },
       },
       kidneys: {
         organ: "Kidneys", title: "Nephropathy & kidney failure", accent: "#854F0B",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "High blood sugar is the leading cause of chronic kidney disease globally, damaging the tiny filtering units inside the kidneys." },
-          { label: "High blood pressure", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "High pressure in kidney blood vessels scars the filters, reducing their ability to remove waste from blood." },
-          { label: "High cholesterol", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Cholesterol deposits reduce blood flow to the kidneys, accelerating damage — especially combined with diabetes or hypertension." },
-        ],
-        watch: "Swollen ankles, foamy urine, or fatigue; kidneys often show no symptoms until damage is advanced. Get screened regularly.",
+        symptoms: { ...COLORS.symptoms, label: "Quick Check (Symptoms)", items: [
+          "Swelling in the ankles, feet, or hands.",
+          "Foamy urine or changes in urination frequency.",
+          "Persistent itching or feeling very tired/weak."
+        ]},
+        danger: { ...COLORS.danger, label: "The Triple Threat", text: "Your kidneys are delicate filters. Diabetes \"gums up\" the filters with excess sugar, while Hypertension \"blasts\" the filters with high-pressure blood, causing scarring and eventually kidney failure." },
+        tip: { label: "The SIHAT Tip", text: "Salt is the secret enemy. SIHAT helps you identify \"Hidden Salt\" in processed foods, instantly taking the pressure off your hardworking kidney filters." },
+        image: { 
+          src: "/images/body-map/diabetic-kidney.jpg", 
+          caption: "Healthy kidneys (left) filter waste properly, while damaged kidneys (right) become smaller and lose their ability to clean your blood." 
+        },
       },
       feet: {
         organ: "Feet & legs", title: "Neuropathy & diabetic foot", accent: "#0F6E56",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "High blood sugar damages nerves in the feet (neuropathy), causing numbness or burning. Small wounds can go unnoticed and become serious infections." },
-          { label: "High blood pressure", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Reduced blood flow from hypertension slows wound healing in the feet and lower legs." },
-          { label: "High cholesterol", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Peripheral artery disease from plaque buildup restricts blood supply to the legs, worsening neuropathy and increasing amputation risk." },
-        ],
-        watch: "Check your feet daily for cuts, blisters, or sores; especially if you have reduced sensation. Never walk barefoot.",
+        symptoms: { ...COLORS.symptoms, label: "Quick Check (Symptoms)", items: [
+          "Tingling, \"pins and needles,\" or burning pain.",
+          "Loss of feeling (numbness)—not feeling small cuts.",
+          "Slow-healing wounds or skin that feels unusually cold."
+        ]},
+        danger: { ...COLORS.danger, label: "The Triple Threat", text: "Diabetes destroys the nerves (Neuropathy), so you don't feel injuries. Meanwhile, Cholesterol narrows the blood vessels, meaning oxygen can't reach the wound to heal it, leading to serious infections." },
+        tip: { label: "The SIHAT Tip", text: "Good circulation is a choice. By managing your Three Highs through our meal recommendations, you ensure healthy blood flow reaches your toes." },
+        image: { 
+          src: "/images/body-map/diabetic-foot.png", 
+          caption: "High blood sugar can damage nerves and reduce blood flow, making it hard for small cuts or dry skin to heal properly." 
+        },
       },
     },
   },
   ms: {
-    title: "Bagaimana Tiga Tinggi mempengaruhi badan anda",
-    watchLabel: "Perhatikan tanda-tanda ini",
-    emptyLabel: "Klik titik panas pada badan untuk melihat bagaimana Tiga Tinggi mempengaruhi kawasan tersebut",
-    legend: { diabetes: "Diabetes", bloodPressure: "Tekanan darah tinggi", cholesterol: "Kolesterol tinggi" },
+    title: "Bagaimana Tiga Serangkai mempengaruhi badan anda",
+    emptyLabel: "Klik titik panas pada badan untuk melihat kesan Tiga Serangkai",
     data: {
       brain: {
         organ: "Otak", title: "Strok & penurunan kognitif", accent: "#534AB7",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Gula darah tinggi merosakkan saluran darah di otak dari semasa ke semasa, meningkatkan risiko strok dan melambatkan fungsi kognitif." },
-          { label: "Tekanan darah tinggi", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Hipertensi yang tidak terkawal memberi tekanan berterusan pada saluran otak; punca utama strok hemoragik." },
-          { label: "Kolesterol tinggi", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Penumpukan plak dalam arteri menuju otak boleh mencetuskan strok iskemia dengan menyekat aliran darah." },
-        ],
-        watch: "Sakit kepala mengejut, perubahan penglihatan, kebas di satu sisi, atau kekeliruan; dapatkan pertolongan kecemasan dengan segera.",
+        symptoms: { ...COLORS.symptoms, label: "Tanda-tanda", items: [
+          "Kebas tiba-tiba pada muka, lengan, atau kaki.",
+          "Kekeliruan, kesukaran bercakap, atau penglihatan kabur.",
+          "Pening atau sakit kepala yang teruk secara tiba-tiba."
+        ]},
+        danger: { ...COLORS.danger, label: "Bahaya 3 Serangkai", text: "Tekanan darah tinggi melemahkan saluran otak, manakala kolesterol tinggi membentuk \"plak\". Apabila saluran pecah atau tersumbat, ia menyebabkan Strok. Gula tinggi pula melambatkan pemulihan otak." },
+        tip: { label: "Pesanan SIHAT", text: "Gunakan alat pemakanan kami untuk memilih makanan tinggi Omega-3 yang membantu mengekalkan kelenturan saluran otak dan mengurangkan risiko strok." },
       },
       eyes: {
         organ: "Mata", title: "Retinopati & kehilangan penglihatan", accent: "#185FA5",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Gula darah berlebihan melemahkan saluran darah retina, menyebabkan kebocoran atau pendarahan; punca utama kebutaan dalam kalangan orang dewasa yang bekerja." },
-          { label: "Tekanan darah tinggi", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Hipertensi menyebabkan retinopati hipertensif, menyempitkan saluran retina dan mengurangkan aliran darah ke mata." },
-          { label: "Kolesterol tinggi", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "LDL tinggi boleh mendap dalam saluran mata, meningkatkan risiko penyumbatan vena retina dan kehilangan penglihatan mengejut." },
-        ],
-        watch: "Penglihatan kabur, titisan terapung, atau bintik gelap; jika anda menghidap diabetes, lakukan pemeriksaan mata tahunan.",
+        symptoms: { ...COLORS.symptoms, label: "Tanda-tanda", items: [
+          "Penglihatan kabur atau \"berombak\".",
+          "Melihat bintik gelap yang tidak hilang.",
+          "Kesukaran melihat warna atau penglihatan malam yang lemah."
+        ]},
+        danger: { ...COLORS.danger, label: "Bahaya 3 Serangkai", text: "Saluran kecil di mata anda sangat rapuh. Diabetes menyebabkannya bocor (Retinopati), dan Hipertensi menambah tekanan yang menyebabkan pendarahan, membawa kepada buta kekal." },
+        tip: { label: "Pesanan SIHAT", text: "Gula darah yang stabil adalah cara utama untuk menghentikan kerosakan mata. Gunakan SIHAT untuk menjejaki beban glisemik anda." },
+        image: { 
+          src: "/images/body-map/diabetic-eye.jpg", 
+          caption: "Diabetes menyebabkan kebocoran kecil pada saluran darah mata, yang boleh mengakibatkan penglihatan kabur." 
+        },
       },
       heart: {
-        organ: "Jantung", title: "Serangan jantung & kegagalan jantung", accent: "#993556",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Penghidap diabetes 2–3× lebih berisiko mendapat penyakit jantung. Gula darah tinggi merosakkan arteri koronari dan menggalakkan keradangan." },
-          { label: "Tekanan darah tinggi", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Jantung perlu bekerja lebih keras menentang tekanan tinggi, menyebabkannya menebal dan melemah; akhirnya membawa kepada kegagalan jantung." },
-          { label: "Kolesterol tinggi", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Kolesterol LDL terkumpul sebagai plak dalam arteri koronari. Pecahan plak menyebabkan serangan jantung." },
-        ],
-        watch: "Rasa sesak dada, sesak nafas, atau sakit yang memancar ke lengan atau rahang; hubungi perkhidmatan kecemasan dengan segera.",
+        organ: "Jantung", title: "Serangan & kegagalan jantung", accent: "#993556",
+        symptoms: { ...COLORS.symptoms, label: "Tanda-tanda", items: [
+          "Sakit dada atau rasa \"ketat\".",
+          "Sesak nafas semasa aktiviti ringan.",
+          "Jantung berdebar-debar atau berdegup kencang."
+        ]},
+        danger: { ...COLORS.danger, label: "Bahaya 3 Serangkai", text: "Di sinilah titik pertemuan Tiga Serangkai. Diabetes melemahkan otot jantung, Hipertensi memaksanya mengepam lebih kuat, dan Kolesterol menyempitkan saluran bahan api ke jantung." },
+        tip: { label: "Pesanan SIHAT", text: "SIHAT membantu anda mencari makanan tempatan kaya serat yang bertindak seperti \"penyapu semula jadi\" untuk membuang kolesterol berlebihan dari arteri anda." },
+        image: { 
+          src: "/images/body-map/diabetic-heart.jpg", 
+          caption: "Lama-kelamaan, tekanan darah dan gula yang tinggi melemahkan otot jantung, menyebabkannya sukar mengepam darah ke seluruh badan." 
+        },
       },
       kidneys: {
         organ: "Buah pinggang", title: "Nefropati & kegagalan buah pinggang", accent: "#854F0B",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Gula darah tinggi adalah punca utama penyakit buah pinggang kronik di seluruh dunia, merosakkan unit penapisan kecil dalam buah pinggang." },
-          { label: "Tekanan darah tinggi", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Tekanan tinggi dalam saluran darah buah pinggang mengerutkan penapis, mengurangkan keupayaannya membuang sisa dari darah." },
-          { label: "Kolesterol tinggi", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Mendapan kolesterol mengurangkan aliran darah ke buah pinggang, mempercepatkan kerosakan; terutama apabila digabungkan dengan diabetes atau hipertensi." },
-        ],
-        watch: "Pergelangan kaki bengkak, air kencing berbuih, atau keletihan; buah pinggang sering tidak menunjukkan gejala sehingga kerosakan teruk. Jalani saringan berkala.",
+        symptoms: { ...COLORS.symptoms, label: "Tanda-tanda", items: [
+          "Bengkak di pergelangan kaki, kaki, atau tangan.",
+          "Air kencing berbuih atau kekerapan kencing berubah.",
+          "Gatal berterusan atau rasa sangat letih/lemah."
+        ]},
+        danger: { ...COLORS.danger, label: "Bahaya 3 Serangkai", text: "Buah pinggang adalah penapis halus. Diabetes \"melekitkan\" penapis dengan gula berlebihan, manakala Hipertensi \"menghentam\" penapis dengan tekanan tinggi, menyebabkan parut dan kegagalan buah pinggang." },
+        tip: { label: "Pesanan SIHAT", text: "Garam adalah musuh tersembunyi. SIHAT membantu anda mengenal pasti garam tersembunyi dalam makanan, lalu mengurangkan tekanan pada buah pinggang anda serta-merta." },
+        image: { 
+          src: "/images/body-map/diabetic-kidney.jpg", 
+          caption: "Buah pinggang sihat (kiri) menapis sisa dengan betul, manakala buah pinggang yang rosak (kanan) mengecut dan gagal mencuci darah anda." 
+        },
       },
       feet: {
-        organ: "Kaki & betis", title: "Neuropati & kaki diabetik", accent: "#0F6E56",
-        conditions: [
-          { label: "Diabetes", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "Gula darah tinggi merosakkan saraf di kaki (neuropati), menyebabkan kebas atau rasa terbakar. Luka kecil boleh tidak disedari dan menjadi jangkitan serius." },
-          { label: "Tekanan darah tinggi", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "Aliran darah yang berkurangan akibat hipertensi melambatkan penyembuhan luka di kaki dan betis." },
-          { label: "Kolesterol tinggi", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "Penyakit arteri periferi akibat penumpukan plak menyekat bekalan darah ke kaki, memburukkan neuropati dan meningkatkan risiko amputasi." },
-        ],
-        watch: "Periksa kaki anda setiap hari untuk luka, lepuh, atau kudis; terutama jika anda mengalami pengurangan deria. Jangan berjalan tanpa alas kaki.",
+        organ: "Kaki & Saraf", title: "Neuropati & kaki diabetik", accent: "#0F6E56",
+        symptoms: { ...COLORS.symptoms, label: "Tanda-tanda", items: [
+          "Rasa semut-semut, kebas, atau sakit terbakar.",
+          "Hilang deria rasa—tidak menyedari luka kecil.",
+          "Luka lambat sembuh atau kulit berasa sejuk."
+        ]},
+        danger: { ...COLORS.danger, label: "Bahaya 3 Serangkai", text: "Diabetes memusnahkan saraf (Neuropati) supaya anda tidak berasa sakit. Kolesterol pula menyempitkan saluran darah, menghalang oksigen daripada menyembuhkan luka dan membawa kepada jangkitan serius." },
+        tip: { label: "Pesanan SIHAT", text: "Peredaran darah yang baik adalah pilihan. Dengan menguruskan Tiga Serangkai melalui cadangan makanan kami, darah yang sihat dapat sampai ke jari kaki anda." },
+        image: { 
+          src: "/images/body-map/diabetic-foot.png", 
+          caption: "Gula darah tinggi boleh merosakkan saraf dan mengurangkan aliran darah, menyebabkan luka kecil atau kulit kering sukar sembuh." 
+        },
       },
     },
   },
   zh: {
     title: "三高如何影响您的身体",
-    watchLabel: "注意征兆",
     emptyLabel: "点击身体上的热点，查看三高如何影响该部位",
-    legend: { diabetes: "糖尿病", bloodPressure: "高血压", cholesterol: "高胆固醇" },
     data: {
       brain: {
         organ: "大脑", title: "中风与认知衰退", accent: "#534AB7",
-        conditions: [
-          { label: "糖尿病", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "长期高血糖会损伤大脑血管，增加中风风险并降低认知功能。" },
-          { label: "高血压", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "未受控制的高血压对脑血管持续施压是出血性中风的主要原因。" },
-          { label: "高胆固醇", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "通往大脑的动脉斑块堆积可通过阻断血流引发缺血性中风。" },
-        ],
-        watch: "突发头痛、视力变化、一侧肢体麻木或意识混乱，请立即寻求紧急救助。",
+        symptoms: { ...COLORS.symptoms, label: "常见症状", items: [
+          "面部、手臂或腿部突然麻木。",
+          "意识混乱、说话困难或视力模糊。",
+          "头晕或突发性剧烈头痛。"
+        ]},
+        danger: { ...COLORS.danger, label: "三重威胁", text: "高血压会削弱脑血管，而高胆固醇会形成“斑块”。当血管破裂或堵塞时，就会导致中风。高血糖则进一步减缓大脑的恢复能力。" },
+        tip: { label: "SIHAT 提示", text: "“健脑食物”真实存在！使用我们的营养工具选择富含Omega-3的食物，有助于保持脑血管弹性并降低中风风险。" },
       },
       eyes: {
         organ: "眼睛", title: "视网膜病变与视力丧失", accent: "#185FA5",
-        conditions: [
-          { label: "糖尿病", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "过高的血糖会削弱视网膜血管，导致渗漏或出血是工作年龄成人失明的主要原因。" },
-          { label: "高血压", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "高血压会引起高血压性视网膜病变，使视网膜血管变窄、减少眼部血流。" },
-          { label: "高胆固醇", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "高LDL可沉积在眼部血管中，增加视网膜静脉阻塞和突发性视力丧失的风险。" },
-        ],
-        watch: "视力模糊、飞蚊症或黑点，如果您患有糖尿病，请每年进行一次散瞳眼科检查。",
+        symptoms: { ...COLORS.symptoms, label: "常见症状", items: [
+          "视力模糊或视物变形。",
+          "眼前出现挥之不去的黑点或“飞蚊”。",
+          "色觉困难或夜视能力差。"
+        ]},
+        danger: { ...COLORS.danger, label: "三重威胁", text: "眼部的微小血管极其脆弱。糖尿病导致血管渗漏（视网膜病变），而高血压增加的压力会导致这些渗漏出血，最终导致永久性失明。" },
+        tip: { label: "SIHAT 提示", text: "保护视力从餐桌开始。稳定的血糖是阻止眼部损伤的首要方法。使用 SIHAT 追踪您的升糖负荷，保持视野清晰。" },
+        image: { 
+          src: "/images/body-map/diabetic-eye.jpg", 
+          caption: "糖尿病会导致眼部血管出现微小渗漏，从而导致视力模糊或视力丧失。" 
+        },
       },
       heart: {
         organ: "心脏", title: "心脏病发作与心力衰竭", accent: "#993556",
-        conditions: [
-          { label: "糖尿病", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "糖尿病患者患心脏病的风险是常人的2–3倍。高血糖损伤冠状动脉并促进炎症。" },
-          { label: "高血压", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "心脏需要在高压下更努力地工作，导致心肌增厚和衰弱，最终引发心力衰竭。" },
-          { label: "高胆固醇", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "LDL胆固醇在冠状动脉内堆积形成斑块。斑块破裂会导致心脏病发作。" },
-        ],
-        watch: "胸部紧绷感、呼吸困难或疼痛放射至手臂或下颌，请立即拨打紧急服务电话。",
+        symptoms: { ...COLORS.symptoms, label: "常见症状", items: [
+          "胸痛或“紧绷”感。",
+          "轻度活动时感到呼吸短促。",
+          "心悸或心跳过速。"
+        ]},
+        danger: { ...COLORS.danger, label: "三重威胁", text: "这是“三高”的交汇点。糖尿病削弱心肌，高血压迫使心脏在高阻力下泵血，而高胆固醇阻塞了供应心脏的“燃料管”（动脉）。" },
+        tip: { label: "SIHAT 提示", text: "您的心脏需要纤维！SIHAT 帮助您找到富含纤维的本地美食，它们就像“天然扫帚”一样清除动脉中多余的胆固醇。" },
+        image: { 
+          src: "/images/body-map/diabetic-eye.jpg", 
+          caption: "长期的高血压和高血糖会削弱心肌，使心脏更难向全身泵血。" 
+        },
       },
       kidneys: {
         organ: "肾脏", title: "肾病与肾衰竭", accent: "#854F0B",
-        conditions: [
-          { label: "糖尿病", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "高血糖是全球慢性肾病的主要原因，会损伤肾脏内的微小过滤单元。" },
-          { label: "高血压", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "肾脏血管中的高压会损伤过滤器，降低其从血液中清除废物的能力。" },
-          { label: "高胆固醇", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "胆固醇沉积会减少肾脏的血流，加速损伤；尤其是与糖尿病或高血压合并时。" },
-        ],
-        watch: "脚踝肿胀、尿液起泡沫或疲劳，肾脏通常在损伤严重之前无明显症状。请定期筛查。",
+        symptoms: { ...COLORS.symptoms, label: "常见症状", items: [
+          "脚踝、双脚或手部肿胀。",
+          "尿液起泡沫或排尿频率改变。",
+          "持续瘙痒或感到非常疲倦/虚弱。"
+        ]},
+        danger: { ...COLORS.danger, label: "三重威胁", text: "您的肾脏是脆弱的过滤器。糖尿病过多的糖分会使过滤器“黏结”，而高血压则用高压血液“冲击”过滤器，导致结疤并最终引发尿毒症。" },
+        tip: { label: "SIHAT 提示", text: "盐是隐形杀手。SIHAT 帮助您识别加工食品中的“隐形盐”，瞬间减轻肾脏过滤器的压力。" },
+        image: { 
+          src: "/images/body-map/diabetic-kidney.jpg", 
+          caption: "健康的肾脏（左）能正常过滤废物，而受损的肾脏（右）会萎缩并失去清洁血液的能力。" 
+        },
       },
       feet: {
         organ: "双脚与腿部", title: "神经病变与糖尿病足", accent: "#0F6E56",
-        conditions: [
-          { label: "糖尿病", bg: "#E6F1FB", color: "#0C447C", dot: "#185FA5", text: "高血糖损伤脚部神经（神经病变），引起麻木或灼热感。小伤口可能被忽视，进而发展为严重感染。" },
-          { label: "高血压", bg: "#FBEAF0", color: "#72243E", dot: "#993556", text: "高血压导致的血流减少会减慢脚部和小腿的伤口愈合速度。" },
-          { label: "高胆固醇", bg: "#FAEEDA", color: "#633806", dot: "#854F0B", text: "斑块堆积引起的外周动脉疾病限制了腿部的血液供应，加重神经病变并增加截肢风险。" },
-        ],
-        watch: "每天检查双脚是否有割伤、水泡或溃疡，尤其是感觉减退时。不要赤脚行走。",
+        symptoms: { ...COLORS.symptoms, label: "常见症状", items: [
+          "刺痛、“针扎感”或灼痛。",
+          "失去知觉（麻木）——感觉不到小伤口。",
+          "伤口愈合缓慢或皮肤感觉异常寒冷。"
+        ]},
+        danger: { ...COLORS.danger, label: "三重威胁", text: "糖尿病会破坏神经（神经病变），使您感觉不到受伤。同时，高胆固醇使血管变窄，导致氧气无法到达伤口进行愈合，从而引发严重感染。" },
+        tip: { label: "SIHAT 提示", text: "良好的血液循环是可以选择的。通过我们的膳食建议管理三高，确保健康的血液流向您的脚趾。" },
+        image: { 
+          src: "/images/body-map/diabetic-foot.png", 
+          caption: "高血糖会损伤神经并减少血流量，使小伤口或皮肤干燥难以正常愈合。" 
+        },
       },
     },
   },
@@ -204,7 +268,7 @@ const hotspotPositions: { id: BodyMapId; top: string; left: string; color: strin
   { id: "feet",    top: "87%", left: "30%", color: "#0F6E56" },
 ]
 
-// ─── Props (all optional — falls back to built-in defaults) ───────────────────
+// ─── Props ────────────────────────────────────────────────────────────────
 
 interface BodyMapProps {
   lang: string
@@ -245,32 +309,63 @@ export default function BodyMap({ lang }: BodyMapProps) {
           <X className="w-5 h-5" />
         </button>
       </div>
-      <div className="p-4 flex flex-col gap-3">
-        {d.conditions.map((c, i) => (
-          <div key={i}>
-            <span
-              className="inline-flex items-center gap-1.5 text-base font-medium px-2.5 py-1 rounded-full mb-1.5"
-              style={{ backgroundColor: c.bg, color: c.color }}
-            >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.dot }} />
-              {c.label}
-            </span>
-            <p className="text-lg leading-relaxed text-muted-foreground">{c.text}</p>
-          </div>
-        ))}
+      
+      <div className="p-4 flex flex-col gap-4">
+        {/* Symptoms Section */}
+        <div>
+          <span
+            className="inline-flex items-center gap-1.5 text-base font-medium px-2.5 py-1 rounded-full mb-2"
+            style={{ backgroundColor: d.symptoms.bg, color: d.symptoms.color }}
+          >
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.symptoms.dot }} />
+            {d.symptoms.label}
+          </span>
+          <ul className="list-disc pl-5 space-y-1 text-lg leading-relaxed text-muted-foreground">
+            {d.symptoms.items.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Danger Section */}
+        <div>
+          <span
+            className="inline-flex items-center gap-1.5 text-base font-medium px-2.5 py-1 rounded-full mb-2"
+            style={{ backgroundColor: d.danger.bg, color: d.danger.color }}
+          >
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.danger.dot }} />
+            {d.danger.label}
+          </span>
+          <p className="text-lg leading-relaxed text-muted-foreground">{d.danger.text}</p>
+        </div>
+
+        {/* Tip Section (Reusing the highlighted "Watch" box style) */}
         <div className="rounded-xl p-3 mt-1" style={{ backgroundColor: "var(--muted)" }}>
-          <p className="text-base font-medium uppercase tracking-widest text-muted-foreground mb-1">{t.watchLabel}</p>
-          <p className="text-lg leading-relaxed">{d.watch}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl">💡</span>
+            <p className="text-base font-medium uppercase tracking-widest text-muted-foreground">
+              {d.tip.label}
+            </p>
+          </div>
+          <p className="text-lg leading-relaxed">{d.tip.text}</p>
         </div>
 
         {d.image && (
-          <div className="mx-4 mt-3 rounded-xl overflow-hidden">
-            <img
-              src={d.image.src}
-              alt={d.image.caption}
-              className="w-full h-40 object-cover"
-            />
-            <p className="text-xs text-muted-foreground px-1 pt-1.5 pb-0.5">{d.image.caption}</p>
+          <div className="mt-4 border rounded-xl overflow-hidden bg-white">
+            <div className="relative w-full h-80 sm:h-100 bg-slate-50">
+              <img
+                src={d.image.src}
+                alt={d.image.caption}
+                // "object-contain" ensures the whole diagram is visible
+                // "p-2" adds a small buffer so the image doesn't touch the borders
+                className="w-full h-full object-contain p-2"
+              />
+            </div>
+            <div className="bg-muted/30 p-3 border-t">
+              <p className="text-base leading-relaxed text-foreground italic">
+                {d.image.caption}
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -296,7 +391,7 @@ export default function BodyMap({ lang }: BodyMapProps) {
                 onClick={() => handleHotspot(id)}
                 className="absolute z-10 -translate-x-1/2 -translate-y-1/2 group"
                 style={{ top, left }}
-                aria-label={t. data[id].organ}
+                aria-label={t.data[id].organ}
               >
                 <span
                   className="absolute inset-0 rounded-full animate-ping"

@@ -50,6 +50,31 @@ const getRisk = (prevalence: number): "high" | "medium" | "low" => {
   return "low"
 }
 
+// State name translation
+const stateNameTranslations: Record<string, { en: string; ms: string; zh: string }> = {
+  "Johor": { en: "Johor", ms: "Johor", zh: "柔佛" },
+  "Kedah": { en: "Kedah", ms: "Kedah", zh: "吉打" },
+  "Kelantan": { en: "Kelantan", ms: "Kelantan", zh: "吉兰丹" },
+  "Melaka": { en: "Malacca", ms: "Melaka", zh: "马六甲" },
+  "Negeri Sembilan": { en: "Negeri Sembilan", ms: "Negeri Sembilan", zh: "森美兰" },
+  "Pahang": { en: "Pahang", ms: "Pahang", zh: "彭亨" },
+  "Perak": { en: "Perak", ms: "Perak", zh: "霹雳" },
+  "Perlis": { en: "Perlis", ms: "Perlis", zh: "玻璃市" },
+  "Pulau Pinang": { en: "Penang", ms: "Pulau Pinang", zh: "槟城" },
+  "Sabah": { en: "Sabah", ms: "Sabah", zh: "沙巴" },
+  "Sarawak": { en: "Sarawak", ms: "Sarawak", zh: "砂拉越" },
+  "Selangor": { en: "Selangor", ms: "Selangor", zh: "雪兰莪" },
+  "Terengganu": { en: "Terengganu", ms: "Terengganu", zh: "登嘉楼" },
+  "WP Kuala Lumpur": { en: "Kuala Lumpur", ms: "WP Kuala Lumpur", zh: "吉隆坡" },
+  "WP Labuan": { en: "Labuan", ms: "WP Labuan", zh: "纳闽" },
+  "WP Putrajaya": { en: "Putrajaya", ms: "WP Putrajaya", zh: "布城" },
+};
+
+const getStateNameTranslated = (geoName: string, lang: "en" | "ms" | "zh"): string => {
+  const state = stateNameTranslations[geoName]
+  return state ? state[lang] : geoName
+}
+
 // ─── State panel messages ──────────────────────────────────────────────────
 // Each risk level gets a message covering all three highs with actionable steps.
 // The message is dynamic — it references the actual state data values so the
@@ -188,9 +213,6 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
   const stateEntries = Object.entries(stateData)
   const highestState = stateEntries.length ? stateEntries.reduce((a, b) => a[1].diabetes > b[1].diabetes ? a : b) : null
   const lowestState  = stateEntries.length ? stateEntries.reduce((a, b) => a[1].diabetes < b[1].diabetes ? a : b) : null
-  const avgPrevalence = stateEntries.length
-    ? (stateEntries.reduce((sum, [, d]) => sum + d.diabetes, 0) / stateEntries.length).toFixed(1)
-    : "—"
 
   const labels = ({
     en: { diabetes: "Diabetes", hypertension: "Hypertension", hyperlipidemia: "Hyperlipidemia", patients: "Total Patients", risk: "Prevalence Level" },
@@ -349,7 +371,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
                             const rect = mapContainerRef.current?.getBoundingClientRect()
                             if (rect) {
                               setTooltip({
-                                name,
+                                name: getStateNameTranslated(name, lang as "en" | "ms" | "zh"),
                                 prevalence: data.diabetes,
                                 x: evt.clientX - rect.left,
                                 y: evt.clientY - rect.top,
@@ -401,14 +423,14 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
         const { why, actions } = buildStateMessage(risk, d, safeLang)
 
         const riskConfig = {
-          high:   { bg: "#1a3a6b", light: "#e8eef8", border: "#4a7fc1", emoji: "⚠️" },
-          medium: { bg: "#4a7fc1", light: "#e8eef8", border: "#4a7fc1", emoji: "ℹ️" },
-          low:    { bg: "#7aaed6", light: "#e8eef8", border: "#4a7fc1", emoji: "✅" },
+          high:   { bg: "#1a3a6b", light: "#f6f7f9", emoji: "⚠️" },
+          medium: { bg: "#4a7fc1", light: "#f6f7f9", emoji: "ℹ️" },
+          low:    { bg: "#7aaed6", light: "#f6f7f9", emoji: "✅" },
         }
         const config = riskConfig[risk]
 
         return (
-          <div className="mt-4 rounded-2xl overflow-hidden shadow-md border-2" style={{ borderColor: config.border }}>
+          <div className="mt-4 rounded-2xl overflow-hidden shadow-md border-2">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: config.bg }}>
               <div className="flex items-center gap-3">
@@ -417,7 +439,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
                   <p className="text-white text-sm font-medium uppercase tracking-wider opacity-80">
                     {labels.risk}: {riskLabels[risk]}
                   </p>
-                  <h3 className="text-white text-xl font-bold leading-tight">{selectedState}</h3>
+                  <h3 className="text-white text-xl font-bold leading-tight">{getStateNameTranslated(selectedState, lang as "en" | "ms" | "zh")}</h3>
                 </div>
               </div>
               <button
@@ -459,7 +481,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
 
             {/* What you can do — action steps */}
             <div className="px-5 pt-2 pb-5" style={{ backgroundColor: config.light }}>
-              <p className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">{whatYouCanDo}</p>
+              <p className="text-base font-semibold uppercase tracking-widest text-gray-500 mb-3">{whatYouCanDo}</p>
               <ul className="space-y-2">
                 {actions.map((action, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -469,7 +491,7 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
                     >
                       {i + 1}
                     </span>
-                    <p className="text-base text-gray-700 leading-snug">{action}</p>
+                    <p className="text-lg text-gray-700 leading-snug">{action}</p>
                   </li>
                 ))}
               </ul>
@@ -483,12 +505,12 @@ export function MalaysiaChoroplethMap({ dataByYear, availableYears, lang, t }: C
         <div className="text-center">
           <p className="text-base text-muted-foreground">{t.highest_rate}</p>
           <p className="text-2xl sm:text-3xl font-bold text-[#8b3a62]">{highestState ? `${highestState[1].diabetes.toFixed(1)}%` : "—"}</p>
-          <p className="text-base text-muted-foreground">{highestState ? `(${highestState[0]})` : ""}</p>
+          <p className="text-base text-muted-foreground">{highestState ? `(${getStateNameTranslated(highestState[0], lang as "en" | "ms" | "zh")})` : ""}</p>
         </div>
         <div className="text-center">
           <p className="text-base text-muted-foreground">{t.lowest_rate}</p>
           <p className="text-2xl sm:text-3xl font-bold text-[#1a5276]">{lowestState ? `${lowestState[1].diabetes.toFixed(1)}%` : "—"}</p>
-          <p className="text-base text-muted-foreground">{lowestState ? `(${lowestState[0]})` : ""}</p>
+          <p className="text-base text-muted-foreground">{lowestState ? `(${getStateNameTranslated(lowestState[0], lang as "en" | "ms" | "zh")})` : ""}</p>
         </div>
       </div>
 

@@ -10,7 +10,7 @@ const notoSans = Noto_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'SIHAT - Smart Interactive Health Assistance & Tracking',
+  title: "SIHAT - Seniors' Integrated Health Assessment Tool",
   description: 'SIHAT helps Malaysian elderly understand and manage nutrition and chronic-condition risk factors. Sistem bantuan kesihatan interaktif pintar untuk warga emas Malaysia. 面向马来西亚老年人的智能互动健康辅助与追踪系统。',
   generator: 'v0.app',
   icons: {

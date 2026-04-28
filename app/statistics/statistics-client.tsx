@@ -83,6 +83,14 @@ const content = {
     ethnicity_subtitle: "Our cultural backgrounds and traditions shape us. Understanding these unique trends helps us provide better care for our elders across all communities.",
     ethnicity_y_label: "Percentage (%)",
     click_bar: "👆 Tap any bar or label to learn more",
+    ethnicity_names: {
+      Malay: "Malay",
+      Chinese: "Chinese",
+      Indian: "Indian",
+      'Bumiputera Sabah': "Bumiputera Sabah",
+      'Bumiputera Sarawak': "Bumiputera Sarawak",
+      Others: "Others",
+    },
     legend_high: "High Prevalence (>14%)",
     legend_medium: "Medium Prevalence (7-14%)",
     legend_low: "Low Prevalence (<7%)",
@@ -127,6 +135,14 @@ const content = {
     ethnicity_subtitle: "Memahami bagaimana diabetes mempengaruhi komuniti kita yang berbeza membantu kita memberikan penjagaan yang lebih baik untuk semua.",
     ethnicity_y_label: "Peratusan (%)",
     click_bar: "👆 Klik pada bar atau label untuk maklumat lanjut",
+    ethnicity_names: {
+      Malay: "Melayu",
+      Chinese: "Cina",
+      Indian: "India",
+      'Bumiputera Sabah': "Bumiputera Sabah",
+      'Bumiputera Sarawak': "Bumiputera Sarawak",
+      Others: "Lain-lain",
+    },
     legend_high: "Risiko Tinggi (>14%)",
     legend_medium: "Risiko Sederhana (7-14%)",
     legend_low: "Risiko Rendah (<7%)",
@@ -171,6 +187,14 @@ const content = {
     ethnicity_subtitle: "了解糖尿病如何影响我们不同的社区，有助于我们为每个人提供更好的护理。",
     ethnicity_y_label: "百分比 (%)",
     click_bar: "👆 点击任何条形或标签了解更多",
+    ethnicity_names: {
+      Malay: "马来人",
+      Chinese: "华人",
+      Indian: "印度人",
+      'Bumiputera Sabah': "沙巴土著",
+      'Bumiputera Sarawak': "砂拉越土著",
+      Others: "其他人",
+    },
     legend_high: "高风险 (>14%)",
     legend_medium: "中等风险 (7-14%)",
     legend_low: "较低风险 (<7%)",
@@ -500,11 +524,18 @@ function TrendsChart({ t, nationalTrend }: { t: typeof content.en; nationalTrend
             height={50}
             iconType="circle"
             iconSize={14}
-            formatter={(value) => (
-              <span className="text-base font-medium px-2 text-foreground">
-                {value.charAt(0).toUpperCase() + value.slice(1)}
-              </span>
-            )}
+            formatter={(value) => {
+              const labels: Record<string, string> = {
+                diabetes: t.tooltip_label,
+                hypertension: t.tooltip_label2,
+                hyperlipidemia: t.tooltip_label3,
+              };
+              return (
+                <span className="text-base font-medium px-2 text-foreground">
+                  {labels[value] ||value.charAt(0).toUpperCase() + value.slice(1)}
+                </span>
+              )
+            }}
             wrapperStyle={{
               paddingBottom: "20px",
               paddingLeft: "40px"
@@ -556,7 +587,7 @@ const CustomBarShape = (props: any) => {
     width <= 0 || height <= 0  ) return null;
 
   // This part handles the "fading" effect when clicking an ethnicity
-  const isSelected = !selected || selected.ethnicity === payload.ethnicity;
+  const isSelected = !selected || selected.rawEthnicity === payload.rawEthnicity;
   const opacity = isSelected ? 1 : 0.3;
 
   return (
@@ -616,14 +647,15 @@ function useIsMobile(breakpoint = 768) {
 
 function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicityData: EthnicityRow[]}) {
   const chartData = ethnicityData.map((row) => ({
-    ethnicity: row.ethnicity, // aliased column holds the ethnicity name
+    rawEthnicity: row.ethnicity,
+    ethnicity: t.ethnicity_names[row.ethnicity as keyof typeof t.ethnicity_names] ?? row.ethnicity, // aliased column holds the ethnicity name
     diabetes: parseFloat(row.diabetes as string), 
     hypertension: parseFloat(row.hypertension as string),
     hyperlipidemia: parseFloat(row.hyperlipidemia as string),
   }))
   .sort((a, b) => b.diabetes - a.diabetes)
 
-  const [selected, setSelected] = useState<{ ethnicity: string; diabetes: number, hypertension: number, hyperlipidemia: number } | null>(null)
+  const [selected, setSelected] = useState<{ rawEthnicity: string; diabetes: number, hypertension: number, hyperlipidemia: number } | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<EthnicityExplanation | null>(null)
   const explanationRef = useRef<HTMLDivElement>(null)
 
@@ -635,15 +667,15 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
     : langCode === "zh" ? "您可以做什么"
     : "What you can do"
   
-  function handleBarClick(data: { ethnicity: string; diabetes: number, hypertension: number, hyperlipidemia: number }) {
+  function handleBarClick(data: { rawEthnicity: string; ethnicity: string; diabetes: number, hypertension: number, hyperlipidemia: number }) {
     // If clicking the same bar, deselect it
-    if (selected?.ethnicity === data.ethnicity) {
+    if (selected?.rawEthnicity === data.rawEthnicity) {
       setSelected(null)
       setSelectedEntry(null)
       return
     }
-    setSelected(data)
-    setSelectedEntry(ETHNICITY_EXPLANATIONS[data.ethnicity] ?? DEFAULT_EXPLANATION)
+    setSelected({ rawEthnicity: data.rawEthnicity, diabetes: data.diabetes, hypertension: data.hypertension, hyperlipidemia: data.hyperlipidemia })
+    setSelectedEntry(ETHNICITY_EXPLANATIONS[data.rawEthnicity] ?? DEFAULT_EXPLANATION)
   }
 
   const isMobile = useIsMobile()
@@ -666,7 +698,6 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
             </pattern>
           </defs>
           <CartesianGrid strokeDasharray="3 3" horizontal={!false} vertical={true} />
-          {/* Swap XAxis and YAxis based on layout */}
           <XAxis
             type="number"
             domain={[0, 45]}
@@ -710,23 +741,23 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
           />
           <Legend content={(props) => <CustomLegend {...props} t={t} />} verticalAlign="top" align="right" />
           {/* Group 1: Diabetes (Solid) */}
-          <Bar dataKey="diabetes" name="Diabetes" radius={[0, 6, 6, 0]} maxBarSize={80} onClick={(data) => handleBarClick(data as { ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
+          <Bar dataKey="diabetes" name="Diabetes" radius={[0, 6, 6, 0]} maxBarSize={80} onClick={(data) => handleBarClick(data as {rawEthnicity: string; ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
             {chartData.map((entry, index) => (
-              <Cell key={`cell-dia-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} opacity={selected && selected.ethnicity !== entry.ethnicity ? 0.35 : 1} />
+              <Cell key={`cell-dia-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} opacity={selected && selected.rawEthnicity !== entry.ethnicity ? 0.35 : 1} />
             ))}
           </Bar>
           {/* Group 2: Hypertension (Striped) */}
-          <Bar dataKey="hypertension" name="Hypertension" shape={<CustomBarShape patternId="striped" selected={selected} />} onClick={(data) => handleBarClick(data as { ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
+          <Bar dataKey="hypertension" name="Hypertension" shape={<CustomBarShape patternId="striped" selected={selected} />} onClick={(data) => handleBarClick(data as { rawEthnicity: string; ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
             {chartData.map((entry, index) => (
-              <Cell key={`cell-hyp-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} fillOpacity={selected && selected.ethnicity !== entry.ethnicity ? 0.3 : 1} />
+              <Cell key={`cell-hyp-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} fillOpacity={selected && selected.rawEthnicity !== entry.ethnicity ? 0.3 : 1} />
             ))}
             
           </Bar>
 
           {/* Group 3: Hyperlipidemia (Dotted) */}
-          <Bar dataKey="hyperlipidemia" name="Hyperlipidemia" shape={<CustomBarShape patternId="dotted" selected={selected} />} onClick={(data) => handleBarClick(data as { ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
+          <Bar dataKey="hyperlipidemia" name="Hyperlipidemia" shape={<CustomBarShape patternId="dotted" selected={selected} />} onClick={(data) => handleBarClick(data as { rawEthnicity: string; ethnicity: string; diabetes: number; hypertension: number; hyperlipidemia: number })} style={{ cursor: "pointer" }}>
             {chartData.map((entry, index) => (
-              <Cell key={`cell-lip-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} fillOpacity={selected && selected.ethnicity !== entry.ethnicity ? 0.3 : 1} />
+              <Cell key={`cell-lip-${index}`} fill={ETHNICITY_COLORS[index % ETHNICITY_COLORS.length]} fillOpacity={selected && selected.rawEthnicity !== entry.ethnicity ? 0.3 : 1} />
             ))}
             
           </Bar>
@@ -748,7 +779,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
 
       {/* Explanation panel — three-part structure */}
       {selected && selectedEntry && (() => {
-        const color = ETHNICITY_COLORS[chartData.findIndex((d) => d.ethnicity === selected.ethnicity) % ETHNICITY_COLORS.length]
+        const color = ETHNICITY_COLORS[chartData.findIndex((d) => d.rawEthnicity === selected.rawEthnicity) % ETHNICITY_COLORS.length]
         const highlight = selectedEntry.highlight
         const why = selectedEntry.why[langCode]
         const actions = selectedEntry.actions[langCode]
@@ -759,7 +790,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔍</span>
                 <div>
-                  <p className="text-white font-bold text-xl leading-tight">{selected.ethnicity}</p>
+                  <p className="text-white font-bold text-xl leading-tight">{t.ethnicity_names[selected?.rawEthnicity as keyof typeof t.ethnicity_names] ?? selected?.rawEthnicity}</p>
                 </div>
               </div>
               <button
@@ -779,8 +810,8 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
                 { label: t.tooltip_label3, value: selected.hyperlipidemia },
               ].map(({ label, value }) => (
                 <div key={label} className="px-4 py-3 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
-                  <p className="text-2xl font-bold text-foreground">{value.toFixed(1)}%</p>
+                  <p className="text-base font-semibold uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
+                  <p className="text-3xl font-bold text-foreground">{value.toFixed(1)}%</p>
                 </div>
               ))}
             </div>
@@ -788,7 +819,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
             {/* Highlight badge */}
             <div className="px-5 pt-4 pb-1 bg-card">
               <span
-                className="inline-flex items-center gap-1.5 text-sm font-semibold rounded-full px-3 py-1 mb-3"
+                className="inline-flex items-center gap-1.5 text-base font-semibold rounded-full px-3 py-1 mb-3"
                 style={{ backgroundColor: selectedEntry.highlight.color + "20", color: selectedEntry.highlight.color }}
               >
                 ★ {highlight.label[langCode]}: {highlight.value}
@@ -802,7 +833,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
 
             {/* What you can do */}
             <div className="px-5 pt-3 pb-5 bg-card border-t border-border">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">{whatYouCanDo}</p>
+              <p className="text-base font-semibold uppercase tracking-widest text-muted-foreground mb-3">{whatYouCanDo}</p>
               <ul className="space-y-3">
                 {actions.map((action, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -812,7 +843,7 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
                     >
                       {i + 1}
                     </span>
-                    <p className="text-base text-foreground leading-snug">{action}</p>
+                    <p className="text-lg text-foreground leading-snug">{action}</p>
                   </li>
                 ))}
               </ul>
@@ -833,7 +864,6 @@ function EthnicityBarChart({t, ethnicityData,}: {t: typeof content.en; ethnicity
 
 export default function StatisticsClient({ dataByYear, availableYears, nationalTrend, ethnicityData }: StatisticsClientProps) {
   const [activeTab, setActiveTab] = useState<"prevalence" | "trends">("prevalence")
-  const [activeEduIndex, setActiveEduIndex] = useState(0)
 
   return (
     <PageLayout>
@@ -843,8 +873,8 @@ export default function StatisticsClient({ dataByYear, availableYears, nationalT
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-14 space-y-10">
             {/* Header */}
             <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto whitespace-normal">{t.page_subtitle}</p>
+              <h1 className="text-2xl md:text-5xl font-extrabold mb-4 text-balance">{t.page_title}</h1>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto whitespace-normal">{t.page_subtitle}</p>
             </div>
 
             {/* ── Stats section ── */}
@@ -858,7 +888,7 @@ export default function StatisticsClient({ dataByYear, availableYears, nationalT
               </h2>
 
               {/* Diabetes cards — responsive 1 col on mobile, 3 on sm+ */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {t.stats.map((stat, i) => (
                   <StatCard
                     key={i}
@@ -881,7 +911,7 @@ export default function StatisticsClient({ dataByYear, availableYears, nationalT
               </div>
 
               {/* Three Highs cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {t.stats2.map((stat, i) => (
                   <StatCard
                     key={i}
