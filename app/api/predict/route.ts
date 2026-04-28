@@ -42,57 +42,112 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
  
 // ─── OCR via Groq (Llama-4-Scout) with Key Fallback ───────────────────────────
  
-async function processSingleImage(
-  arrayBuffer: ArrayBuffer,
-  mimeType: string
-): Promise<string> {
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-  const dataUrl = `data:${mimeType};base64,${base64}`;
+async function executeGroqOcrRequest(apiKey: string, base64: string, mimeType: string) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `You are a menu analysis engine. Extract every unique food and drink item.
 
-  const attemptOcr = async (apiKey: string | undefined) => {
-    if (!apiKey) throw new Error("API Key missing");
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Extract every food and drink item name from this menu and return the results as a JSON object. The JSON should contain a list called 'items'. Exclude prices, category headers, and descriptions. Only include the specific name of the food or drink. If a line is unclear or contains only noise, ignore.`,
-              },
-              {
-                type: "image_url",
-                image_url: { url: dataUrl },
-              },
-            ],
-          },
-        ],
-        max_tokens: 1024,
-        temperature: 0.1,
-      }),
-    });
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    const data = await res.json();
-    return data?.choices?.[0]?.message?.content ?? "";
+DETECTION STRATEGY (Adaptive):
+1. IF PRICES EXIST: Use prices or codes (A1, RM10) as anchors to identify valid items.
+2. IF NO PRICES EXIST: Identify items based on list structure. Look for:
+   - Items aligned in a vertical column.
+   - Text preceded by bullet points, icons, or checkboxes.
+   - Text positioned directly below or next to a food photo.
+3. HIERARCHY RULE: Identify and IGNORE large category headers (e.g., "NASI GORENG", "DRINKS"). Only extract the specific sub-items listed under them.
+4. DECORATION RULE: Ignore generic background illustrations that are not part of the structured list.
+
+Formatting:
+- Return ONLY valid JSON: {"items": ["Item 1", "Item 2"]}`,
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_tokens: 1024,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error((errorData as any)?.error?.message || `Groq OCR error ${res.status}`);
+  }
+  return await res.json();
+}
+
+function parseItemsFromOcrContent(rawContent: string): string[] {
+  if (!rawContent || typeof rawContent !== "string") return [];
+  const trimmed = rawContent.trim();
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray((parsed as any).items)) return (parsed as any).items;
+  } catch { /* ignore */ }
+
+  const jsonMatch = trimmed.match(/\{[\s\S]*"items"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray((parsed as any).items)) return (parsed as any).items;
+    } catch { /* ignore */ }
+  }
+
+  return trimmed
+    .split(/[,\n]/)
+    .map((s) => s.replace(/^[-•*\d.)\s]+/, "").trim())
+    .filter((s) => s.length > 1 && s.length < 100);
+}
+
+function deduplicateItems(items: string[]): string[] {
+  const seen = new Map<string, string>();
+  for (const item of items) {
+    const key = item.toLowerCase().trim().replace(/\s+/g, " ");
+    if (!seen.has(key)) seen.set(key, item.trim());
+  }
+  return Array.from(seen.values());
+}
+
+async function processSingleImage(arrayBuffer: ArrayBuffer, mimeType: string): Promise<string[]> {
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  const primaryKey = process.env.GROQ_API_KEY;
+  const backupKey = process.env.GROQ_API_KEY_2;
+
+  if (!primaryKey && !backupKey) return [];
+
+  const tryWithKey = async (apiKey: string) => {
+    const ocrResult = await executeGroqOcrRequest(apiKey, base64, mimeType);
+    const rawContent = ocrResult?.choices?.[0]?.message?.content ?? "";
+    const parsed = parseItemsFromOcrContent(rawContent);
+    return deduplicateItems(parsed);
   };
 
   try {
-    // Try KEY 2 first
-    return await attemptOcr(process.env.GROQ_API_KEY_2);
+    if (!primaryKey) throw new Error("Primary OCR key missing");
+    return await tryWithKey(primaryKey);
   } catch (err) {
-    console.warn(`[predict] ⚠️ OCR Primary Key failed, trying backup...`);
+    console.warn("[predict] ⚠️ OCR primary key failed, trying backup...", err);
     try {
-      // Try KEY 1 backup
-      return await attemptOcr(process.env.GROQ_API_KEY);
+      if (!backupKey) return [];
+      return await tryWithKey(backupKey);
     } catch {
-      return "";
+      return [];
     }
   }
 }
@@ -127,14 +182,14 @@ TASK:
      - Else if ANY indicator is Medium -> Final Risk = "Medium"
      - If ALL indicators are Low -> Final Risk = "Low"
 4. Write a short practical health tip for EVERY item (one sentence) focusing on reducing salt, sugar, or fat.
-5. For EVERY item, include a "best_reason" field explaining the choice based on the Three Highs (Hypertension, Hyperglycemia, Hyperlipidemia).
+5. For EVERY item, include a "best_reason" field explaining the choice based on the Three Highs (Hypertension, Hyperglycemia, Hyperlipidemia). If all 3 foods in that category is high risk, suggest a similiar healthier food alternative (if the food is es kacang, es dawet, es teler for example can suggest es buah).
  
 RANKING LOGIC (apply per category):
-- Priority 1: Risk (Low first, then Medium, then High)
-- Priority 2 (tie-breaker for same Risk):
-  1st: Salt (lower mg first)
-  2nd: Sugar (lower g first)
-  3rd: Saturated Fat (lower g first)
+1. Highest Priority: Risk (Low first, then Medium, then High)
+2. Tie Breaker (tie-breaker if there are multiple items with the same risk[3 top items all have low risks for example] then rank those 3 items based on in order Salt, Sugar, then Saturated Fat):
+  -Salt (lower mg first)
+  -Sugar (lower g first)
+  -Saturated Fat (lower g first)
  
 IMPORTANT OUTPUT RULES:
 - Output ONLY the top 3 best items per category (already ranked). If a category has fewer than 3 items, output all of them. If a category has 0 items, output an empty array.
@@ -216,7 +271,7 @@ export async function POST(req: NextRequest) {
         return processSingleImage(buf, file.type || "image/jpeg");
       })
     );
-    const combinedOcr = ocrResults.filter(Boolean).join("\n");
+    const combinedOcr = deduplicateItems(ocrResults.flat()).join("\n");
  
     const rawJson = await analyzeWithFallback(combinedOcr, userText);
  
