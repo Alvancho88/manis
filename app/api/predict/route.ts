@@ -1,14 +1,21 @@
 // app/api/predict/route.ts
-// Backend used by the recommendation landing page (`app/page.tsx`).
-// Uses: Groq (Llama-4-Scout) for OCR + Groq (Llama-3.3-70B) for analysis
-// Strategy: Key 2 primary, Key 1 backup for both tasks.
+// Backend API endpoint for food analysis and recommendation system
+// Uses Groq AI models: Llama-4-Scout for OCR and Llama-3.3-70B for nutritional analysis
+// Implements API key fallback strategy for reliability
+// Supports multi-language analysis based on user preference
  
 import { NextRequest, NextResponse } from "next/server";
  
-export const maxDuration = 60;
+export const maxDuration = 60; // Maximum execution time for the API route (60 seconds)
  
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// ─── HELPER FUNCTIONS ─────────────────────────────────────────────────────────────────
  
+/**
+ * Converts various input types to numbers for nutritional data processing
+ * Handles string parsing, removes non-numeric characters, and provides fallback to 0
+ * @param value - Input value that could be number, string, or other types
+ * @returns Cleaned numeric value or 0 if conversion fails
+ */
 function cleanToNumber(value: unknown): number {
   if (typeof value === "number") return value;
   const cleaned = String(value).replace(/[^\d.]/g, "");
@@ -16,6 +23,13 @@ function cleanToNumber(value: unknown): number {
   return isNaN(n) ? 0 : n;
 }
  
+/**
+ * Safely parses JSON responses from AI models that might include markdown formatting
+ * Handles nested JSON objects by tracking brace depth and string literals
+ * @param raw - Raw string response from AI model
+ * @returns Parsed JSON object
+ * @throws Error if no valid JSON object found
+ */
 function safeParseJson(raw: string): Record<string, unknown[]> {
   const stripped = raw.replace(/```json\s*|```/g, "").trim();
   const start = stripped.indexOf("{");
@@ -25,6 +39,7 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
   let inString = false;
   let escape = false;
  
+  // Parse character by character to handle nested structures properly
   for (let i = start; i < stripped.length; i++) {
     const ch = stripped[i];
     if (escape) { escape = false; continue; }
@@ -40,8 +55,61 @@ function safeParseJson(raw: string): Record<string, unknown[]> {
   return JSON.parse(stripped);
 }
  
-// ─── OCR via Groq (Llama-4-Scout) with Key Fallback ───────────────────────────
+/**
+ * Extracts food and drink items from OCR content
+ * Handles JSON parsing, string trimming, and item filtering
+ * @param rawContent - Raw OCR content from Groq API
+ * @returns Array of extracted food and drink items
+ */
+function parseItemsFromOcrContent(rawContent: string): string[] {
+  if (!rawContent || typeof rawContent !== "string") return [];
+  const trimmed = rawContent.trim();
  
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray((parsed as any).items)) return (parsed as any).items;
+  } catch (e) {}
+ 
+  const jsonMatch = trimmed.match(/\{[\s\S]*"items"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray((parsed as any).items)) return (parsed as any).items;
+    } catch (e) {}
+  }
+ 
+  return trimmed
+    .split(/[,\n]/)
+    .map((s) => s.replace(/^[-•*\d.)\s]+/, "").trim())
+    .filter((s) => s.length > 1 && s.length < 100);
+}
+ 
+/**
+ * Removes duplicate items from an array while preserving order
+ * Uses a Map to track unique items and returns the resulting array
+ * @param items - Array of items to deduplicate
+ * @returns Array of unique items
+ */
+function deduplicateItems(items: string[]): string[] {
+  const seen = new Map<string, string>();
+  for (const item of items) {
+    const key = item.toLowerCase().trim().replace(/\s+/g, " ");
+    if (!seen.has(key)) seen.set(key, item.trim());
+  }
+  return Array.from(seen.values());
+}
+ 
+// ─── OCR PROCESSING WITH GROQ (Llama-4-Scout) ───────────────────────────
+ 
+/**
+ * Executes OCR request to Groq API using Llama-4-Scout model
+ * Sends base64 encoded image with detailed menu analysis instructions
+ * @param apiKey - Groq API authentication key
+ * @param base64 - Base64 encoded image data
+ * @param mimeType - Image MIME type (e.g., 'image/jpeg')
+ * @returns Promise resolving to Groq API response
+ * @throws Error if API request fails
+ */
 async function executeGroqOcrRequest(apiKey: string, base64: string, mimeType: string) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -57,6 +125,7 @@ async function executeGroqOcrRequest(apiKey: string, base64: string, mimeType: s
           content: [
             {
               type: "text",
+              // Comprehensive OCR prompt with adaptive detection strategies
               text: `You are a menu analysis engine. Extract every unique food and drink item.
 
 DETECTION STRATEGY (Adaptive):
@@ -78,51 +147,25 @@ Formatting:
           ],
         },
       ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 1024,
+      response_format: { type: "json_object" }, // Enforce JSON response
+      temperature: 0.1, // Low temperature for consistent results
     }),
   });
-
+ 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error((errorData as any)?.error?.message || `Groq OCR error ${res.status}`);
   }
   return await res.json();
 }
-
-function parseItemsFromOcrContent(rawContent: string): string[] {
-  if (!rawContent || typeof rawContent !== "string") return [];
-  const trimmed = rawContent.trim();
-
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (Array.isArray((parsed as any).items)) return (parsed as any).items;
-  } catch { /* ignore */ }
-
-  const jsonMatch = trimmed.match(/\{[\s\S]*"items"[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray((parsed as any).items)) return (parsed as any).items;
-    } catch { /* ignore */ }
-  }
-
-  return trimmed
-    .split(/[,\n]/)
-    .map((s) => s.replace(/^[-•*\d.)\s]+/, "").trim())
-    .filter((s) => s.length > 1 && s.length < 100);
-}
-
-function deduplicateItems(items: string[]): string[] {
-  const seen = new Map<string, string>();
-  for (const item of items) {
-    const key = item.toLowerCase().trim().replace(/\s+/g, " ");
-    if (!seen.has(key)) seen.set(key, item.trim());
-  }
-  return Array.from(seen.values());
-}
-
+ 
+/**
+ * Processes a single image using OCR and extracts food and drink items
+ * Handles API key fallback and error handling
+ * @param arrayBuffer - Image data as an array buffer
+ * @param mimeType - Image MIME type (e.g., 'image/jpeg')
+ * @returns Promise resolving to an array of extracted items
+ */
 async function processSingleImage(arrayBuffer: ArrayBuffer, mimeType: string): Promise<string[]> {
   const base64 = Buffer.from(arrayBuffer).toString("base64");
 
@@ -151,14 +194,37 @@ async function processSingleImage(arrayBuffer: ArrayBuffer, mimeType: string): P
     }
   }
 }
- 
+
 // ─── Shared prompt builder ─────────────────────────────────────────────────────
 
-function buildAnalysisPrompt(combinedOcr: string, userText: string): string {
+/**
+ * Builds comprehensive analysis prompt for AI model
+ * Includes language requirements, categorization rules, and nutritional analysis guidelines
+ * @param combinedOcr - OCR results from all images
+ * @param userText - Manual input from user
+ * @param language - Target language for analysis (defaults to 'en')
+ * @returns Complete prompt string for AI analysis
+ */
+function buildAnalysisPrompt(combinedOcr: string, userText: string, language: string = "en"): string {
+  // Language mapping for prompt instructions
+  const languageMap: Record<string, string> = {
+    "en": "English",
+    "ms": "Bahasa Malaysia", 
+    "zh": "Chinese"
+  };
+  
+  const targetLanguage = languageMap[language] || "English";
+  
   return `
 CONTEXT:
 Menu OCR (ALL items extracted from images): ${combinedOcr}
 USER MANUAL INPUT: ${userText}
+LANGUAGE: ${targetLanguage} (${language})
+ 
+CRITICAL LANGUAGE REQUIREMENT:
+- You must provide ALL analysis, tips, recommendations, and best_reason fields entirely in ${targetLanguage}.
+- If language is unsupported, default to English.
+- All food item names should remain in their original language, but all explanations must be in ${targetLanguage}.
  
 CRITICAL RULE:
 - ONLY include food items that are EXPLICITLY named in the Menu OCR or USER MANUAL INPUT above. Do NOT invent or hallucinate any food item.
@@ -200,17 +266,28 @@ IMPORTANT OUTPUT RULES:
 - Every item must follow this shape: {"f":"name","sugar":number,"salt":number,"fat":number,"risk":"Low"|"Medium"|"High","tip":"string","best_reason":"string"}
 `;
 }
+
+// ─── NUTRITIONAL ANALYSIS WITH GROQ (Llama-3.3-70B) ────────────────────────────────
  
-// ─── Analysis via Groq (Llama-3.3-70B) ────────────────────────────────a───────
- 
+/**
+ * Executes nutritional analysis request to Groq API using Llama-3.3-70B model
+ * Sends comprehensive prompt with OCR data and user input for health analysis
+ * @param combinedOcr - Combined OCR results from all images
+ * @param userText - Manual user input of food items
+ * @param apiKey - Groq API authentication key
+ * @param language - Target language for analysis (defaults to 'en')
+ * @returns Promise resolving to AI analysis response as JSON string
+ * @throws Error if API key missing or request fails
+ */
 async function analyzeWithGroq(
   combinedOcr: string,
   userText: string,
-  apiKey: string | undefined
+  apiKey: string | undefined,
+  language: string = "en"
 ): Promise<string> {
   if (!apiKey) throw new Error("API Key missing");
-  const prompt = buildAnalysisPrompt(combinedOcr, userText);
- 
+  const prompt = buildAnalysisPrompt(combinedOcr, userText, language);
+
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -227,54 +304,76 @@ async function analyzeWithGroq(
       response_format: { type: "json_object" }
     }),
   });
- 
+
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Groq Analysis error ${res.status}: ${err}`);
   }
- 
+
   const data = await res.json();
   return data?.choices?.[0]?.message?.content ?? "{}";
 }
+
+// ─── ANALYSIS WITH API KEY FALLBACK ────────────────────────────────────────────────
  
-// ─── Analysis with Key 2 first, Key 1 fallback ────────────────────────────────
- 
+/**
+ * Executes nutritional analysis with API key fallback strategy
+ * Tries primary key first, then falls back to backup key if primary fails
+ * @param combinedOcr - Combined OCR results from all images
+ * @param userText - Manual user input of food items
+ * @param language - Target language for analysis (defaults to 'en')
+ * @returns Promise resolving to AI analysis response as JSON string
+ */
 async function analyzeWithFallback(
   combinedOcr: string,
-  userText: string
+  userText: string,
+  language: string = "en"
 ): Promise<string> {
   try {
-    // Primary: Key 2
-    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY_2);
-    console.log("[predict] ✅ Analysis succeeded (Key 2)");
+    // Primary: Key 1 (GROQ_API_KEY)
+    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY, language);
+    console.log("[predict] ✅ Analysis succeeded (Key 1)");
     return result;
   } catch (err) {
-    console.warn(`[predict] ⚠️ Analysis Key 2 failed — trying Key 1. Error: ${err}`);
-    // Secondary: Key 1
-    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY);
-    console.log("[predict] ✅ Analysis succeeded (Key 1)");
+    console.warn(`[predict] ⚠️ Analysis Key 1 failed — trying Key 2. Error: ${err}`);
+    // Secondary: Key 2 (GROQ_API_KEY_2)
+    const result = await analyzeWithGroq(combinedOcr, userText, process.env.GROQ_API_KEY_2, language);
+    console.log("[predict] ✅ Analysis succeeded (Key 2)");
     return result;
   }
 }
+
+// ─── MAIN API ROUTE HANDLER ────────────────────────────────────────────────────────────
  
-// ─── Route handler ────────────────────────────────────────────────────────────
- 
+/**
+ * Main API endpoint handler for food analysis and recommendation system
+ * Processes uploaded images and text input, performs OCR and nutritional analysis
+ * @param req - Next.js API request object
+ * @returns Promise resolving to JSON response with categorized food recommendations
+ * @throws Error if processing fails
+ */
 export async function POST(req: NextRequest) {
   try {
+    // Extract form data from request
     const formData = await req.formData();
     const userText = (formData.get("userText") as string) ?? "";
     const files = formData.getAll("file") as File[];
- 
+    const language = (formData.get("language") as string) ?? "en"; // Get language from frontend
+
+    // Process all uploaded images with OCR (max 5 images)
     const ocrResults = await Promise.all(
       files.slice(0, 5).map(async (file) => {
         const buf = await file.arrayBuffer();
         return processSingleImage(buf, file.type || "image/jpeg");
       })
     );
+    // Combine and deduplicate OCR results from all images
     const combinedOcr = deduplicateItems(ocrResults.flat()).join("\n");
- 
-    const rawJson = await analyzeWithFallback(combinedOcr, userText);
- 
+
+    // Perform nutritional analysis with language support
+    const rawJson = await analyzeWithFallback(combinedOcr, userText, language);
+
+    // Parse AI response safely
     let rawData: Record<string, unknown[]>;
     try {
       rawData = safeParseJson(rawJson);
@@ -282,6 +381,7 @@ export async function POST(req: NextRequest) {
       rawData = JSON.parse(rawJson);
     }
  
+    // Risk level mapping for sorting
     const riskMap: Record<string, number> = { 
       "Low": 1, "Low Risk": 1, 
       "Medium": 2, "Medium Risk": 2, 
@@ -290,25 +390,30 @@ export async function POST(req: NextRequest) {
 
     const finalResults: Record<string, { ranking: unknown[] }> = {};
  
+    // Process each food category (Appetizer, Main Dish, Dessert, Drinks)
     for (const cat of ["Appetizer", "Main Dish", "Dessert", "Drinks"]) {
       const items = (rawData[cat] ?? []) as Record<string, any>[];
- 
+
+      // Clean and validate nutritional data for each item
       for (const item of items) {
         item.sugar = cleanToNumber(item.sugar ?? 0);
         item.salt = cleanToNumber(item.salt ?? 0);
         item.fat = cleanToNumber(item.fat ?? 0);
         item.risk_score = riskMap[String(item.risk).trim()] ?? 2;
       }
- 
+
+      // Sort items by risk level (primary) and nutritional values (secondary)
       const sorted = [...items].sort((a, b) => {
         if (a.risk_score !== b.risk_score) return a.risk_score - b.risk_score;
         if (a.salt !== b.salt) return a.salt - b.salt;
         if (a.sugar !== b.sugar) return a.sugar - b.sugar;
         return a.fat - b.fat;
       });
- 
+
+      // Keep only top 3 items per category
       const top3 = sorted.slice(0, 3);
- 
+
+      // Clean up data structure and add best reason for top item
       top3.forEach((item: any, idx: number) => {
         delete item.risk_score;
         if (idx === 0) {
@@ -319,17 +424,20 @@ export async function POST(req: NextRequest) {
           delete item.best_reason;
         }
       });
- 
+
       finalResults[cat] = { ranking: top3 };
     }
  
+    // Calculate unique food count from AI response or fallback
     const uniqueFoodCount = typeof rawData.uniqueFoodCount === 'number' 
       ? rawData.uniqueFoodCount 
       : Object.values(rawData).filter(Array.isArray).flat().length;
 
+    // Return final results with unique food count
     return NextResponse.json({ ...finalResults, uniqueFoodCount });
 
   } catch (err: unknown) {
+    // Error handling with proper error message
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
