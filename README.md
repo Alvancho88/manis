@@ -1,8 +1,8 @@
-# 🍚 Manis — Malaysian Diabetes Awareness & Nutrition Intelligence System
+# 🍚 SIHAT - Seniors' Integrated Health Assessment Tool
 
 > **FIT5120 Industry Experience Project — TM02 Quintet**
 
-**SIHAT** (Modern Analytics & Nutrition Interactive System) is a multilingual web application designed to combat the rising rates of metabolic syndrome and non-infectious diseases (NIDs) among Malaysians. While the name sihat (Malay for healthy) reflects a holistic approach to wellness, the platform specifically targets the "Three Highs": High Blood Sugar **(Hyperglycemia)**, High Blood Pressure **(Hypertension)**, and High Blood Fat **(Hyperlipidemia)**.
+**SIHAT** (SIHAT - Seniors' Integrated Health Assessment Tool) is a multilingual web application designed to combat the rising rates of metabolic syndrome and non-infectious diseases (NIDs) among Malaysians. While the name sihat (Malay for healthy) reflects a holistic approach to wellness, the platform specifically targets the "Three Highs": High Blood Sugar **(Hyperglycemia)**, High Blood Pressure **(Hypertension)**, and High Blood Fat **(Hyperlipidemia)**.
 
 ---
 
@@ -11,10 +11,10 @@
 | Feature | Description |
 |---|---|
 | **AI Menu Analyser** | Upload a photo of a restaurant menu and get an instant nutritional breakdown ranked by diabetes risk (sugar, salt, saturated fat) |
-| **Food Explorer** | Browse common Malaysian foods with their sugar, calorie, and Glycaemic Index (GI) levels — with multilingual health tips |
+| **Food Explorer** | Browse common Malaysian foods with their sugar, calorie, salt, fat, and Glycaemic Index (GI) levels — with multilingual health tips |
 | **Diabetes Overview** | Interactive choropleth map and charts showing diabetes prevalence across Malaysian states and ethnic groups |
 | **Myth Buster** | Debunks common diabetes misconceptions with evidence-based facts |
-| **Healthcare Finder** | *(Coming in Iteration 2)* Locating nearby diabetes healthcare facilities |
+| **Healthcare Finder** | *(Coming in Iteration 3)* Locating nearby diabetes healthcare facilities |
 | **Multilingual Support** | Full UI in English 🇬🇧, Bahasa Malaysia 🇲🇾, and Mandarin 🇨🇳 |
 
 ---
@@ -103,10 +103,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Diabetes Statistics Overview
 
-1. Go to `/overview`.
-2. Interact with the **choropleth map** to explore diabetes prevalence by Malaysian state.
-3. View the **national trend chart** to see how prevalence has changed over the years.
+1. Go to `/statistics`.
+2. View the **national trend chart** to see how prevalence has changed over the years.
+3. Interact with the **choropleth map** to explore diabetes prevalence by Malaysian state.
 4. Check the **ethnicity breakdown** chart for community-level insights.
+5. Get additional useful information 
+
+### Learn Overview
+
+1. Go to `/learn`.
+2. Learn about Diabetes and Its Partners (The Three Highs)
+3. How the Three Highs affect your body
+4. Myth Debunker
+
 
 ---
 
@@ -117,10 +126,10 @@ manis/
 ├── app/
 │   ├── api/predict/        # AI menu analysis API route (Groq)
 │   ├── archive/            # Archived content / past iterations
-│   ├── explore/            # Myth Buster page
+│   ├── learn/            # Myth Buster page
 │   ├── food/               # Food Explorer page
 │   ├── healthcare/         # Healthcare Finder (coming in Iteration 2)
-│   ├── overview/           # Diabetes statistics & map
+│   ├── statistics/           # Diabetes statistics & map
 │   └── recommendation/     # AI Menu Analyser (home page)
 ├── components/
 │   ├── ui/                 # shadcn/ui component library
@@ -156,18 +165,20 @@ Set the same environment variables (`DATABASE_URL`, `GROQ_API_KEY`, `GROQ_API_KE
 
 ## 🔁 Iteration Notes
 
-### Iteration 1 (Current)
-- AI menu analyser with OCR + nutritional risk ranking
-- Food explorer with GI and sugar data for common Malaysian foods
-- Diabetes statistics overview with state-level map
-- Myth Buster feature
-- Multilingual support (EN / MS / ZH)
-- Dual Groq API key fallback for reliability
+### Iteration 1 (Archived)
+- AI Input & Food Detection
+- AI Recommendation & Decision Support
+- Diabetes Education & Awareness
 
-### Iteration 2 (Planned)
+### Iteration 2 (Current)
+- Food explorer with the three highs for common Malaysian foods
+- Three highs statistics overview with state-level map
+- Learning about the three highs and Myth Buster feature
+- Multilingual support (EN / MS / ZH)
+
+### Iteration 3 (Future)
 - Healthcare Facility Finder (nearby clinic/hospital locator)
-- Expanded food database
-- Additional language support
+- AI Conversational Health Assistant
 
 ### Tagging a Release
 
