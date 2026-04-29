@@ -98,6 +98,7 @@ const content = {
     success_none: "No items detected",
     top3_disclaimer: "We are showing you the Top 3 Healthiest Choices identified in your photo. These are the safest options for managing your blood sugar, blood pressure, and cholesterol.",
     analyze_new_food: "Reset",
+    back_to_category: "Back to Categories",
     best_choice_reason_label: "Why we pick this as the Best Choice",
     // Action sheet
     sheet_title: "Add Photo",
@@ -181,6 +182,7 @@ const content = {
     success_none: "Tiada item dikesan",
     top3_disclaimer: "Kami menunjukkan kepada anda 3 Pilihan Paling Sihat daripada apa yang dijumpai dalam foto makanan anda. Ini adalah pilihan paling selamat untuk gula darah anda.",
     analyze_new_food: "Set Semula",
+    back_to_category: "Kembali ke Kategori",
     best_choice_reason_label: "Kenapa Pilihan Terbaik",
     sheet_title: "Tambah Foto",
     sheet_camera: "Ambil Foto",
@@ -263,6 +265,7 @@ const content = {
     success_none: "未检测到食物",
     top3_disclaimer: "我们为您展示了食物照片中发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
     analyze_new_food: "重置",
+    back_to_category: "返回类别",
     best_choice_reason_label: "为何是最佳选择",
     sheet_title: "添加照片",
     sheet_camera: "拍照",
@@ -480,6 +483,7 @@ export default function RecommendationPage() {
   // File input refs for different upload methods
   const fileRef = useRef<HTMLInputElement>(null)       // gallery / desktop file picker
   const cameraRef = useRef<HTMLInputElement>(null)     // camera-only (mobile)
+  const categoryTabsRef = useRef<HTMLDivElement>(null) // category tabs section (for scroll-back)
 
   const MAX_IMAGES = 5 // Maximum number of images allowed
 
@@ -915,7 +919,7 @@ export default function RecommendationPage() {
 
             {/* Category Selection */}
             {showCategoryTabs && (
-              <div className="bg-card rounded-2xl border border-border p-4 md:p-6 shadow-sm">
+              <div ref={categoryTabsRef} className="bg-card rounded-2xl border border-border p-4 md:p-6 shadow-sm">
                 <h2 className="text-2xl font-bold mb-2 text-center">{t.select_category}</h2>
                 <p className="text-muted-foreground text-center mb-6">{t.select_category_hint}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
@@ -1011,8 +1015,25 @@ export default function RecommendationPage() {
                     <FoodResultCard key={i} food={food} isBest={i === 0} t={t} lang={lang} />
                   ))}
                 </div>
-                <div className="mt-8">
-                  <button onClick={clearAll} className="w-full flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted">
+                <div className="mt-8 flex gap-3">
+                  {/* Back button — scrolls to category tabs */}
+                  <button
+                    onClick={() => {
+                      handleAnalyzeAnother()
+                      setTimeout(() => {
+                        categoryTabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }, 50)
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#ADD8E6] text-[#1a5276] font-bold text-lg py-4 rounded-2xl hover:bg-[#93c6d6] transition-colors border-2 border-[#ADD8E6]"
+                  >
+                    <ArrowRight className="w-5 h-5 rotate-180" />
+                    {t.back_to_category}
+                  </button>
+                  {/* Reset button — half width, right side */}
+                  <button
+                    onClick={clearAll}
+                    className="flex-none w-[calc(50%-6px)] flex items-center justify-center gap-2 border-2 border-border text-foreground font-bold text-lg py-4 rounded-2xl hover:bg-muted"
+                  >
                     <Trash2 className="w-5 h-5" />
                     {t.analyze_new_food}
                   </button>
