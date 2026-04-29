@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import Image from "next/image"
+import { createPortal } from "react-dom"
 
 type LangCode = "en" | "ms" | "zh"
 
@@ -13,7 +14,7 @@ const content = {
     conditions: {
       bloodSugar: {
         name: "High Blood Sugar",
-        condition: "Hyperglycemia",
+        condition: "Diabetes",
         why: "Over time, it can damage blood vessels and vital organs."
       },
       bloodPressure: {
@@ -88,12 +89,16 @@ export function ThreeHighsPopup({ lang }: { lang: LangCode }) {
   const t = content[lang]
 
   useEffect(() => {
-    // Check if user has dismissed the popup before
-    const dismissed = localStorage.getItem('dismissed_3high_popup')
-    if (!dismissed) {
+    // Check if popup has been shown in current session
+    const sessionShown = sessionStorage.getItem('3high_popup_shown_session')
+    const permanentlyDismissed = localStorage.getItem('dismissed_3high_popup')
+    
+    if (!sessionShown && !permanentlyDismissed) {
       // Show popup after a short delay to allow page to load
       const timer = setTimeout(() => {
         setIsVisible(true)
+        // Mark as shown in current session
+        sessionStorage.setItem('3high_popup_shown_session', 'true')
       }, 1000)
       return () => clearTimeout(timer)
     }
@@ -104,6 +109,7 @@ export function ThreeHighsPopup({ lang }: { lang: LangCode }) {
       localStorage.setItem('dismissed_3high_popup', 'true')
     }
     setIsVisible(false)
+    // Session already marked as shown, no need to update
   }
 
   const handleLearnMore = () => {
@@ -111,14 +117,14 @@ export function ThreeHighsPopup({ lang }: { lang: LangCode }) {
       localStorage.setItem('dismissed_3high_popup', 'true')
     }
     setIsVisible(false)
-    // TODO: Redirect to learn page or FAQ
+    // Session already marked as shown, no need to update
     window.location.href = '/learn'
   }
 
   if (!isVisible) return null
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4 three-highs-popup">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 pb-4">
@@ -231,6 +237,7 @@ export function ThreeHighsPopup({ lang }: { lang: LangCode }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
