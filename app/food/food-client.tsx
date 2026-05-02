@@ -481,6 +481,27 @@ function FoodCard({ food, t, lang }: { food: FoodItem; t: typeof pageContent.en;
   // Find the index of this food in the cart (used for removal)
   const cartIndex = cart.findIndex(f => f.name.en === food.name.en)
 
+  /**
+   * translateCategory
+   *
+   * Translates a comma-separated category string into the active language.
+   * Each category value is looked up by its English index in the categories array
+   * and replaced with the equivalent translation. Unrecognised values are kept as-is.
+   *
+   * @param category - Raw category string from food data (e.g., "Malaysian,Drinks")
+   * @returns Translated category string (e.g., "马来西亚,饮料" in zh)
+   */
+  const translateCategory = (category: string): string => {
+    return category
+      .split(",")
+      .map(c => {
+        const trimmed = c.trim()
+        const index = categories.en.indexOf(trimmed)
+        return index !== -1 ? categories[lang][index] : trimmed
+      })
+      .join(", ")
+  }
+
   // Compute colour-coded risk levels for each nutrient
   const displayName = getFoodName(food, lang)
   const displayCategory = getLocalizedCategory(food.category, lang)
