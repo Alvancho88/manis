@@ -1748,7 +1748,7 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
         )}
 
         {/* Collapsible nutrition guide with colour legends for sugar, fat, sodium, and GI */}
-        <div className="-mx-4 sm:-mx-6 bg-background border-b border-border">
+        <div className="bg-background rounded-2xl overflow-hidden">
           {/* Toggle button to expand/collapse the guide */}
           <button
             onClick={() => setGuideOpen(v => !v)}
@@ -1774,8 +1774,8 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
 
           {/* Expanded guide content */}
           {guideOpen && (
-            <div className="px-2 sm:px-6 pb-3 space-y-3 md:space-y-2">
-              <div className="-mx-4 sm:-mx-6 px-2 sm:px-6 py-2 bg-background border-b border-border">
+            <div className="px-4 sm:px-6 pb-4 space-y-3 md:space-y-2">
+              <div className="py-2 bg-background">
                 <div className="space-y-3 md:space-y-2">
                   {/* Sugar colour guide */}
                   <div className="flex flex-col gap-1.5 md:flex-row md:flex-wrap md:items-center md:gap-3 text-sm md:text-base">
@@ -1816,7 +1816,7 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
                   </div>
 
                   {/* Sodium colour guide with info button */}
-                  <div className="flex flex-col gap-1.5 md:flex-row md:flex-nowrap md:items-center md:gap-3 text-sm md:text-base">
+                  <div className="flex flex-col gap-1.5 md:flex-row md:flex-wrap md:items-center md:gap-3 text-sm md:text-base">
                     <span className="font-bold text-primary shrink-0 whitespace-nowrap text-base md:text-base">{t.sodium_guide_title}:</span>
                     <div className="flex w-full gap-1 md:flex-nowrap md:gap-3 md:w-auto md:items-center">
                       <span className="flex-1 md:flex-none inline-flex flex-col md:flex-row items-center justify-center gap-0 md:gap-1 px-2 py-1.5 rounded-xl md:rounded-full bg-[#B5E0F1] border border-[#1a5276] text-[#1a5276] font-semibold text-sm md:text-base md:px-4 md:py-2">
@@ -1831,19 +1831,11 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
                         <span className="inline-flex items-center gap-0.5"><TrendingUp className="w-3.5 h-3.5 md:w-5 md:h-5 shrink-0" />{t.risk_high}</span>
                         <span className="text-xs md:text-base">≥601mg</span>
                       </span>
-                      {/* Sodium info button — desktop only */}
-                      <button
-                        onClick={() => setSodiumInfoOpen(true)}
-                        className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        <Info className="w-5 h-5" />
-                        {t.sodium_short_explanation}
-                      </button>
                     </div>
-                    {/* Sodium info button — mobile only */}
+                    {/* GI info button */}
                     <button
                       onClick={() => setSodiumInfoOpen(true)}
-                      className="w-full md:hidden justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-sm md:text-base font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <Info className="w-4 h-4" />
                       {t.sodium_short_explanation}
