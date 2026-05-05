@@ -66,7 +66,7 @@ export function PageLayout({ children }: { children: (lang: LangCode) => ReactNo
         <p className="mt-3 text-sm text-primary-foreground/70">© 2026 SIHAT</p>
       </footer>
       {/* AI Chatbot */}
-      {/* <AIChatbot lang={lang} /> */}
+      <AIChatbot lang={lang} />
       {/* 3 Highs Educational Popup - Only on home page */}
       {isHomePage && <ThreeHighsPopup lang={lang} />}
     </div>
