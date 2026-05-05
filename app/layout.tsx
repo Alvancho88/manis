@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Noto_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AIChatbot } from '@/components/ai-chatbot'
 import './globals.css'
 
 const notoSans = Noto_Sans({

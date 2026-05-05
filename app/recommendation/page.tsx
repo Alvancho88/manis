@@ -616,6 +616,13 @@ export default function RecommendationPage() {
       }
 
       const data = await res.json()
+
+      // ─── Epic 9: Save scan results for AI Chatbot context ───
+      // AIChatbot reads this to give context-aware food advice
+      // Auto-cleared when browser tab closes (privacy by design)
+      sessionStorage.setItem("sihat_scan_results", JSON.stringify(data))
+      // ─────────────────────────────────────────────────────────
+
       const cache: ApiResultsCache = {}
       for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
         const raw = data[geminiKey]?.ranking ?? []
