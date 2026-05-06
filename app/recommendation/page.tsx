@@ -376,16 +376,8 @@ function FoodResultCard({ food, isBest, t, lang }: { food: FoodItem; isBest: boo
             ? "bg-[#FFF3CD] border border-[#856404]/30"
             : "bg-accent/20"
         }`}>
-          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${
-            isHighRisk ? "text-[#856404]" : isMediumRisk ? "text-[var(--risk-medium)]" : "text-accent-foreground"
-          }`} />
-          <p className={`text-base ${
-            isHighRisk
-              ? "text-red-700 font-extrabold"
-              : isMediumRisk
-                ? "text-[var(--risk-medium)] font-extrabold"
-                : "text-foreground"
-          }`}>
+          <Info className="w-5 h-5 shrink-0 mt-0.5 text-accent-foreground" />
+          <p className={`text-base text-foreground ${isHighRisk ? "font-bold" : ""}`}>
             <span className="font-bold">{t.tip_label}:</span> {tipText}
           </p>
         </div>
@@ -626,15 +618,36 @@ export default function RecommendationPage() {
       const cache: ApiResultsCache = {}
       for (const [geminiKey, pageKey] of Object.entries(CATEGORY_MAP)) {
         const raw = data[geminiKey]?.ranking ?? []
-        cache[pageKey] = raw.map((item: { f: string; sugar: number; salt: number; fat: number; risk: string; tip: string; best_reason?: string }, index: number) => ({
-          name: item.f,
-          risk: item.risk?.toLowerCase() ?? "medium",
-          sugar: `${item.sugar}g`,
-          salt: `${item.salt}mg`,
-          fat: `${item.fat}g`,
-          tip: { en: item.tip, ms: item.tip, zh: item.tip },
-          ...(index === 0 && item.best_reason ? { best_reason: { en: item.best_reason, ms: item.best_reason, zh: item.best_reason } } : {}),
-        }))
+        cache[pageKey] = raw.map((item: {
+          f: string; sugar: number; salt: number; fat: number; risk: string;
+          tip: { en: string; ms: string; zh: string } | string;
+          best_reason?: { en: string; ms: string; zh: string } | string;
+        }, index: number) => {
+          // Tip: backend now returns a trilingual object; gracefully handle legacy string
+          const tipObj: { en: string; ms: string; zh: string } =
+            item.tip && typeof item.tip === "object"
+              ? (item.tip as { en: string; ms: string; zh: string })
+              : { en: String(item.tip ?? ""), ms: String(item.tip ?? ""), zh: String(item.tip ?? "") }
+
+          // best_reason: trilingual object for the top item
+          let bestReasonObj: { en: string; ms: string; zh: string } | undefined
+          if (index === 0 && item.best_reason) {
+            bestReasonObj =
+              typeof item.best_reason === "object"
+                ? (item.best_reason as { en: string; ms: string; zh: string })
+                : { en: String(item.best_reason), ms: String(item.best_reason), zh: String(item.best_reason) }
+          }
+
+          return {
+            name: item.f,
+            risk: item.risk?.toLowerCase() ?? "medium",
+            sugar: `${item.sugar}g`,
+            salt: `${item.salt}mg`,
+            fat: `${item.fat}g`,
+            tip: tipObj,
+            ...(bestReasonObj ? { best_reason: bestReasonObj } : {}),
+          }
+        })
       }
 
       setApiResultsCache(cache)
