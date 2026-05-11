@@ -1118,12 +1118,16 @@ export default function LearnClient() {
   const [learnMoreOpen, setLearnMoreOpen] = useState(false)
   const [activeTileIndices, setActiveTileIndices] = useState<Set<number>>(new Set())
   const [showAll, setShowAll] = useState(false)
+  const educardRef = useRef<HTMLDivElement>(null)
 
   // When switching education sections, reset the learn more and active tiles states
   function switchCard(idx: number) {
     setActiveEduIndex(idx)
     setLearnMoreOpen(false)
     setActiveTileIndices(new Set())
+    setTimeout(() => {
+      educardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
   }
   
   return (
@@ -1149,7 +1153,7 @@ export default function LearnClient() {
                 </div>
 
                 {/* Education Navigation Tabs */}
-                <div className="flex flex-wrap gap-3 mb-8">
+                <div ref={educardRef} className="flex flex-wrap gap-3 mb-8">
                   {t.edu_sections.map((section, idx) => {
                     const isActive = activeEduIndex === idx
                     return (
@@ -1179,7 +1183,7 @@ export default function LearnClient() {
                 </div>
 
                 {/* Display only the active card */}
-                <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div  className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <EduCard
                     section={t.edu_sections[activeEduIndex]}
                     learnMoreLabel={t.edu_learn_more}
