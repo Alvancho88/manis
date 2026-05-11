@@ -82,6 +82,14 @@ interface ScanFoodSummary {
   category?: keyof Omit<ScanContext, "uniqueFoodCount">;
 }
 
+type EstimatedFoodCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drink";
+interface EstimatedFoodCard {
+  name: string;
+  category: EstimatedFoodCategory | null;
+  risk: "low" | "medium" | "high";
+  tip: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -96,6 +104,9 @@ interface Message {
     label: string;
     href: string;
   };
+  isMultiFood?: boolean;
+  estimatedFood?: EstimatedFoodCard;
+  estimatedFoods?: EstimatedFoodCard[];
 }
 
 interface PendingChatImage {
@@ -143,6 +154,9 @@ interface ChatResponse {
     label: string;
     href: string;
   };
+  isMultiFood?: boolean;
+  estimatedFood?: EstimatedFoodCard;
+  estimatedFoods?: EstimatedFoodCard[];
 }
 
 type ChatRequestBody = {
@@ -165,6 +179,7 @@ const t = {
     clearChat: "Clear chat",
     clearConfirm: "Clear this conversation?",
     copied: "Copied.",
+    copyFailed: "Copy failed",
     copyReply: "Copy",
     tryAgain: "Try again",
     stopResponding: "Stop responding",
@@ -207,6 +222,7 @@ const t = {
       "Hello! I'm Siti, your SIHAT health assistant. Ask me about food choices, diabetes, or the Three Highs.",
     scanFound: "💡 I can see you've scanned a menu! Ask me about your food choices and I'll give you personalised advice.",
     noScan: "No food scan found. Try scanning a menu first for personalised advice!",
+    analysisReset: "Analysis reset. You can upload a new photo or type another food.",
     thinking: "Thinking...",
     errorRetry: "Something went wrong. Please try again.",
     stillUnavailable: "Sorry, that food is not in our food list.",
@@ -233,6 +249,7 @@ const t = {
     clearChat: "Kosongkan perbualan",
     clearConfirm: "Kosongkan perbualan ini?",
     copied: "Disalin.",
+    copyFailed: "Gagal disalin",
     copyReply: "Salin",
     tryAgain: "Cuba semula",
     stopResponding: "Hentikan jawapan",
@@ -275,6 +292,7 @@ const t = {
       "Helo! Saya Siti, pembantu kesihatan SIHAT anda. Tanya saya tentang pilihan makanan, diabetes, atau Tiga Tinggi.",
     scanFound: "💡 Saya nampak anda telah mengimbas menu! Tanya saya tentang pilihan makanan anda untuk nasihat peribadi.",
     noScan: "Tiada imbasan makanan ditemui. Cuba imbas menu dahulu untuk nasihat peribadi!",
+    analysisReset: "Analisis telah dikosongkan. Anda boleh muat naik gambar baharu atau taip makanan lain.",
     thinking: "Sedang berfikir...",
     errorRetry: "Ada masalah. Sila cuba lagi.",
     stillUnavailable: "Maaf, makanan itu tidak ada dalam senarai makanan kami.",
@@ -301,6 +319,7 @@ const t = {
     clearChat: "清除对话",
     clearConfirm: "清除这段对话？",
     copied: "已复制。",
+    copyFailed: "复制失败",
     copyReply: "复制",
     tryAgain: "重新回答",
     stopResponding: "停止",
@@ -343,6 +362,7 @@ const t = {
       "您好！我是 Siti，您的 SIHAT 健康助手。您可以询问食物选择、糖尿病或三高相关问题。",
     scanFound: "💡 我看到您已扫描了菜单！向我询问您的食物选择，我将为您提供个性化建议。",
     noScan: "未找到食物扫描记录。请先扫描菜单以获取个性化建议！",
+    analysisReset: "分析已重置。您可以上传新的照片或输入其他食物。",
     thinking: "思考中…",
     errorRetry: "出现错误，请重试。",
     stillUnavailable: "抱歉，这个食物不在我们的食物列表中。",
@@ -547,6 +567,53 @@ function getCartFoodName(food: CartFoodItem, lang: LangCode): string {
   return food.name[lang] || food.name.en;
 }
 
+type FoodCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drink";
+
+function inferFoodCategory(food: CartFoodItem): FoodCategory | null {
+  const dbCat = food.category.toLowerCase();
+  const name = `${food.name.en} ${food.name.ms}`.toLowerCase();
+
+  // Direct database-category mappings (unambiguous)
+  if (dbCat === "drinks") return "Drink";
+  if (dbCat === "desserts") return "Dessert";
+  if (dbCat === "fruits") return "Dessert";
+
+  // Name-based drink detection (covers drinks filed under cuisine categories)
+  const drinkWords = ["tea", "teh", "coffee", "kopi", "juice", "jus", "milo", "horlicks",
+    "bandung", "lassi", "laici", "sirap", "air", "water", "soda", "milk", "susu",
+    "smoothie", "shake", "cocoa", "chocolate drink", "beverage"];
+  if (drinkWords.some((w) => name.includes(w))) return "Drink";
+
+  // Name-based dessert detection
+  const dessertWords = ["cake", "kek", "pudding", "ice cream", "ais krim", "ais", "ice",
+    "kuih", "kueh", "donut", "donat", "cookie", "biskut", "biscuit", "wafer",
+    "jelly", "agar", "bubur", "porridge", "sweet", "manis", "candy", "sweets",
+    "brownie", "muffin", "pastry", "tart", "pie", "crepe", "pancake", "waffle",
+    "halwa", "dodol", "ladoo", "barfi", "mithai", "payasam"];
+  if (dessertWords.some((w) => name.includes(w))) return "Dessert";
+
+  // Name-based appetizer/side detection
+  const appetizerWords = ["salad", "soup", "sup", "starter", "satay", "acar",
+    "popiah", "samosa", "spring roll", "keropok", "cracker", "papadum"];
+  if (appetizerWords.some((w) => name.includes(w))) return "Appetizer";
+
+  // For cuisine categories (Malaysian, Chinese, Indian, etc.) assume Main Dish
+  const cuisineCategories = ["malaysian", "chinese", "indian", "western", "japanese", "korean"];
+  if (cuisineCategories.some((c) => dbCat.includes(c))) return "Main Dish";
+
+  return null;
+}
+
+function getLocalizedFoodCategory(category: FoodCategory, lang: LangCode): string {
+  const labels: Record<FoodCategory, Record<LangCode, string>> = {
+    "Main Dish": { en: "Main Dish", ms: "Hidangan Utama", zh: "主食" },
+    "Appetizer": { en: "Appetizer", ms: "Pembuka Selera", zh: "前菜" },
+    "Dessert":   { en: "Dessert",   ms: "Pencuci Mulut",  zh: "甜点" },
+    "Drink":     { en: "Drink",     ms: "Minuman",        zh: "饮料" },
+  };
+  return labels[category][lang];
+}
+
 function getSpeechRecognitionLanguage(lang: LangCode): string {
   if (lang === "ms") return "ms-MY";
   if (lang === "zh") return "zh-CN";
@@ -640,6 +707,33 @@ function getMealPlanIntent(message: string): "add" | "remove" | null {
   if ((hasAddVerb && hasCartTarget) || hasAddPhrase) return "add";
   return null;
 }
+
+function isAnalysisResetIntent(message: string): boolean {
+  const n = normalizeLanguageText(message);
+  // Reset/clear verbs
+  const resetVerbs = ["reset", "clear", "start over", "restart", "delete all",
+    "set semula", "kosongkan", "mula semula", "padam semua",
+    "重置", "清除", "重新", "清空", "重来",
+  ];
+  // Analysis nouns — must co-occur with a verb OR be a standalone reset phrase
+  const analysisNouns = ["analysis", "analyze", "analyse", "scanned food", "scan result", "scan",
+    "analisis", "pengimbasan", "imbasan",
+    "分析", "扫描结果", "扫描",
+  ];
+  // Standalone phrases that unambiguously mean reset analysis
+  const standalonePhrases = [
+    "reset analysis", "reset the analysis", "reset the analyze", "clear analysis",
+    "clear scanned food", "start over analysis", "clear my scan",
+    "set semula analisis", "kosongkan analisis", "mula semula analisis",
+    "重置分析", "清除分析", "重新分析", "清除扫描结果", "重来一次",
+  ];
+  if (standalonePhrases.some((p) => n.includes(normalizeLanguageText(p)))) return true;
+  const hasResetVerb = resetVerbs.some((v) => n.includes(normalizeLanguageText(v)));
+  const hasAnalysisNoun = analysisNouns.some((noun) => n.includes(normalizeLanguageText(noun)));
+  return hasResetVerb && hasAnalysisNoun;
+}
+
+const ANALYSIS_RESET_EVENT = "sihat-analysis-reset";
 
 type FoodContext =
   | { status: "available"; food: CartFoodItem }
@@ -762,14 +856,16 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
       <div style={{ whiteSpace: "normal", fontSize: "18px", lineHeight: "1.7" }}>
         <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "20px" }}>{scanFood.name}</p>
         <div className="mb-3 flex flex-wrap items-center gap-2">
+          {/* Badge 1 — Food Category (AI recognition: Main Dish / Appetizer / Dessert / Drinks) */}
           {categoryLabel && (
             <span
               className="inline-block rounded-full px-3 py-1 font-semibold"
-              style={{ background: "#e0f2fe", color: "#0369a1", border: "1.5px solid #7dd3fc", fontSize: "14px" }}
+              style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "14px" }}
             >
               {categoryLabel}
             </span>
           )}
+          {/* Badge 3 — Risk Level */}
           <span
             className="inline-block rounded-full px-3 py-1 font-bold"
             style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "14px" }}
@@ -795,6 +891,8 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
   const parsed = parsedFromText;
   const foodName = getCartFoodName(food, lang);
   const categoryLabel = food.category ? getLocalizedCategory(food.category, lang) : null;
+  const inferredCategory = inferFoodCategory(food);
+  const foodCategoryLabel = inferredCategory ? getLocalizedFoodCategory(inferredCategory, lang) : null;
 
   const riskLabel = {
     low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
@@ -808,7 +906,6 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
     high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
   }[parsed.risk];
 
-  const goodPointHeader = lang === "zh" ? "优点" : lang === "ms" ? "Kebaikan" : "Good point";
   const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
 
   return (
@@ -818,8 +915,18 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
         {foodName}
       </p>
 
-      {/* Category + Risk badges */}
+      {/* Badge row: [Badge 1 Food Category] [Badge 2 Cuisine] [Badge 3 Risk] */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
+        {/* Badge 1 — Food Category (inferred: Main Dish / Appetizer / Dessert / Drink) */}
+        {foodCategoryLabel && (
+          <span
+            className="inline-block rounded-full px-3 py-1 font-semibold"
+            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "14px" }}
+          >
+            {foodCategoryLabel}
+          </span>
+        )}
+        {/* Badge 2 — Cuisine / Database category (e.g. Malaysian, Chinese, Drinks) */}
         {categoryLabel && (
           <span
             className="inline-block rounded-full px-3 py-1 font-semibold"
@@ -828,6 +935,7 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
             {categoryLabel}
           </span>
         )}
+        {/* Badge 3 — Risk Level */}
         <span
           className="inline-block rounded-full px-3 py-1 font-bold"
           style={{
@@ -840,24 +948,6 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
           {riskLabel}
         </span>
       </div>
-
-      {/* Good points */}
-      {parsed.goodPoints.length > 0 && (
-        <div className="mb-3">
-          <p
-            className="font-semibold text-gray-400 mb-1"
-            style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.05em" }}
-          >
-            {goodPointHeader}
-          </p>
-          {parsed.goodPoints.map((pt, i) => (
-            <p key={i} className="flex items-start gap-2 text-gray-800" style={{ fontSize: "18px" }}>
-              <span className="shrink-0 font-bold" style={{ color: "#059669" }}>✓</span>
-              <span>{pt}</span>
-            </p>
-          ))}
-        </div>
-      )}
 
       {/* Health tip */}
       {parsed.tip && (
@@ -876,6 +966,118 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// Compact structured card for each food in a multi-food typed response.
+// Reads directly from CartFoodItem (no LLM text parsing needed).
+function FoodItemCard({ food, lang }: { food: CartFoodItem; lang: LangCode }) {
+  const foodName = getCartFoodName(food, lang);
+  const cuisineLabel = food.category ? getLocalizedCategory(food.category, lang) : null;
+  const inferredCategory = inferFoodCategory(food);
+  const foodCategoryLabel = inferredCategory ? getLocalizedFoodCategory(inferredCategory, lang) : null;
+  const tip = food.tip[lang] || food.tip.en || "";
+
+  const riskKey = food.risk;
+  const riskLabel = {
+    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
+    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
+    high:   { en: "High Risk",   ms: "Risiko Tinggi",    zh: "高风险"   },
+  }[riskKey][lang];
+  const riskStyle = {
+    low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
+    medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
+    high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
+  }[riskKey];
+  const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3" style={{ fontSize: "16px", lineHeight: "1.6" }}>
+      <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "17px" }}>{foodName}</p>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        {foodCategoryLabel && (
+          <span
+            className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
+            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "13px" }}
+          >
+            {foodCategoryLabel}
+          </span>
+        )}
+        {cuisineLabel && (
+          <span
+            className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
+            style={{ background: "#e0f2fe", color: "#0369a1", border: "1.5px solid #7dd3fc", fontSize: "13px" }}
+          >
+            {cuisineLabel}
+          </span>
+        )}
+        <span
+          className="inline-block rounded-full px-2.5 py-0.5 font-bold"
+          style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "13px" }}
+        >
+          {riskLabel}
+        </span>
+      </div>
+      {tip && (
+        <div className="rounded-lg px-3 py-2" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
+          <p className="font-semibold mb-0.5" style={{ fontSize: "12px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {tipHeader}
+          </p>
+          <p className="text-gray-800" style={{ fontSize: "15px", lineHeight: "1.6" }}>{tip}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AiFoodCard({ food, lang }: { food: EstimatedFoodCard; lang: LangCode }) {
+  const categoryLabel = food.category
+    ? ({
+        "Main Dish":  { en: "Main Dish",  ms: "Hidangan Utama",    zh: "主菜"   },
+        "Appetizer":  { en: "Appetizer",  ms: "Pembuka Selera",    zh: "开胃菜" },
+        "Dessert":    { en: "Dessert",    ms: "Pencuci Mulut",     zh: "甜点"   },
+        "Drink":      { en: "Drink",      ms: "Minuman",           zh: "饮料"   },
+      } as Record<EstimatedFoodCategory, Record<LangCode, string>>)[food.category][lang]
+    : null;
+
+  const riskStyle = {
+    low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
+    medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
+    high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
+  }[food.risk];
+  const riskLabel = {
+    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
+    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
+    high:   { en: "High Risk",  ms: "Risiko Tinggi",    zh: "高风险"   },
+  }[food.risk][lang];
+  const tipHeader  = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health Tip";
+  const noDbNote   = { en: "Meal planning unavailable", ms: "Perancangan makanan tidak tersedia", zh: "膳食计划不可用" }[lang];
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3" style={{ fontSize: "16px", lineHeight: "1.6" }}>
+      <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "17px" }}>{food.name}</p>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        {categoryLabel && (
+          <span className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
+            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "13px" }}>
+            {categoryLabel}
+          </span>
+        )}
+        <span className="inline-block rounded-full px-2.5 py-0.5 font-bold"
+          style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "13px" }}>
+          {riskLabel}
+        </span>
+      </div>
+      {food.tip && (
+        <div className="rounded-lg px-3 py-2" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
+          <p className="font-semibold mb-0.5" style={{ fontSize: "12px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {tipHeader}
+          </p>
+          <p className="text-gray-800" style={{ fontSize: "15px", lineHeight: "1.6" }}>{food.tip}</p>
+        </div>
+      )}
+      <p className="mt-2 text-gray-400" style={{ fontSize: "12px" }}>{noDbNote}</p>
     </div>
   );
 }
@@ -906,6 +1108,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
   const [voiceNotice, setVoiceNotice] = useState("");
   const [mealPlanToast, setMealPlanToast] = useState("");
   const [isFoodDetailModalOpen, setIsFoodDetailModalOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const { cart, addToCart, removeFromCart, clearCart, isInCart } = useCart();
 
   const pathname = usePathname();
@@ -922,30 +1125,86 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
   const imagePreviewUrlsRef = useRef<Set<string>>(new Set());
   const pendingVoiceTranscriptRef = useRef("");
   const lastScanContextRawRef = useRef<string | null>(null);
+  // Raw JSON of the scan context whose hint was last appended in chat.
+  // Used to avoid duplicating the "I can see you've scanned" message.
+  const lastAcknowledgedScanRef = useRef<string | null>(null);
+  // Set when a new scan arrives while chatbot is closed; consumed on open.
+  const pendingScanHintRef = useRef<string | null>(null);
+  // Ref mirrors of volatile state so stable callbacks can read current values.
+  const isOpenRef = useRef(false);
+  const txRef = useRef<typeof tx>(tx);
 
   const revokeImagePreview = useCallback((url: string) => {
     URL.revokeObjectURL(url);
     imagePreviewUrlsRef.current.delete(url);
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
-  const scrollToBottom = useCallback(() => {
+  // Scroll the message container to the bottom.
+  // Tries container.scrollTo first, then falls back to the sentinel scrollIntoView.
+  // Mobile Safari often needs a second layout pass before scrollHeight is final,
+  // so callers may schedule multiple delayed invocations.
+  const scrollChatToBottom = useCallback((smooth = true) => {
+    const behavior: ScrollBehavior = smooth ? "smooth" : "auto";
     const container = messagesScrollRef.current;
-    if (!container) return;
-    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    if (container) {
+      try {
+        container.scrollTo({ top: container.scrollHeight, behavior });
+      } catch {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+    // Sentinel fallback: always fires so older Safari is covered.
+    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+  // Keep volatile-state mirrors up to date so stable callbacks can read them.
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+  useEffect(() => { txRef.current = tx; }, [tx]);
 
-  // Ensure chat reopens at the latest message before rendering
+  // Track whether the panel was open on the previous render so we can tell
+  // "just opened" from "new message while already open".
+  const prevIsOpenRef = useRef(false);
+
+  // Instant scroll when the chatbot panel opens (synchronous, pre-paint).
   useLayoutEffect(() => {
     if (!isOpen || messages.length === 0) return;
     const container = messagesScrollRef.current;
     if (!container) return;
     container.scrollTop = container.scrollHeight;
-  }, [isOpen, messages.length]);
+  }, [isOpen]);
+
+  // Combined scroll effect: instant on open, smooth for new messages while open.
+  useEffect(() => {
+    if (!isOpen) {
+      prevIsOpenRef.current = false;
+      return;
+    }
+    const justOpened = !prevIsOpenRef.current;
+    prevIsOpenRef.current = true;
+    if (justOpened) {
+      // Extra delayed passes cover mobile reflow after panel height settles.
+      scrollChatToBottom(false);
+      const t1 = setTimeout(() => scrollChatToBottom(false), 0);
+      const t2 = setTimeout(() => scrollChatToBottom(false), 120);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+    scrollChatToBottom(true);
+    const t = setTimeout(() => scrollChatToBottom(true), 100);
+    return () => clearTimeout(t);
+  }, [messages.length, isOpen, scrollChatToBottom]);
+
+  // Append the scan-context hint message once per unique scan.
+  // Uses refs so the callback is stable and event listeners can call the latest version.
+  const appendScanHintIfNew = useCallback((raw: string) => {
+    if (!raw || raw === lastAcknowledgedScanRef.current) return;
+    lastAcknowledgedScanRef.current = raw;
+    pendingScanHintRef.current = null;
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: txRef.current.scanFound, id: uid() },
+    ]);
+    setTimeout(() => scrollChatToBottom(true), 100);
+  }, [scrollChatToBottom]);
 
   // Close chatbot on route change while preserving session history
   useEffect(() => {
@@ -1007,11 +1266,16 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     setSupportsVoiceInput(Boolean(speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition));
     setSupportsImageUpload(Boolean(window.FormData && window.File && window.FileReader));
 
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 640);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+
     return () => {
       recognitionRef.current?.abort();
       recognitionRef.current = null;
       imagePreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
       imagePreviewUrlsRef.current.clear();
+      window.removeEventListener("resize", checkDesktop);
     };
   }, []);
 
@@ -1030,8 +1294,11 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
       const msgs: Message[] = [welcomeMsg];
 
-      // If scan context found, add a hint message
+      // If scan context found, add a hint message and mark it acknowledged.
       if (ctx) {
+        const raw = sessionStorage.getItem(SCAN_CONTEXT_KEY);
+        lastAcknowledgedScanRef.current = raw;
+        pendingScanHintRef.current = null;
         msgs.push({
           role: "assistant",
           content: tx.scanFound,
@@ -1047,16 +1314,22 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     }
   }, [isOpen, hasInitialised, tx]);
 
-  // Re-read scan context when chat opens (user may have just scanned)
+  // Re-read scan context when chat opens; flush any pending scan hint.
   useEffect(() => {
-    if (isOpen) {
-      const ctx = readScanContext();
-      setScanContext(ctx);
-      lastScanContextRawRef.current = typeof window === "undefined" ? null : sessionStorage.getItem(SCAN_CONTEXT_KEY);
+    if (!isOpen) return;
+    const raw = typeof window === "undefined" ? null : sessionStorage.getItem(SCAN_CONTEXT_KEY);
+    setScanContext(readScanContext());
+    lastScanContextRawRef.current = raw;
+
+    // If a new scan arrived while the chatbot was closed, show the hint now.
+    const pending = pendingScanHintRef.current;
+    if (pending && pending !== lastAcknowledgedScanRef.current) {
+      appendScanHintIfNew(pending);
     }
-  }, [isOpen]);
+  }, [isOpen, appendScanHintIfNew]);
 
   // Keep chatbot scan context in sync with the recommendation page's session storage.
+  // When a NEW scan arrives, immediately show the hint in chat (or queue it if closed).
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1065,6 +1338,22 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
       if (raw === lastScanContextRawRef.current) return;
       lastScanContextRawRef.current = raw;
       setScanContext(readScanContext());
+
+      if (!raw) {
+        // Scan was cleared — discard any queued hint.
+        pendingScanHintRef.current = null;
+        return;
+      }
+
+      if (raw === lastAcknowledgedScanRef.current) return;
+
+      if (isOpenRef.current) {
+        // Chatbot is visible: show hint immediately.
+        appendScanHintIfNew(raw);
+      } else {
+        // Chatbot is closed: remember so we show hint on next open.
+        pendingScanHintRef.current = raw;
+      }
     };
 
     const handleStorage = (event: StorageEvent) => {
@@ -1084,6 +1373,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
       if (!label || !resetLabels.some((resetLabel) => label.includes(resetLabel))) return;
       clearStoredScanContext();
       lastScanContextRawRef.current = null;
+      pendingScanHintRef.current = null;
       setScanContext(null);
     };
 
@@ -1097,7 +1387,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
       window.removeEventListener(SCAN_CONTEXT_EVENT, syncScanContext);
       document.removeEventListener("click", handleRecommendationResetClick, true);
     };
-  }, [pathname]);
+  }, [pathname, appendScanHintIfNew]);
 
   // Add a minimal in-chat language switch indicator when language changes
   useEffect(() => {
@@ -1116,7 +1406,16 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     lastRequestedLangRef.current = lang;
     conversationLangRef.current = lang;
     setConversationLang(lang);
-  }, [lang, isOpen, hasInitialised, tx]);
+
+    // Fire multiple scroll attempts at increasing delays.
+    // Mobile Safari often reflows the layout after the first render, so a
+    // single RAF or timeout is not enough — each call re-reads scrollHeight
+    // after the next paint/reflow cycle.
+    requestAnimationFrame(() => scrollChatToBottom());
+    setTimeout(() => scrollChatToBottom(), 50);
+    setTimeout(() => scrollChatToBottom(), 150);
+    setTimeout(() => scrollChatToBottom(false), 300);
+  }, [lang, isOpen, hasInitialised, tx, scrollChatToBottom]);
 
   // ─── SEND MESSAGE ───────────────────────────────────────────────────────────
 
@@ -1151,6 +1450,9 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     ];
 
     if (ctx) {
+      const raw = sessionStorage.getItem(SCAN_CONTEXT_KEY);
+      lastAcknowledgedScanRef.current = raw;
+      pendingScanHintRef.current = null;
       freshMessages.push({
         role: "assistant",
         content: tx.scanFound,
@@ -1262,8 +1564,11 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     });
     const separator = href.includes("?") ? "&" : "?";
     const url = `${href}${separator}fromChatbot=1&ts=${Date.now()}`;
-    setIsOpen(false);
+    // Push first so the navigation is committed before the component re-renders
+    // from setIsOpen(false). On mobile Safari, closing first can cause the push
+    // to be dropped when the component unmounts rapidly.
     router.push(url);
+    setIsOpen(false);
   }, [pathname, router]);
 
   const handleImageUpload = useCallback(
@@ -1412,9 +1717,12 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     const textarea = inputRef.current;
     if (!textarea) return;
     textarea.style.height = "auto";
-    const minHeight = textarea.value.trim() ? 48 : 72;
-    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, minHeight), 112)}px`;
-  }, []);
+    // Mobile: single-line compact bar; desktop: taller empty placeholder.
+    const emptyMin = isDesktop ? 72 : 56;
+    const maxH = isDesktop ? 112 : 96;
+    const minHeight = textarea.value.trim() ? 48 : emptyMin;
+    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, minHeight), maxH)}px`;
+  }, [isDesktop]);
 
   useLayoutEffect(() => {
     resizeInput();
@@ -1520,6 +1828,28 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
         return;
       }
 
+      // Intercept "reset analysis" intent — clear scan context and notify the
+      // recommendation page, then reply immediately without calling the LLM.
+      if (!options?.retry && isAnalysisResetIntent(trimmed)) {
+        const userMsg: Message = { role: "user", content: trimmed, id: uid() };
+        clearStoredScanContext();
+        lastScanContextRawRef.current = null;
+        lastAcknowledgedScanRef.current = null;
+        pendingScanHintRef.current = null;
+        setScanContext(null);
+        window.dispatchEvent(new Event(ANALYSIS_RESET_EVENT));
+        setMessages((prev) => [
+          ...prev,
+          userMsg,
+          ...(typedLanguageSwitchMsg ? [typedLanguageSwitchMsg] : []),
+          { role: "assistant", kind: "system", content: t[messageLang].analysisReset, id: uid() },
+        ]);
+        conversationLangRef.current = messageLang;
+        setConversationLang(messageLang);
+        setInput("");
+        return;
+      }
+
       if (!options?.retry && lastUnavailableRequestRef.current === repeatKey) {
         const userMsg: Message = { role: "user", content: trimmed, id: uid() };
         setMessages((prev) => [
@@ -1602,7 +1932,8 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
           clearCart();
         }
 
-        if (data.suggestions?.length || data.unavailableFoodName) {
+        // Multi-food responses are not "unavailable food" — don't block retries.
+        if (!data.isMultiFood && (data.suggestions?.length || data.unavailableFoodName)) {
           lastUnavailableRequestRef.current = repeatKey;
         } else {
           lastUnavailableRequestRef.current = null;
@@ -1618,12 +1949,14 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
           data.actionButton?.href?.includes("/recommendation") &&
           data.suggestions?.length
         ) {
-          const names = data.suggestions.map((f) => getCartFoodName(f, messageLang)).join(", ");
-          sessionStorage.setItem("rec-text", names);
+          const matchedNames = data.suggestions.map((f) => getCartFoodName(f, messageLang));
+          const estimatedNames = (data.estimatedFoods ?? []).map((f) => f.name);
+          const allNames = [...matchedNames, ...estimatedNames].join(", ");
+          sessionStorage.setItem("rec-text", allNames);
           sessionStorage.removeItem(SCAN_CONTEXT_KEY);
           sessionStorage.removeItem(ANALYSIS_SESSION_KEY);
           setScanContext(null);
-          console.log("[Chatbot] Text query — pre-filled rec-text and cleared scan context:", names);
+          console.log("[Chatbot] Text query — pre-filled rec-text and cleared scan context:", allNames);
         }
 
         setMessages((prev) => [
@@ -1635,6 +1968,9 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
             unavailableFoodName: data.unavailableFoodName,
             quickReplies,
             actionButton: actionButton ?? data.actionButton,
+            isMultiFood: data.isMultiFood,
+            estimatedFood: data.estimatedFood,
+            estimatedFoods: data.estimatedFoods,
             id: uid(),
           },
         ]);
@@ -1666,14 +2002,38 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
   const copyAssistantMessage = useCallback(
     async (content: string) => {
+      const text = content.replace(/^!HIGH_NUTRITION! /gm, "");
+
+      // Primary: Clipboard API (works on desktop and modern mobile browsers).
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        try {
+          await navigator.clipboard.writeText(text);
+          setVoiceNotice(tx.copied);
+          return;
+        } catch {
+          // Fall through to execCommand fallback.
+        }
+      }
+
+      // Fallback: execCommand — works on mobile Safari and older browsers.
       try {
-        await navigator.clipboard.writeText(content.replace(/^!HIGH_NUTRITION! /gm, ""));
-        setVoiceNotice(tx.copied);
+        const el = document.createElement("textarea");
+        el.value = text;
+        el.setAttribute("readonly", "");
+        el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        // iOS Safari requires setSelectionRange after select().
+        el.setSelectionRange(0, el.value.length);
+        const ok = document.execCommand("copy");
+        document.body.removeChild(el);
+        setVoiceNotice(ok ? tx.copied : tx.copyFailed);
       } catch {
-        setVoiceNotice("");
+        setVoiceNotice(tx.copyFailed);
       }
     },
-    [tx.copied]
+    [tx.copied, tx.copyFailed]
   );
 
   const getPreviousUserMessage = useCallback(
@@ -1914,7 +2274,20 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                         ))}
                       </div>
                     ) : null}
-                    {msg.role === "assistant" && (msg.scanFood || msg.suggestions?.length === 1)
+                    {msg.role === "assistant" && msg.isMultiFood && (msg.suggestions?.length || msg.estimatedFoods?.length)
+                      ? (
+                        <div className="space-y-3">
+                          {msg.suggestions?.map((food) => (
+                            <FoodItemCard key={food.name.en} food={food} lang={lang} />
+                          ))}
+                          {msg.estimatedFoods?.map((food) => (
+                            <AiFoodCard key={food.name} food={food} lang={lang} />
+                          ))}
+                        </div>
+                      )
+                      : msg.role === "assistant" && msg.estimatedFood
+                      ? <AiFoodCard food={msg.estimatedFood} lang={lang} />
+                      : msg.role === "assistant" && (msg.scanFood || msg.suggestions?.length === 1)
                       ? <FoodSummaryCard
                           content={msg.content}
                           food={msg.suggestions?.[0]}
@@ -1965,16 +2338,29 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                     ) : null}
                   </div>
                   {msg.role === "assistant" && msg.actionButton ? (
-                    <div className="mt-2">
+                    <div className="mt-2" style={{ position: "relative", zIndex: 10 }}>
                       <button
                         type="button"
-                        onClick={() => openFullAnalysis(msg.actionButton!.href)}
-                        className="min-h-12 rounded-xl border-2 px-4 py-3 font-bold shadow-sm transition-colors text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (msg.actionButton!.href === "/food") {
+                            console.log("Open Food Page clicked");
+                            router.push("/food");
+                            setIsOpen(false);
+                          } else {
+                            openFullAnalysis(msg.actionButton!.href);
+                          }
+                        }}
+                        className="min-h-12 w-full rounded-xl border-2 px-4 py-3 font-bold shadow-sm text-white cursor-pointer select-none transition-all active:opacity-90 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         style={{
                           background: "linear-gradient(135deg, #0a7a74, #047a57)",
                           borderColor: "#047a57",
                           fontSize: "18px",
                           lineHeight: "1.35",
+                          touchAction: "manipulation",
+                          pointerEvents: "auto",
+                          position: "relative",
+                          zIndex: 10,
                         }}
                       >
                         {msg.actionButton.href === "/recommendation"
@@ -2176,7 +2562,9 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
               </div>
             )}
             <div
-              className="relative rounded-2xl border bg-gray-50 px-3 py-1.5 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2"
+              // Mobile: flex row so textarea + icons share the same line.
+              // Desktop (sm+): relative block so icons can be absolute-positioned.
+              className="flex items-end gap-1 sm:block sm:relative rounded-2xl border bg-gray-50 px-3 py-1.5 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2"
               style={{
                 borderColor: isListening || isPhotoAnalyzing ? "#0a7a74" : "#d1d5db",
                 outlineColor: "#0a7a74",
@@ -2191,14 +2579,22 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                   if (voiceNotice) setVoiceNotice("");
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder={tx.placeholder}
+                // Short single-line placeholder on mobile; full text on desktop.
+                placeholder={isDesktop ? tx.placeholder : (
+                  conversationLang === "zh" ? "询问 SIHAT…"
+                  : conversationLang === "ms" ? "Tanya SIHAT..."
+                  : "Ask SIHAT..."
+                )}
                 rows={1}
                 disabled={isLoading || isPhotoAnalyzing}
-                className="min-h-12 w-full resize-none border-0 bg-transparent px-1 py-2.5 pr-40 text-gray-800 placeholder-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed max-h-28 overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words placeholder:whitespace-pre-wrap"
-                style={{ fontSize: "18px", lineHeight: "1.45", outline: "none", overflowWrap: "anywhere", wordBreak: "break-word" }}
+                // Mobile: flex-1 fills remaining width (no pr-40 needed).
+                // Desktop: full width with pr-40 to clear absolute icons.
+                className="flex-1 min-w-0 sm:w-full resize-none border-0 bg-transparent px-1 py-2 sm:py-2.5 sm:pr-40 text-gray-800 placeholder-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed overflow-y-auto whitespace-pre-wrap break-words placeholder:whitespace-pre-wrap sm:max-h-28"
+                style={{ fontSize: "18px", lineHeight: "1.45", outline: "none", overflowWrap: "anywhere", wordBreak: "break-word", minHeight: isDesktop ? undefined : "56px", maxHeight: isDesktop ? undefined : "96px" }}
                 aria-label={tx.placeholder}
               />
-              <div className="absolute bottom-1.5 right-2 flex items-center gap-1">
+              {/* Mobile: inline flex; Desktop: absolute bottom-right */}
+              <div className="flex items-center gap-1 shrink-0 sm:absolute sm:bottom-1.5 sm:right-2">
                 {supportsImageUpload && (
                   <button
                     type="button"

@@ -14,6 +14,14 @@ export const maxDuration = 30;
 type LangCode = "en" | "ms" | "zh";
 type ScanCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drinks";
 
+type EstimatedFoodCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drink";
+interface EstimatedFoodCard {
+  name: string;
+  category: EstimatedFoodCategory | null;
+  risk: "low" | "medium" | "high";
+  tip: string;
+}
+
 interface ChatResponse {
   reply: string;
   action?: {
@@ -27,6 +35,9 @@ interface ChatResponse {
     label: string;
     href: string;
   };
+  isMultiFood?: boolean;
+  estimatedFood?: EstimatedFoodCard;
+  estimatedFoods?: EstimatedFoodCard[];
 }
 
 interface ScanFoodItem {
@@ -524,6 +535,39 @@ function uniqueFoods(foods: FoodItem[]): FoodItem[] {
 
 function toLangCode(value: string | undefined): LangCode {
   return value === "ms" || value === "zh" ? value : "en";
+}
+
+// Split a query containing multiple food names joined by common separators.
+// Returns an empty array when the input is clearly a single food name.
+// NOTE: call this on the ORIGINAL message (before normalization) to preserve
+// commas and other separators that normalizeFoodText would otherwise strip.
+function splitMultipleFoodNames(query: string): string[] {
+  const parts = query
+    .split(/[,，；;\/]|\s+(?:and|&|plus|serta|dan|dengan|和|跟)\s+/gi)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 1);
+  return parts.length > 1 ? parts : [];
+}
+
+// Try splitting on the normalized query first (conjunctions survive normalization).
+// Fall back to the original message so commas/semicolons/slashes are not lost.
+function resolveMultiFoodParts(originalMessage: string, normalizedQuery: string): string[] {
+  const fromNormalized = splitMultipleFoodNames(normalizedQuery);
+  if (fromNormalized.length > 1) return fromNormalized;
+
+  const fromOriginal = splitMultipleFoodNames(originalMessage)
+    .map((p) => stripFoodQuestionIntent(p))
+    .filter((p) => p.length > 1);
+  return fromOriginal.length > 1 ? fromOriginal : [];
+}
+
+function buildMultiFoodIntro(count: number, lang: LangCode): string {
+  const labels: Record<LangCode, string> = {
+    en: `Here is the health analysis for these ${count} foods:`,
+    ms: `Berikut adalah analisis kesihatan untuk ${count} makanan ini:`,
+    zh: `以下是这 ${count} 种食物的健康分析：`,
+  };
+  return labels[lang];
 }
 
 function detectUserMessageLanguage(message: string): LangCode | null {
@@ -1342,6 +1386,72 @@ async function callGeminiChat(
   return text;
 }
 
+// ─── AI FOOD CARD ESTIMATION ──────────────────────────────────────────────────
+
+async function getEstimatedFoodCards(
+  names: string[],
+  lang: LangCode,
+  apiKey: string
+): Promise<EstimatedFoodCard[]> {
+  if (!names.length) return [];
+
+  const langName = lang === "zh" ? "Simplified Chinese" : lang === "ms" ? "Bahasa Malaysia" : "English";
+  const isSingle = names.length === 1;
+
+  const prompt = isSingle
+    ? `Analyze the food or drink "${names[0]}" for an elderly person. Reply ONLY with this JSON (no other text):
+{"category":"Main Dish","risk":"medium","tip":"One sentence health tip."}
+category: "Main Dish"|"Appetizer"|"Dessert"|"Drink"
+risk: "low"|"medium"|"high"
+tip: one short sentence in ${langName}`
+    : `Analyze these foods for an elderly person. Reply ONLY with a JSON array (no other text):
+${names.map((n, i) => `${i + 1}. ${n}`).join("\n")}
+[{"category":"Main Dish","risk":"medium","tip":"Tip."},...]
+category: "Main Dish"|"Appetizer"|"Dessert"|"Drink"
+risk: "low"|"medium"|"high"
+tip: short ${langName} sentence`;
+
+  const validCat = (v: unknown): EstimatedFoodCategory | null =>
+    (["Main Dish", "Appetizer", "Dessert", "Drink"] as EstimatedFoodCategory[]).find(c => c === v) ?? null;
+  const validRisk = (v: unknown): "low" | "medium" | "high" =>
+    (["low", "medium", "high"] as const).find(r => r === v) ?? "medium";
+  const fallback = (n: string): EstimatedFoodCard => ({ name: n, category: null, risk: "medium", tip: "" });
+
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.1,
+        max_tokens: isSingle ? 80 : 200,
+      }),
+    });
+    if (!res.ok) return names.map(fallback);
+    const data = await res.json();
+    const text: string = data?.choices?.[0]?.message?.content?.trim() ?? "";
+
+    if (isSingle) {
+      const m = text.match(/\{[\s\S]*?\}/);
+      if (!m) return [fallback(names[0])];
+      const p = JSON.parse(m[0]);
+      return [{ name: names[0], category: validCat(p.category), risk: validRisk(p.risk), tip: String(p.tip ?? "").trim() }];
+    } else {
+      const m = text.match(/\[[\s\S]*\]/);
+      if (!m) return names.map(fallback);
+      const arr = JSON.parse(m[0]);
+      if (!Array.isArray(arr)) return names.map(fallback);
+      return names.map((n, i) => {
+        const p: Record<string, unknown> = arr[i] ?? {};
+        return { name: n, category: validCat(p.category), risk: validRisk(p.risk), tip: String(p.tip ?? "").trim() };
+      });
+    }
+  } catch {
+    return names.map(fallback);
+  }
+}
+
 // ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -1406,29 +1516,85 @@ export async function POST(req: NextRequest) {
       throw new Error("No GEMINI API keys configured");
     }
 
+    const openFullLabels = { en: "Open Full Analysis", ms: "Buka Analisis Penuh", zh: "打开完整分析" };
     let reply = "";
 
+    // ── Helper: run multi-food logic for a list of name parts ──────────────────
+    const handleMultiFoodParts = async (parts: string[]): Promise<Response | null> => {
+      const matchedFoods: FoodItem[] = [];
+      const unmatchedNames: string[] = [];
+      for (const part of parts) {
+        const m = matchFoodQuery(part, foods);
+        if (m.status === "matched") {
+          matchedFoods.push(m.food);
+        } else if (m.status === "ambiguous" && m.foods.length > 0) {
+          // For multi-food queries, pick best ambiguous match rather than discarding.
+          matchedFoods.push(m.foods[0]);
+        } else {
+          const displayName = formatUnavailableFoodName(part, requestLang);
+          if (displayName) unmatchedNames.push(displayName);
+        }
+      }
+      const uniqueMatched = uniqueFoods(matchedFoods);
+      if (uniqueMatched.length === 0 && unmatchedNames.length === 0) return null;
+
+      const estimatedFoods = unmatchedNames.length > 0 && primaryKey
+        ? await getEstimatedFoodCards(unmatchedNames, requestLang, primaryKey)
+        : [];
+
+      const totalCount = uniqueMatched.length + estimatedFoods.length;
+      return NextResponse.json({
+        reply: buildMultiFoodIntro(totalCount, requestLang),
+        suggestions: uniqueMatched.length > 0 ? uniqueMatched : undefined,
+        estimatedFoods: estimatedFoods.length > 0 ? estimatedFoods : undefined,
+        actionButton: uniqueMatched.length > 0
+          ? { label: openFullLabels[requestLang], href: "/recommendation" }
+          : undefined,
+        isMultiFood: true,
+      });
+    };
+
     if (foodMention.status === "matched") {
-      // Quick guidance from dataset. Detailed nutrition stays on the Full Analysis page.
       reply = buildQuickFoodSummary(foodMention.food, requestLang);
-      const openFullLabels = {
-        en: "Open Full Analysis",
-        ms: "Buka Analisis Penuh",
-        zh: "打开完整分析",
-      };
       return NextResponse.json({
         reply,
         suggestions: [foodMention.food],
         actionButton: { label: openFullLabels[requestLang], href: "/recommendation" },
       });
     } else if (foodMention.status === "ambiguous") {
+      // Before showing disambiguation UI, check if this is a multi-food query.
+      const foodNameParts = resolveMultiFoodParts(message, foodQuestionQuery);
+      if (foodNameParts.length > 1) {
+        const result = await handleMultiFoodParts(foodNameParts);
+        if (result) return result;
+      }
       return NextResponse.json(formatFoodSuggestions(foodMention.foods, requestLang, foodQuestionQuery));
     } else {
+      // Multi-food: split by conjunctions/commas/separators.
+      const foodNameParts = resolveMultiFoodParts(message, foodQuestionQuery);
+      if (foodNameParts.length > 1) {
+        const result = await handleMultiFoodParts(foodNameParts);
+        if (result) return result;
+      }
+
+      // Single non-DB food: if query looks like a food name, get AI-estimated card.
+      const queryWords = foodQuestionQuery.trim().split(/\s+/).filter(Boolean);
+      const isLikelyFoodName =
+        queryWords.length >= 1 &&
+        queryWords.length <= 5 &&
+        !/\b(how|why|what|when|where|who|which|does|do|is|are|can|should|help|explain|tell|diabetes|hypertension|blood|cholesterol|medication|exercise|stress|sleep)\b/i.test(foodQuestionQuery);
+
+      if (isLikelyFoodName && primaryKey) {
+        const displayName = formatUnavailableFoodName(foodQuestionQuery, requestLang) || foodQuestionQuery;
+        const [estimated] = await getEstimatedFoodCards([displayName], requestLang, primaryKey);
+        if (estimated) {
+          return NextResponse.json({ estimatedFood: estimated });
+        }
+      }
+
       // Normal AI conversation flow
       const systemPrompt = buildSystemPrompt(requestLang, scanContext);
-
-      // Keep last 6 messages for context efficiency
-      let conversationMessages: ChatMessage[] = [
+      const conversationMessages: ChatMessage[] = [
         ...history.slice(-6),
         { role: "user", content: message },
       ];
