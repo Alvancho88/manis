@@ -160,7 +160,7 @@ const pageContent = {
     modal_next: "Next food",
     modal_food_label: "Food",
     modal_of: "of",
-    modal_swipe_hint: "Swipe or tap arrows to browse more foods",
+    modal_swipe_hint: "Swipe left or right to view more foods",
   },
   ms: {
     title: "Cari Makanan",
@@ -282,7 +282,7 @@ const pageContent = {
     modal_next: "Makanan seterus",
     modal_food_label: "Makanan",
     modal_of: "daripada",
-    modal_swipe_hint: "Leret atau ketik anak panah untuk lihat makanan lain",
+    modal_swipe_hint: "Leret ke kiri atau kanan untuk lihat makanan lain",
   },
   zh: {
     title: "搜索食物",
@@ -404,7 +404,7 @@ const pageContent = {
     modal_next: "下一种食物",
     modal_food_label: "食物",
     modal_of: "共",
-    modal_swipe_hint: "左右滑动或点击箭头浏览更多食物",
+    modal_swipe_hint: "向左或向右滑动以查看更多食物",
   },
 }
 
@@ -585,20 +585,6 @@ function FoodDetailModal({
   const fatLevel = getFatLevel(food.fat)
   const sodiumLevel = getSodiumLevel(food.sodium)
 
-  // Show swipe hint the first time the modal is ever opened
-  const [swipeHintVisible, setSwipeHintVisible] = useState(() => {
-    if (typeof window === "undefined") return false
-    if (localStorage.getItem("sihat-swipe-hint-seen")) return false
-    localStorage.setItem("sihat-swipe-hint-seen", "1")
-    return true
-  })
-
-  useEffect(() => {
-    if (!swipeHintVisible) return
-    const timer = setTimeout(() => setSwipeHintVisible(false), 3000)
-    return () => clearTimeout(timer)
-  }, [swipeHintVisible])
-
   // Swipe gesture tracking
   const touchStartX = useRef<number | null>(null)
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -631,14 +617,17 @@ function FoodDetailModal({
   const isHighRisk = sugarVal > 22.5 || giVal >= 70 || fatVal >= 16 || sodiumVal >= 601
 
   return (
+    // Mobile: flex-centered so card fits in visible viewport without backdrop scroll.
+    // Desktop: overflow-y-auto with top margin (existing behaviour).
     <div
-      className="fixed inset-0 z-[9000] overflow-y-auto bg-foreground/80 px-4 pb-6"
+      className="fixed inset-0 z-[9000] bg-foreground/80 px-3 flex items-center justify-center md:block md:overflow-y-auto md:px-4 md:pb-6"
       onClick={onClose}
     >
       <div
-        className="mx-auto flex w-full items-center justify-center gap-8"
-        style={{ maxWidth: "calc(32rem + 12rem)", marginTop: 112 }}
+        className="w-full md:mx-auto md:flex md:items-center md:justify-center md:gap-8 md:mt-28"
+        style={{ maxWidth: "calc(32rem + 12rem)" }}
       >
+        {/* Desktop left arrow — hidden on mobile */}
         <button
           onClick={(e) => { e.stopPropagation(); if (!isTransitioning) onPrev() }}
           disabled={index === 0 || isTransitioning}
@@ -650,44 +639,36 @@ function FoodDetailModal({
           <ChevronLeft className="h-7 w-7" />
         </button>
 
-        {/* Modal card — original sizing unchanged */}
+        {/* Modal card */}
         <div
-          className="bg-card rounded-2xl max-w-lg w-full overflow-hidden shadow-xl"
+          className="bg-card rounded-2xl max-w-lg w-full shadow-xl overflow-hidden flex flex-col"
+          style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.5rem)" }}
           onClick={(e) => e.stopPropagation()}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Image */}
-          <div className="relative h-48 sm:h-56 w-full">
+          {/* Image — explicit px height so flex layout never collapses it */}
+          <div className="relative w-full shrink-0" style={{ height: "clamp(140px, 22vw, 224px)" }}>
             <Image
               src={food.image}
               alt={displayName}
               fill
               className={`object-cover transition-opacity duration-150 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
             />
-
-            {/* First-time swipe hint */}
-            {swipeHintVisible && (
-              <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none">
-                <div className="bg-black/65 text-white text-sm px-4 py-2 rounded-full">
-                  {t.modal_swipe_hint}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Modal body — fades during navigation */}
-          <div className={`p-6 transition-opacity duration-150 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+          {/* Modal body — min-h-0 lets the flex item shrink so overflow-y-auto works correctly */}
+          <div className={`overflow-y-auto flex-1 min-h-0 p-4 sm:p-6 transition-opacity duration-150 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
             {/* Food name, portion, category and close button */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div>
-                <h3 className="text-2xl font-bold text-foreground">{displayName}</h3>
-                <p className="text-base text-muted-foreground">{t.portion}: {translatePortion(food.portion, t)}</p>
-                <p className="text-base text-muted-foreground font-medium">{displayCategory}</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground">{displayName}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">{t.portion}: {translatePortion(food.portion, t)}</p>
+                <p className="text-sm sm:text-base text-muted-foreground font-medium">{displayCategory}</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-3 md:p-2 hover:bg-muted rounded-full transition-colors"
+                className="p-3 md:p-2 hover:bg-muted rounded-full transition-colors shrink-0"
                 aria-label={t.close}
               >
                 <X className="w-6 h-6" />
@@ -700,7 +681,7 @@ function FoodDetailModal({
                 if (inCart) removeFromCart(cartIndex)
                 else addToCart(food)
               }}
-              className={`w-full mb-4 py-3 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all ${
+              className={`w-full mb-3 sm:mb-4 py-2.5 sm:py-3 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all ${
                 inCart
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted hover:bg-primary/20 border-2 border-border"
@@ -711,47 +692,47 @@ function FoodDetailModal({
             </button>
 
             {/* Nutrition grid: Sugar | Cal | GI */}
-            <div className="grid grid-cols-3 gap-2 md:gap-3 mb-3">
-              <div className={`rounded-xl px-3 py-2 text-center border min-h-[48px] ${getLevelPillStyle(sugarLevel)}`}>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-2 sm:mb-3">
+              <div className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-center border min-h-[44px] ${getLevelPillStyle(sugarLevel)}`}>
                 <div className="flex items-center justify-center gap-1">
                   <LevelIcon level={sugarLevel} />
-                  <span className="text-lg font-bold">{food.sugar}</span>
+                  <span className="text-base sm:text-lg font-bold">{food.sugar}</span>
                 </div>
-                <div className="text-sm font-medium">{t.nutrition_sugar}</div>
+                <div className="text-xs sm:text-sm font-medium">{t.nutrition_sugar}</div>
               </div>
-              <div className="bg-muted rounded-xl px-3 py-2 text-center border border-border min-h-[48px]">
-                <div className="text-lg font-bold text-foreground">{food.calories}</div>
-                <div className="text-sm font-medium text-muted-foreground">{t.nutrition_cal}</div>
+              <div className="bg-muted rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-center border border-border min-h-[44px]">
+                <div className="text-base sm:text-lg font-bold text-foreground">{food.calories}</div>
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground">{t.nutrition_cal}</div>
               </div>
-              <div className={`rounded-xl px-3 py-2 text-center border min-h-[48px] ${getLevelPillStyle(giLevel)}`}>
+              <div className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-center border min-h-[44px] ${getLevelPillStyle(giLevel)}`}>
                 <div className="flex items-center justify-center gap-1">
                   <LevelIcon level={giLevel} />
-                  <span className="text-lg font-bold">{food.gi}</span>
+                  <span className="text-base sm:text-lg font-bold">{food.gi}</span>
                 </div>
-                <div className="text-sm font-medium">{t.nutrition_gi}</div>
+                <div className="text-xs sm:text-sm font-medium">{t.nutrition_gi}</div>
               </div>
             </div>
 
             {/* Nutrition grid: Fat | Sodium */}
-            <div className="grid grid-cols-2 gap-2 md:gap-3 mb-4">
-              <div className={`rounded-xl px-3 py-2 text-center border min-h-[48px] ${getLevelPillStyle(fatLevel)}`}>
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-3 mb-3 sm:mb-4">
+              <div className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-center border min-h-[44px] ${getLevelPillStyle(fatLevel)}`}>
                 <div className="flex items-center justify-center gap-1">
                   <LevelIcon level={fatLevel} />
-                  <span className="text-lg font-bold">{food.fat}</span>
+                  <span className="text-base sm:text-lg font-bold">{food.fat}</span>
                 </div>
-                <div className="text-sm font-medium">{t.nutrition_fat}</div>
+                <div className="text-xs sm:text-sm font-medium">{t.nutrition_fat}</div>
               </div>
-              <div className={`rounded-xl px-3 py-2 text-center border min-h-[48px] ${getLevelPillStyle(sodiumLevel)}`}>
+              <div className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-center border min-h-[44px] ${getLevelPillStyle(sodiumLevel)}`}>
                 <div className="flex items-center justify-center gap-1">
                   <LevelIcon level={sodiumLevel} />
-                  <span className="text-lg font-bold">{food.sodium}</span>
+                  <span className="text-base sm:text-lg font-bold">{food.sodium}</span>
                 </div>
-                <div className="text-sm font-medium">{t.nutrition_sodium}</div>
+                <div className="text-xs sm:text-sm font-medium">{t.nutrition_sodium}</div>
               </div>
             </div>
 
             {/* Daily sugar reference */}
-            <div className="text-base text-muted-foreground text-center mb-4 bg-muted rounded-xl px-4 py-3">
+            <div className="text-sm sm:text-base text-muted-foreground text-center mb-3 sm:mb-4 bg-muted rounded-xl px-4 py-2 sm:py-3">
               <div className="font-semibold text-foreground mb-1">{t.daily_sugar_title}</div>
               <div className="flex justify-center gap-6">
                 <span>{t.daily_sugar_women}</span>
@@ -760,20 +741,26 @@ function FoodDetailModal({
             </div>
 
             {/* Health tip */}
-            <div className={`flex items-start gap-2 rounded-xl p-4 ${isHighRisk ? "bg-[#FFF3CD] border border-[#856404]" : "bg-accent/20"}`}>
+            <div className={`flex items-start gap-2 rounded-xl p-3 sm:p-4 ${isHighRisk ? "bg-[#FFF3CD] border border-[#856404]" : "bg-accent/20"}`}>
               <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isHighRisk ? "text-[#856404]" : "text-accent-foreground"}`} />
-              <p className={`text-base ${isHighRisk ? "text-[#856404] font-extrabold" : "text-foreground"}`}>
+              <p className={`text-sm sm:text-base ${isHighRisk ? "text-[#856404] font-extrabold" : "text-foreground"}`}>
                 <span className="font-bold">{t.three_highs_tip}:</span> {food.tip[lang] || food.tip.en}
               </p>
             </div>
 
-            {/* Food position counter — clear wording for elderly users */}
-            <div className="mt-4 pt-3 border-t border-border text-center text-base text-muted-foreground">
+            {/* Swipe hint — mobile only, always visible so elderly users know to swipe */}
+            <div className="mt-3 pt-2 border-t border-border text-center text-sm text-muted-foreground/70 md:hidden">
+              ← {t.modal_swipe_hint} →
+            </div>
+
+            {/* Food position counter */}
+            <div className="mt-1 text-center text-sm sm:text-base text-muted-foreground md:mt-4 md:pt-3 md:border-t md:border-border">
               {t.modal_food_label} {index + 1} {t.modal_of} {total}
             </div>
           </div>
         </div>
 
+        {/* Desktop right arrow — hidden on mobile */}
         <button
           onClick={(e) => { e.stopPropagation(); if (!isTransitioning) onNext() }}
           disabled={index === total - 1 || isTransitioning}
@@ -785,28 +772,6 @@ function FoodDetailModal({
           <ChevronRight className="h-7 w-7" />
         </button>
       </div>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); if (!isTransitioning) onPrev() }}
-        disabled={index === 0 || isTransitioning}
-        aria-label={t.modal_prev}
-        className={`fixed left-4 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1a5276]/45 bg-[#B5E0F1] text-[#1a5276] shadow-2xl ring-4 ring-white/25 transition-all hover:bg-[#C9EBF8] hover:border-[#1a5276]/70 focus:outline-none focus:ring-4 focus:ring-[#1a5276]/35 active:scale-95 md:hidden ${
-          index === 0 || isTransitioning ? "opacity-30 cursor-not-allowed pointer-events-none" : ""
-        }`}
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); if (!isTransitioning) onNext() }}
-        disabled={index === total - 1 || isTransitioning}
-        aria-label={t.modal_next}
-        className={`fixed right-4 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1a5276]/45 bg-[#B5E0F1] text-[#1a5276] shadow-2xl ring-4 ring-white/25 transition-all hover:bg-[#C9EBF8] hover:border-[#1a5276]/70 focus:outline-none focus:ring-4 focus:ring-[#1a5276]/35 active:scale-95 md:hidden ${
-          index === total - 1 || isTransitioning ? "opacity-30 cursor-not-allowed pointer-events-none" : ""
-        }`}
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
     </div>
   )
 }
@@ -874,15 +839,17 @@ function DailyIntakePanel({ t, isOpen, onClose, lang }: { t: typeof pageContent.
     sodium: [t.sodium_tip_1, t.sodium_tip_2],
   }
 
-  const HealthTipCard = ({ tipKey, compact = false }: { tipKey: ExceededTipKey; compact?: boolean }) => (
-    <div className={`w-full rounded-md border border-amber-200 bg-amber-50 text-amber-950 ${compact ? "mt-1 px-2 py-1.5" : "mt-1.5 px-2.5 py-2"}`}>
-      <div className="flex items-start gap-1.5 text-[15px] font-semibold leading-snug">
-        <Info className={`${compact ? "w-3.5 h-3.5" : "w-4 h-4"} mt-0.5 shrink-0`} />
+  const HealthTipCard = ({ tipKey, compact = false, mobile = false }: { tipKey: ExceededTipKey; compact?: boolean; mobile?: boolean }) => (
+    <div className={`w-full rounded-md border border-amber-200 bg-amber-50 text-amber-950 ${
+      mobile ? "mt-0.5 px-1.5 py-1" : compact ? "mt-1 px-2 py-1.5" : "mt-1.5 px-2.5 py-2"
+    }`}>
+      <div className={`flex items-start gap-1 font-semibold leading-snug ${mobile ? "text-xs" : "text-[15px]"}`}>
+        <Info className={`${mobile ? "w-3 h-3" : compact ? "w-3.5 h-3.5" : "w-4 h-4"} mt-0.5 shrink-0`} />
         <div className="min-w-0">
           <p className="font-bold">{t.health_tip_short}:</p>
-          <ul className={`${compact ? "mt-0.5 space-y-0.5" : "mt-1 space-y-1"}`}>
+          <ul className={`${mobile ? "mt-0 space-y-0" : compact ? "mt-0.5 space-y-0.5" : "mt-1 space-y-1"}`}>
             {exceededTips[tipKey].map((tip) => (
-              <li key={tip} className="flex gap-1.5 leading-snug">
+              <li key={tip} className="flex gap-1 leading-snug">
                 <span aria-hidden="true">•</span>
                 <span>{tip}</span>
               </li>
@@ -922,13 +889,13 @@ function DailyIntakePanel({ t, isOpen, onClose, lang }: { t: typeof pageContent.
     const limitPct = (limit / maxDisplay) * 100
 
     return (
-      <div className={`mb-1.5 rounded-xl transition-all ${isOver ? "bg-red-50 border border-red-300 px-1.5 py-1 -mx-1" : ""}`}>
-        <div className="flex justify-between items-baseline mb-1">
+      <div className={`mb-1 rounded-xl transition-all ${isOver ? "bg-red-50 border border-red-300 px-1.5 py-0.5 -mx-1" : ""}`}>
+        <div className="flex justify-between items-baseline mb-0.5">
           <div className="flex items-center gap-1">
             {/* Red exclamation badge shown when over limit */}
             {isOver && (
-              <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-600 shrink-0">
-                <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>!</span>
+              <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-red-600 shrink-0">
+                <span className="text-white font-black leading-none" style={{ fontSize: "8px" }}>!</span>
               </span>
             )}
             <span className={`text-xs font-semibold ${isOver ? "text-red-800" : ""}`}>{label}</span>
@@ -938,7 +905,7 @@ function DailyIntakePanel({ t, isOpen, onClose, lang }: { t: typeof pageContent.
           </span>
         </div>
         {/* Progress bar with red vertical limit marker */}
-        <div className="relative h-3 bg-background rounded-full overflow-visible">
+        <div className="relative h-2 bg-background rounded-full overflow-visible">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${fillPct}%`, backgroundColor: isOver ? "#dc2626" : color, opacity: 1 }}
@@ -950,17 +917,17 @@ function DailyIntakePanel({ t, isOpen, onClose, lang }: { t: typeof pageContent.
         </div>
         {/* Excess amount message shown only when over limit */}
         {isOver && excessAmount > 0 && (
-          <div className="mt-1 flex flex-col items-start gap-0.5">
-            <span className="text-sm text-red-700 font-semibold">
+          <div className="mt-0.5 flex flex-col items-start gap-0">
+            <span className="text-xs text-red-700 font-semibold">
               +{excessAmount}{unit} {t.exceeded_by}
             </span>
-            <span className="text-sm text-black font-semibold leading-snug">{statusOver}</span>
-            {tipKey && <HealthTipCard tipKey={tipKey} compact />}
+            <span className="text-xs text-black font-semibold leading-snug">{statusOver}</span>
+            {tipKey && <HealthTipCard tipKey={tipKey} mobile />}
           </div>
         )}
         {/* OK status message shown when within limit */}
         {!isOver && (
-          <p className="text-sm mt-0.5 leading-snug text-muted-foreground">{statusOk}</p>
+          <p className="text-xs mt-0.5 leading-snug text-muted-foreground">{statusOk}</p>
         )}
       </div>
     )
@@ -1116,7 +1083,7 @@ function DailyIntakePanel({ t, isOpen, onClose, lang }: { t: typeof pageContent.
                 </div>
 
                 {/* Compact nutrition bars (mobile) */}
-                <div className="bg-muted rounded-xl p-1.5 mb-1.5">
+                <div className="bg-muted rounded-xl p-1 mb-1">
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="text-xs font-bold text-foreground">{t.total} vs {t.daily_limit}</h4>
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -1701,27 +1668,15 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
    *
    * @returns An array of page numbers (numbers) and ellipsis markers (strings)
    */
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = []
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      if (currentPage <= 4) {
-        for (let i = 1; i <= 5; i++) pages.push(i)
-        pages.push("...")
-        pages.push(totalPages)
-      } else if (currentPage >= totalPages - 3) {
-        pages.push(1)
-        pages.push("...")
-        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
-      } else {
-        pages.push(1)
-        pages.push("...")
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
-        pages.push("...")
-        pages.push(totalPages)
-      }
+  const getPageNumbers = (): (number | string)[] => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    const pages: (number | string)[] = [1]
+    if (currentPage > 3) pages.push("…")
+    for (let p = Math.max(2, currentPage - 1); p <= Math.min(totalPages - 1, currentPage + 1); p++) {
+      pages.push(p)
     }
+    if (currentPage < totalPages - 2) pages.push("…")
+    pages.push(totalPages)
     return pages
   }
 
@@ -2301,16 +2256,16 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
               </button>
             )}
             {/* Page navigation: previous button, numbered pages, next button */}
-            <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:gap-3 md:gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-3 md:gap-4">
               <button
                 onClick={() => {
                   goToPage(currentPage - 1)
                 }}
                 disabled={currentPage === 1}
-                className="min-h-12 flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 text-base md:text-lg font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-4 md:px-5 py-2.5 md:py-3 rounded-xl text-base md:text-lg font-bold text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
-                <span className="whitespace-nowrap">{t.pagination_previous}</span>
+                <span className="hidden sm:inline whitespace-nowrap">{t.pagination_previous}</span>
               </button>
 
               {/* Numbered page buttons with ellipsis for large page counts */}
@@ -2321,7 +2276,7 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
                     onClick={() => {
                       goToPage(page)
                     }}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full text-base md:text-lg font-medium transition-colors ${currentPage === page
+                    className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl md:rounded-full text-base md:text-lg font-semibold transition-colors ${currentPage === page
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted text-muted-foreground hover:text-foreground"
                       }`}
@@ -2329,7 +2284,7 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
                     {page}
                   </button>
                 ) : (
-                  <span key={idx} className="px-1.5 md:px-2 text-muted-foreground text-base md:text-lg">...</span>
+                  <span key={idx} className="px-1 md:px-2 text-muted-foreground text-base md:text-lg">…</span>
                 )
               ))}
 
@@ -2338,16 +2293,22 @@ function FoodClientInner({ lang, initialFoods }: { lang: LangCode; initialFoods:
                   goToPage(currentPage + 1)
                 }}
                 disabled={currentPage === totalPages}
-                className="min-h-12 flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 text-base md:text-lg font-bold text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-4 md:px-5 py-2.5 md:py-3 rounded-xl text-base md:text-lg font-bold text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <span className="whitespace-nowrap">{t.pagination_next}</span>
+                <span className="hidden sm:inline whitespace-nowrap">{t.pagination_next}</span>
                 <ChevronRight className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
               </button>
             </div>
 
-            {/* Result count summary (e.g., "Showing 1-15 of 42 results") */}
-            <p className="text-base md:text-lg text-muted-foreground">
-              {t.pagination_showing} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t.pagination_of} {filtered.length} {t.pagination_results}
+            {/* Result count summary (e.g., "Showing 1–15 of 42 results") */}
+            <p className="text-base text-muted-foreground">
+              {t.pagination_showing}{" "}
+              <span className="font-bold text-foreground">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}
+              </span>{" "}
+              {t.pagination_of}{" "}
+              <span className="font-bold text-foreground">{filtered.length}</span>{" "}
+              {t.pagination_results}
             </p>
           </div>
         )}

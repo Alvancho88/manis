@@ -791,6 +791,15 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
     return () => window.removeEventListener("sihat_view_analysis", handleViewAnalysis)
   }, [restoreSharedScanResults])
 
+  // Chatbot fires "sihat-analysis-reset" when the user asks to reset the analysis.
+  // Runs the same clearAll() used by the Reset button so the page returns to its
+  // initial upload/type state without requiring any UI interaction.
+  useEffect(() => {
+    const handleAnalysisReset = () => clearAll()
+    window.addEventListener("sihat-analysis-reset", handleAnalysisReset)
+    return () => window.removeEventListener("sihat-analysis-reset", handleAnalysisReset)
+  }, [])
+
   // When chatbot navigates here with ?fromChatbot=1&ts=..., force a re-read of
   // sessionStorage even if Next.js restored this page from its router cache
   // (in which case the mount-only effect above does not re-run).
