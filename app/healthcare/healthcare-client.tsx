@@ -5,6 +5,7 @@ import {MapPin, Phone, Star, Navigation, Search, X, AlertTriangle, ChevronDown, 
   HeartPulse, Droplets, Activity, Filter, LocateFixed, SlidersHorizontal} from "lucide-react"
 import type { HealthcareFacilityRow } from "@/lib/queries"
 import { PageLayout } from "@/components/page-layout"
+import { createPortal } from "react-dom"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -464,9 +465,9 @@ export function HealthcareClient({ facilities}: Props) {
             </div>
 
             {/* ── Consent Modal ── */}
-            {showConsent && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-                <div className="bg-card rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-7 sm:p-8 shadow-2xl">
+            {showConsent && createPortal(
+              <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-0 sm:p-4">
+                <div className="bg-card rounded-3xl z-[100] rounded-3xl w-full max-w-md mx-4 p-7 sm:p-8 shadow-2xl">
                   <div className="flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mx-auto mb-5">
                     <LocateFixed className="w-10 h-10 text-primary" />
                   </div>
@@ -492,7 +493,8 @@ export function HealthcareClient({ facilities}: Props) {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
 
             {/* ── Search & Filter Panel ── */}
