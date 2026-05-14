@@ -11,6 +11,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import type { FoodItem as MealPlanFoodItem } from "@/lib/food-functions"
 import { DailyIntakePanel, type DailyIntakePanelStrings } from "@/components/ui/daily-intake-panel"
+import { computeRiskFromIndicators, getLevelFromThresholds } from "@/lib/food-recognition-risk"
 
 import Image from "next/image"
 import {
@@ -113,6 +114,9 @@ const content = {
     removed_from_meal_plan: "Removed from your meal plan",
     meal_plan_unavailable: "AI-generated food analysis",
     meal_plan_unavailable_hint: "This food is not currently in the SIHAT food database. The nutrition information and health advice shown here are estimated by AI and may not be fully accurate.",
+    chatbot_estimate_banner_title: "AI-estimated analysis (not database verified)",
+    chatbot_estimate_banner_body:
+      "Sugar, sodium, fat, risk, and health tips below reuse the same AI estimates as in the chat. They are not verified against the SIHAT food database.",
     // Action sheet
     sheet_title: "Add Photo",
     sheet_camera: "Take Photo",
@@ -212,6 +216,9 @@ const content = {
     removed_from_meal_plan: "Dikeluarkan daripada pelan makanan anda",
     meal_plan_unavailable: "Analisis makanan jana AI",
     meal_plan_unavailable_hint: "Makanan ini tidak terdapat dalam pangkalan data makanan SIHAT. Maklumat pemakanan dan nasihat kesihatan yang ditunjukkan di sini dianggarkan oleh AI dan mungkin tidak sepenuhnya tepat.",
+    chatbot_estimate_banner_title: "Analisis anggaran AI (bukan data pangkalan SIHAT)",
+    chatbot_estimate_banner_body:
+      "Gula, natrium, lemak, risiko, dan tip di bawah menggunakan anggaran AI yang sama seperti dalam sembang. Ia tidak disahkan dengan pangkalan data makanan SIHAT.",
     sheet_title: "Tambah Foto",
     sheet_camera: "Ambil Foto",
     sheet_gallery: "Pilih dari Galeri",
@@ -309,6 +316,9 @@ const content = {
     removed_from_meal_plan: "已从饮食计划中移除",
     meal_plan_unavailable: "AI生成的食物分析",
     meal_plan_unavailable_hint: "此食物目前不在SIHAT食物数据库中。此处显示的营养信息和健康建议由AI估算，可能并不完全准确。",
+    chatbot_estimate_banner_title: "AI估算分析（未经SIHAT数据库核实）",
+    chatbot_estimate_banner_body:
+      "下方的糖、钠、脂肪、风险等级与健康提示与聊天中的AI估算一致，未经SIHAT食物数据库核实。",
     sheet_title: "添加照片",
     sheet_camera: "拍照",
     sheet_gallery: "从相册选择",
@@ -446,24 +456,6 @@ function RiskBadge({ risk, t }: { risk: string; t: typeof content.en }) {
       {c.label}
     </span>
   )
-}
-
-function getLevelFromThresholds(value: number, lowMax: number, mediumMax: number): "low" | "medium" | "high" {
-  if (value <= lowMax) return "low"
-  if (value <= mediumMax) return "medium"
-  return "high"
-}
-
-function computeRiskFromIndicators(sugar: number, salt: number, fat: number, apiRisk: string): "low" | "medium" | "high" {
-  if (!isNaN(sugar) && !isNaN(salt) && !isNaN(fat)) {
-    const sugarLevel = getLevelFromThresholds(sugar, 5, 15)
-    const saltLevel = getLevelFromThresholds(salt, 200, 600)
-    const fatLevel = getLevelFromThresholds(fat, 3, 7)
-    if (sugarLevel === "high" || saltLevel === "high" || fatLevel === "high") return "high"
-    if (sugarLevel === "medium" || saltLevel === "medium" || fatLevel === "medium") return "medium"
-    return "low"
-  }
-  return (apiRisk?.toLowerCase() as "low" | "medium" | "high") ?? "medium"
 }
 
 function indicatorClass(level: "low" | "medium" | "high") {
@@ -664,6 +656,58 @@ type PredictResults = Record<string, { ranking?: PredictFoodItem[] }> & {
 const SCAN_CONTEXT_KEY = "sihat_scan_results"
 const ANALYSIS_SESSION_KEY = "sihat_analysis_session"
 const SCAN_CONTEXT_EVENT = "sihat_scan_results_changed"
+/** Populated by AI chatbot when user opens full analysis for non-database (estimated) foods */
+const CHATBOT_ESTIMATED_ANALYSIS_KEY = "sihat_chatbot_estimated_analysis"
+
+type ChatbotEstimatedFoodPayload = {
+  name: string
+  category: string | null
+  risk: "low" | "medium" | "high"
+  tip: string
+  sugar?: number
+  sodium?: number
+  fat?: number
+}
+
+type ChatbotEstimatedAnalysisPayload = {
+  v: number
+  foods: ChatbotEstimatedFoodPayload[]
+  lang: LangCode
+}
+
+function buildPredictResultsFromChatbotEstimates(foods: ChatbotEstimatedFoodPayload[]): PredictResults {
+  const buckets: Record<string, PredictFoodItem[]> = {
+    "Main Dish": [],
+    "Appetizer": [],
+    "Dessert": [],
+    "Drinks": [],
+  }
+  for (const card of foods) {
+    const mapped =
+      card.category === "Drink"
+        ? "Drinks"
+        : card.category === "Main Dish" ||
+            card.category === "Appetizer" ||
+            card.category === "Dessert" ||
+            card.category === "Drinks"
+          ? card.category
+          : "Main Dish"
+    const tip = card.tip ?? ""
+    const tipTr = { en: tip, ms: tip, zh: tip }
+    const sugar = typeof card.sugar === "number" && Number.isFinite(card.sugar) ? card.sugar : 0
+    const salt = typeof card.sodium === "number" && Number.isFinite(card.sodium) ? card.sodium : 0
+    const fat = typeof card.fat === "number" && Number.isFinite(card.fat) ? card.fat : 0
+    const rk = card.risk === "high" ? "High" : card.risk === "low" ? "Low" : "Medium"
+    buckets[mapped].push({ f: card.name, sugar, salt, fat, risk: rk, tip: tipTr })
+  }
+  return {
+    "Main Dish": { ranking: buckets["Main Dish"] },
+    Appetizer: { ranking: buckets["Appetizer"] },
+    Dessert: { ranking: buckets["Dessert"] },
+    Drinks: { ranking: buckets["Drinks"] },
+    uniqueFoodCount: foods.length,
+  } as PredictResults
+}
 
 function notifyScanContextChanged() {
   window.dispatchEvent(new CustomEvent(SCAN_CONTEXT_EVENT, { detail: { source: "recommendation" } }))
@@ -818,6 +862,8 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
   const panelNavRef = useRef<HTMLDivElement>(null)     // panel navigation tabs (for scroll to results)
   const currentLangRef = useRef<LangCode>("en")        // latest lang from PageLayout render prop
   const [pendingAutoAnalyze, setPendingAutoAnalyze] = useState(false)
+  /** True when results were loaded from chatbot AI estimates (not DB / not fresh /api/predict) */
+  const [showChatbotAiEstimateBanner, setShowChatbotAiEstimateBanner] = useState(false)
 
   const MAX_IMAGES = 5 // Maximum number of images allowed
 
@@ -863,6 +909,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
         source: storedSession?.source ?? null,
       })
       if (!raw) {
+        setShowChatbotAiEstimateBanner(false)
         setApiResultsCache(null)
         setShowCategories(false)
         setSelectedCategory(null)
@@ -878,6 +925,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
         : getFirstAnalysisCategory(cache)
       if (!firstCategory) return
 
+      setShowChatbotAiEstimateBanner(false)
       setUploadedImages(storedSession?.imagePreviews ?? [])
       setUploadedFiles([])
       setNewFiles([])
@@ -902,6 +950,50 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
     }
   }, [])
 
+  const applyChatbotEstimatedFromStorage = useCallback((): boolean => {
+    const raw = sessionStorage.getItem(CHATBOT_ESTIMATED_ANALYSIS_KEY)
+    if (!raw) return false
+    try {
+      const payload = JSON.parse(raw) as ChatbotEstimatedAnalysisPayload
+      sessionStorage.removeItem(CHATBOT_ESTIMATED_ANALYSIS_KEY)
+      if (!payload?.foods?.length) return false
+
+      const predictData = buildPredictResultsFromChatbotEstimates(payload.foods)
+      const cache = buildApiResultsCache(predictData)
+      const firstCategory = getFirstAnalysisCategory(cache)
+      if (!firstCategory) return false
+
+      setUploadedImages([])
+      setUploadedFiles([])
+      setNewFiles([])
+      setPreviousOcr("")
+      setAnalyzeError(null)
+      setIsAnalyzing(false)
+      setSuccessCount(null)
+      setApiResultsCache(cache)
+      setShowCategories(true)
+      setSelectedCategory(firstCategory)
+      setResults(cache[firstCategory])
+      setCurrentPanel("results")
+      setShowChatbotAiEstimateBanner(true)
+      setPendingAutoAnalyze(false)
+
+      const recLine =
+        sessionStorage.getItem("rec-text")?.trim() ||
+        payload.foods.map((f) => f.name).join(", ")
+      setTextInput(recLine)
+      setShowTextInput(true)
+
+      setTimeout(() => {
+        panelNavRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 150)
+      return true
+    } catch {
+      sessionStorage.removeItem(CHATBOT_ESTIMATED_ANALYSIS_KEY)
+      return false
+    }
+  }, [])
+
   useEffect(() => {
     restoreSharedScanResults()
     const handleSharedScanUpdate = (event: Event) => {
@@ -916,12 +1008,15 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
   // clicks "View Detailed Analysis". Instead of navigating, we sync state and scroll.
   useEffect(() => {
     const handleViewAnalysis = () => {
+      if (applyChatbotEstimatedFromStorage()) return
+
       const hasScanCtx = !!sessionStorage.getItem(SCAN_CONTEXT_KEY)
       const recText = sessionStorage.getItem("rec-text")
 
       if (hasScanCtx) {
         restoreSharedScanResults()
       } else if (recText) {
+        setShowChatbotAiEstimateBanner(false)
         setTextInput(recText)
         setShowTextInput(true)
         setApiResultsCache(null)
@@ -938,7 +1033,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
     }
     window.addEventListener("sihat_view_analysis", handleViewAnalysis)
     return () => window.removeEventListener("sihat_view_analysis", handleViewAnalysis)
-  }, [restoreSharedScanResults])
+  }, [applyChatbotEstimatedFromStorage, restoreSharedScanResults])
 
   // Chatbot fires "sihat-analysis-reset" when the user asks to reset the analysis.
   // Runs the same clearAll() used by the Reset button so the page returns to its
@@ -959,6 +1054,8 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
   useEffect(() => {
     if (!searchParams.get("fromChatbot")) return
 
+    if (applyChatbotEstimatedFromStorage()) return
+
     const hasScanContext = !!sessionStorage.getItem(SCAN_CONTEXT_KEY)
 
     if (hasScanContext) {
@@ -971,6 +1068,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
     const savedText = sessionStorage.getItem("rec-text")
     console.log("[Recommendation] fromChatbot: no scan context, auto-analysing:", savedText)
     if (savedText) {
+      setShowChatbotAiEstimateBanner(false)
       setTextInput(savedText)
       setShowTextInput(true)
       setApiResultsCache(null)
@@ -979,7 +1077,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
       setResults(null)
       setPendingAutoAnalyze(true)
     }
-  }, [searchParams, restoreSharedScanResults])
+  }, [searchParams, restoreSharedScanResults, applyChatbotEstimatedFromStorage])
 
   // Fires after state from the fromChatbot effect has been committed.
   // currentLangRef.current is kept up-to-date by the PageLayout render prop below.
@@ -1079,6 +1177,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
   }
 
   const handleAnalyze = async (lang: string) => {
+    setShowChatbotAiEstimateBanner(false)
     setAnalyzeError(null)
     setIsAnalyzing(true)
     setSuccessCount(null)
@@ -1162,6 +1261,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
   }
 
   const clearAll = () => {
+    setShowChatbotAiEstimateBanner(false)
     setUploadedImages([])
     setUploadedFiles([])
     setNewFiles([])
@@ -1497,6 +1597,15 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
             ═══════════════════════════════════════════════════════════════════════════ */}
             {currentPanel === "results" && hasResults && (
               <div className="space-y-4" id="analysis-result-section">
+                {showChatbotAiEstimateBanner && (
+                  <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-2">
+                    <Info className="w-5 h-5 shrink-0 text-amber-800 mt-0.5" aria-hidden="true" />
+                    <div>
+                      <p className="font-bold text-amber-950 text-base md:text-lg">{t.chatbot_estimate_banner_title}</p>
+                      <p className="mt-1 text-amber-950/90 text-base md:text-lg">{t.chatbot_estimate_banner_body}</p>
+                    </div>
+                  </div>
+                )}
                 {/* Category Selection */}
                 {showCategoryTabs && (
                   <div ref={categoryTabsRef} className="bg-card rounded-2xl border border-border p-4 shadow-sm">

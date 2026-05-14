@@ -748,9 +748,11 @@ function FoodDetailModal({
               </p>
             </div>
 
-            {/* Swipe hint — mobile only, always visible so elderly users know to swipe */}
-            <div className="mt-3 pt-2 border-t border-border text-center text-sm text-muted-foreground/70 md:hidden">
-              ← {t.modal_swipe_hint} →
+            {/* Swipe hint — mobile only; nowrap + slightly smaller type so long MS copy stays one line */}
+            <div className="mt-3 pt-2 border-t border-border md:hidden">
+              <p className="mx-auto max-w-full text-center text-xs whitespace-nowrap text-muted-foreground/70">
+                ← {t.modal_swipe_hint} →
+              </p>
             </div>
 
             {/* Food position counter */}
