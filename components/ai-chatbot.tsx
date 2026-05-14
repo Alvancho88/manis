@@ -9,7 +9,7 @@
 // - Safety: disclaimer on every message, no medical diagnosis
 // - Fallback handling for API errors
 
-import { Fragment, useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { Fragment, useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bot,
@@ -32,7 +32,8 @@ import {
 } from "lucide-react";
 import { useCart } from "@/components/cart-context";
 import { buildDailyIntakeSummary, type Gender, type DailyIntakeSummary } from "@/lib/daily-intake-summary";
-import { getLocalizedCategory, type FoodItem as CartFoodItem } from "@/lib/food-functions";
+import { type FoodItem as CartFoodItem } from "@/lib/food-functions";
+import { computeRiskFromIndicators, parseNutrientNumber } from "@/lib/food-recognition-risk";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,9 @@ interface ScanFoodSummary {
   risk: "Low" | "Medium" | "High";
   tip: string;
   category?: keyof Omit<ScanContext, "uniqueFoodCount">;
+  sugarG: number;
+  sodiumMg: number;
+  fatG: number;
 }
 
 type EstimatedFoodCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drink";
@@ -88,16 +92,22 @@ interface EstimatedFoodCard {
   category: EstimatedFoodCategory | null;
   risk: "low" | "medium" | "high";
   tip: string;
+  sugar?: number;
+  sodium?: number;
+  fat?: number;
 }
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   id: string;
+  /** Language used for this assistant turn (detected from user input / API request). */
+  locale?: LangCode;
   kind?: "system";
   suggestions?: CartFoodItem[];
   unavailableFoodName?: string;
   scanFood?: ScanFoodSummary;
+  scanFoods?: ScanFoodSummary[];
   quickReplies?: string[];
   starterQuestions?: readonly string[];
   actionButton?: {
@@ -113,6 +123,30 @@ interface PendingChatImage {
   id: string;
   file: File;
   url: string;
+}
+
+/** True before any real chat: no user messages, no food cards, only welcome / scan hint / system notices. */
+function isChatInInitialSeedState(messages: Message[]): boolean {
+  for (const m of messages) {
+    if (m.role === "user") return false;
+    if (m.role === "assistant") {
+      if (m.kind === "system") continue;
+      if (m.starterQuestions?.length) continue;
+      if (
+        m.suggestions?.length ||
+        m.estimatedFood ||
+        m.estimatedFoods?.length ||
+        m.scanFood ||
+        m.scanFoods?.length ||
+        m.isMultiFood ||
+        (m.quickReplies && m.quickReplies.length > 0) ||
+        m.actionButton
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // Shape of what /api/predict stores — mirrors the API response
@@ -166,7 +200,7 @@ type ChatRequestBody = {
   scanContext: ScanContext | null;
   cart: CartFoodItem[];
   intakeSummary: DailyIntakeSummary;
-}
+};
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 
@@ -402,6 +436,8 @@ function readScanContext(): ScanContext | null {
 const STORAGE_KEY = "sihat_assistant_messages";
 const SCAN_CONTEXT_KEY = "sihat_scan_results";
 const ANALYSIS_SESSION_KEY = "sihat_analysis_session";
+/** Session payload when opening /recommendation from chatbot for non-database (AI-estimated) foods */
+const CHATBOT_ESTIMATED_ANALYSIS_KEY = "sihat_chatbot_estimated_analysis";
 const SCAN_CONTEXT_EVENT = "sihat_scan_results_changed";
 const MAX_CHAT_UPLOAD_IMAGES = 5;
 
@@ -565,53 +601,6 @@ function normalizeRepeatKey(value: string): string {
 
 function getCartFoodName(food: CartFoodItem, lang: LangCode): string {
   return food.name[lang] || food.name.en;
-}
-
-type FoodCategory = "Main Dish" | "Appetizer" | "Dessert" | "Drink";
-
-function inferFoodCategory(food: CartFoodItem): FoodCategory | null {
-  const dbCat = food.category.toLowerCase();
-  const name = `${food.name.en} ${food.name.ms}`.toLowerCase();
-
-  // Direct database-category mappings (unambiguous)
-  if (dbCat === "drinks") return "Drink";
-  if (dbCat === "desserts") return "Dessert";
-  if (dbCat === "fruits") return "Dessert";
-
-  // Name-based drink detection (covers drinks filed under cuisine categories)
-  const drinkWords = ["tea", "teh", "coffee", "kopi", "juice", "jus", "milo", "horlicks",
-    "bandung", "lassi", "laici", "sirap", "air", "water", "soda", "milk", "susu",
-    "smoothie", "shake", "cocoa", "chocolate drink", "beverage"];
-  if (drinkWords.some((w) => name.includes(w))) return "Drink";
-
-  // Name-based dessert detection
-  const dessertWords = ["cake", "kek", "pudding", "ice cream", "ais krim", "ais", "ice",
-    "kuih", "kueh", "donut", "donat", "cookie", "biskut", "biscuit", "wafer",
-    "jelly", "agar", "bubur", "porridge", "sweet", "manis", "candy", "sweets",
-    "brownie", "muffin", "pastry", "tart", "pie", "crepe", "pancake", "waffle",
-    "halwa", "dodol", "ladoo", "barfi", "mithai", "payasam"];
-  if (dessertWords.some((w) => name.includes(w))) return "Dessert";
-
-  // Name-based appetizer/side detection
-  const appetizerWords = ["salad", "soup", "sup", "starter", "satay", "acar",
-    "popiah", "samosa", "spring roll", "keropok", "cracker", "papadum"];
-  if (appetizerWords.some((w) => name.includes(w))) return "Appetizer";
-
-  // For cuisine categories (Malaysian, Chinese, Indian, etc.) assume Main Dish
-  const cuisineCategories = ["malaysian", "chinese", "indian", "western", "japanese", "korean"];
-  if (cuisineCategories.some((c) => dbCat.includes(c))) return "Main Dish";
-
-  return null;
-}
-
-function getLocalizedFoodCategory(category: FoodCategory, lang: LangCode): string {
-  const labels: Record<FoodCategory, Record<LangCode, string>> = {
-    "Main Dish": { en: "Main Dish", ms: "Hidangan Utama", zh: "主食" },
-    "Appetizer": { en: "Appetizer", ms: "Pembuka Selera", zh: "前菜" },
-    "Dessert":   { en: "Dessert",   ms: "Pencuci Mulut",  zh: "甜点" },
-    "Drink":     { en: "Drink",     ms: "Minuman",        zh: "饮料" },
-  };
-  return labels[category][lang];
 }
 
 function getSpeechRecognitionLanguage(lang: LangCode): string {
@@ -780,51 +769,52 @@ function renderMessageContent(content: string) {
   });
 }
 
-// ─── FOOD SUMMARY CARD ────────────────────────────────────────────────────────
+// ─── FOOD SUMMARY (text-only) ─────────────────────────────────────────────────
 
-interface ParsedFoodSummary {
-  risk: "low" | "medium" | "high";
-  goodPoints: string[];
-  tip: string;
+function localizedRiskFromKey(risk: "low" | "medium" | "high", lang: LangCode): string {
+  return {
+    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
+    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
+    high:   { en: "High Risk",   ms: "Risiko Tinggi",    zh: "高风险"   },
+  }[risk][lang];
 }
 
-function parseFoodSummary(content: string): ParsedFoodSummary | null {
-  const clean = content.replace(/^!HIGH_NUTRITION! /gm, "");
-  const lower = clean.toLowerCase();
+function foodItemToScanSummary(item: FoodItem, ctx: ScanContext, messageLang: LangCode): ScanFoodSummary {
+  const tip =
+    typeof item.tip === "object" && item.tip
+      ? (item.tip[messageLang] || item.tip.en || "")
+      : (item.tip ?? "");
+  return {
+    name: item.f,
+    risk: item.risk,
+    tip,
+    category: getFoodScanCategory(ctx, item.f),
+    sugarG: item.sugar,
+    sodiumMg: item.salt,
+    fatG: item.fat,
+  };
+}
 
-  let risk: "low" | "medium" | "high" | null = null;
-  if (
-    lower.includes("high-risk") || lower.includes("high risk") ||
-    lower.includes("risiko tinggi") || lower.includes("高风险") || lower.includes("高危")
-  ) risk = "high";
-  else if (
-    lower.includes("medium-risk") || lower.includes("medium risk") ||
-    lower.includes("risiko sederhana") || lower.includes("中等风险")
-  ) risk = "medium";
-  else if (
-    lower.includes("low-risk") || lower.includes("low risk") ||
-    lower.includes("risiko rendah") || lower.includes("低风险")
-  ) risk = "low";
+function FoodScanSummary({ scanFood, lang }: { scanFood: ScanFoodSummary; lang: LangCode }) {
+  const rk = computeRiskFromIndicators(scanFood.sugarG, scanFood.sodiumMg, scanFood.fatG, scanFood.risk);
+  const riskLabel = localizedRiskFromKey(rk, lang);
+  const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
 
-  if (!risk) return null;
-
-  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
-  const goodPoints = lines
-    .filter((l) => /^[✅✓✔]/.test(l))
-    .map((l) => l.replace(/^[✅✓✔]\s*/, "").trim())
-    .filter(Boolean);
-
-  let tip = "";
-  for (const pattern of [
-    /Health Tips?[：:]\s*\n?([\s\S]+?)(?:\n\n|$)/i,
-    /Tip Kesihatan[：:]\s*\n?([\s\S]+?)(?:\n\n|$)/i,
-    /健康提示[：:]\s*\n?([\s\S]+?)(?:\n\n|$)/i,
-  ]) {
-    const m = clean.match(pattern);
-    if (m) { tip = m[1].trim(); break; }
-  }
-
-  return { risk, goodPoints, tip };
+  return (
+    <div className="text-gray-800" style={{ whiteSpace: "normal", fontSize: "18px", lineHeight: "1.7" }}>
+      <p className="font-bold mb-1" style={{ fontSize: "20px" }}>{scanFood.name}</p>
+      <p className="mb-2" style={{ fontSize: "17px", lineHeight: "1.65" }}>{riskLabel}</p>
+      {scanFood.tip ? (
+        <>
+          <p className="font-semibold mb-1" style={{ fontSize: "17px", lineHeight: "1.65" }}>
+            {tipHeader}
+            {lang === "zh" ? "：" : ":"}
+          </p>
+          <p style={{ fontSize: "17px", lineHeight: "1.65" }}>{scanFood.tip}</p>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function FoodSummaryCard({ content, food, scanFood, lang }: {
@@ -833,225 +823,76 @@ function FoodSummaryCard({ content, food, scanFood, lang }: {
   scanFood?: ScanFoodSummary;
   lang: LangCode;
 }) {
-  const parsedFromText = parseFoodSummary(content);
-
-  // Photo scan path: structured data already extracted
   if (scanFood) {
-    const riskKey = scanFood.risk.toLowerCase() as "low" | "medium" | "high";
-    const riskLabel = {
-      low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
-      medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
-      high:   { en: "High Risk",   ms: "Risiko Tinggi",    zh: "高风险"   },
-    }[riskKey][lang];
-    const riskStyle = {
-      low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-      medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
-      high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
-    }[riskKey];
-    const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
+    return <FoodScanSummary scanFood={scanFood} lang={lang} />;
+  }
 
-    const categoryLabel = scanFood.category ? getLocalizedScanCategory(scanFood.category, lang) : null;
+  if (food) {
+    const foodName = getCartFoodName(food, lang);
+    const sugarN = parseNutrientNumber(food.sugar);
+    const sodiumN = parseNutrientNumber(food.sodium);
+    const fatN = parseNutrientNumber(food.fat);
+    const rk = computeRiskFromIndicators(sugarN, sodiumN, fatN, food.risk);
+    const riskLabel = localizedRiskFromKey(rk, lang);
+    const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
+    const tip = food.tip[lang] || food.tip.en || "";
 
     return (
-      <div style={{ whiteSpace: "normal", fontSize: "18px", lineHeight: "1.7" }}>
-        <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "20px" }}>{scanFood.name}</p>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {/* Badge 1 — Food Category (AI recognition: Main Dish / Appetizer / Dessert / Drinks) */}
-          {categoryLabel && (
-            <span
-              className="inline-block rounded-full px-3 py-1 font-semibold"
-              style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "14px" }}
-            >
-              {categoryLabel}
-            </span>
-          )}
-          {/* Badge 3 — Risk Level */}
-          <span
-            className="inline-block rounded-full px-3 py-1 font-bold"
-            style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "14px" }}
-          >
-            {riskLabel}
-          </span>
-        </div>
-        {scanFood.tip && (
-          <div className="rounded-xl px-4 py-3" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
-            <p className="font-semibold mb-1" style={{ fontSize: "13px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <div className="text-gray-800" style={{ whiteSpace: "normal", fontSize: "18px", lineHeight: "1.7" }}>
+        <p className="font-bold mb-1" style={{ fontSize: "20px" }}>{foodName}</p>
+        <p className="mb-2" style={{ fontSize: "17px", lineHeight: "1.65" }}>{riskLabel}</p>
+        {tip ? (
+          <>
+            <p className="font-semibold mb-1" style={{ fontSize: "17px", lineHeight: "1.65" }}>
               {tipHeader}
+              {lang === "zh" ? "：" : ":"}
             </p>
-            <p className="text-gray-800" style={{ fontSize: "17px", lineHeight: "1.65" }}>{scanFood.tip}</p>
-          </div>
-        )}
+            <p style={{ fontSize: "17px", lineHeight: "1.65" }}>{tip}</p>
+          </>
+        ) : null}
       </div>
     );
   }
 
-  // Text-chat path: parse the AI reply text
-  if (!parsedFromText || !food) return <>{renderMessageContent(content)}</>;
-
-  const parsed = parsedFromText;
-  const foodName = getCartFoodName(food, lang);
-  const categoryLabel = food.category ? getLocalizedCategory(food.category, lang) : null;
-  const inferredCategory = inferFoodCategory(food);
-  const foodCategoryLabel = inferredCategory ? getLocalizedFoodCategory(inferredCategory, lang) : null;
-
-  const riskLabel = {
-    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
-    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
-    high:   { en: "High Risk",   ms: "Risiko Tinggi",    zh: "高风险"   },
-  }[parsed.risk][lang];
-
-  const riskStyle = {
-    low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-    medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
-    high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
-  }[parsed.risk];
-
-  const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
-
-  return (
-    <div style={{ whiteSpace: "normal", fontSize: "18px", lineHeight: "1.7" }}>
-      {/* Food name */}
-      <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "20px" }}>
-        {foodName}
-      </p>
-
-      {/* Badge row: [Badge 1 Food Category] [Badge 2 Cuisine] [Badge 3 Risk] */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        {/* Badge 1 — Food Category (inferred: Main Dish / Appetizer / Dessert / Drink) */}
-        {foodCategoryLabel && (
-          <span
-            className="inline-block rounded-full px-3 py-1 font-semibold"
-            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "14px" }}
-          >
-            {foodCategoryLabel}
-          </span>
-        )}
-        {/* Badge 2 — Cuisine / Database category (e.g. Malaysian, Chinese, Drinks) */}
-        {categoryLabel && (
-          <span
-            className="inline-block rounded-full px-3 py-1 font-semibold"
-            style={{ background: "#e0f2fe", color: "#0369a1", border: "1.5px solid #7dd3fc", fontSize: "14px" }}
-          >
-            {categoryLabel}
-          </span>
-        )}
-        {/* Badge 3 — Risk Level */}
-        <span
-          className="inline-block rounded-full px-3 py-1 font-bold"
-          style={{
-            background: riskStyle.bg,
-            color: riskStyle.color,
-            border: `1.5px solid ${riskStyle.border}`,
-            fontSize: "14px",
-          }}
-        >
-          {riskLabel}
-        </span>
-      </div>
-
-      {/* Health tip */}
-      {parsed.tip && (
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}
-        >
-          <p
-            className="font-semibold mb-1"
-            style={{ fontSize: "13px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}
-          >
-            {tipHeader}
-          </p>
-          <p className="text-gray-800" style={{ fontSize: "17px", lineHeight: "1.65" }}>
-            {parsed.tip}
-          </p>
-        </div>
-      )}
-    </div>
-  );
+  return <>{renderMessageContent(content)}</>;
 }
 
-// Compact structured card for each food in a multi-food typed response.
-// Reads directly from CartFoodItem (no LLM text parsing needed).
+// Compact structured summary for each food in a multi-food typed response.
 function FoodItemCard({ food, lang }: { food: CartFoodItem; lang: LangCode }) {
   const foodName = getCartFoodName(food, lang);
-  const cuisineLabel = food.category ? getLocalizedCategory(food.category, lang) : null;
-  const inferredCategory = inferFoodCategory(food);
-  const foodCategoryLabel = inferredCategory ? getLocalizedFoodCategory(inferredCategory, lang) : null;
   const tip = food.tip[lang] || food.tip.en || "";
-
-  const riskKey = food.risk;
-  const riskLabel = {
-    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
-    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
-    high:   { en: "High Risk",   ms: "Risiko Tinggi",    zh: "高风险"   },
-  }[riskKey][lang];
-  const riskStyle = {
-    low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-    medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
-    high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
-  }[riskKey];
+  const sugarN = parseNutrientNumber(food.sugar);
+  const sodiumN = parseNutrientNumber(food.sodium);
+  const fatN = parseNutrientNumber(food.fat);
+  const rk = computeRiskFromIndicators(sugarN, sodiumN, fatN, food.risk);
+  const riskLabel = localizedRiskFromKey(rk, lang);
   const tipHeader = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3" style={{ fontSize: "16px", lineHeight: "1.6" }}>
-      <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "17px" }}>{foodName}</p>
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        {foodCategoryLabel && (
-          <span
-            className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
-            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "13px" }}
-          >
-            {foodCategoryLabel}
-          </span>
-        )}
-        {cuisineLabel && (
-          <span
-            className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
-            style={{ background: "#e0f2fe", color: "#0369a1", border: "1.5px solid #7dd3fc", fontSize: "13px" }}
-          >
-            {cuisineLabel}
-          </span>
-        )}
-        <span
-          className="inline-block rounded-full px-2.5 py-0.5 font-bold"
-          style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "13px" }}
-        >
-          {riskLabel}
-        </span>
-      </div>
-      {tip && (
-        <div className="rounded-lg px-3 py-2" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
-          <p className="font-semibold mb-0.5" style={{ fontSize: "12px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+    <div className="text-gray-800" style={{ fontSize: "17px", lineHeight: "1.65" }}>
+      <p className="font-bold mb-1">{foodName}</p>
+      <p className="mb-2" style={{ lineHeight: "1.65" }}>{riskLabel}</p>
+      {tip ? (
+        <>
+          <p className="font-semibold mb-1" style={{ lineHeight: "1.65" }}>
             {tipHeader}
+            {lang === "zh" ? "：" : ":"}
           </p>
-          <p className="text-gray-800" style={{ fontSize: "15px", lineHeight: "1.6" }}>{tip}</p>
-        </div>
-      )}
+          <p style={{ lineHeight: "1.65" }}>{tip}</p>
+        </>
+      ) : null}
     </div>
   );
 }
 
 function AiFoodCard({ food, lang }: { food: EstimatedFoodCard; lang: LangCode }) {
-  const categoryLabel = food.category
-    ? ({
-        "Main Dish":  { en: "Main Dish",  ms: "Hidangan Utama",    zh: "主菜"   },
-        "Appetizer":  { en: "Appetizer",  ms: "Pembuka Selera",    zh: "开胃菜" },
-        "Dessert":    { en: "Dessert",    ms: "Pencuci Mulut",     zh: "甜点"   },
-        "Drink":      { en: "Drink",      ms: "Minuman",           zh: "饮料"   },
-      } as Record<EstimatedFoodCategory, Record<LangCode, string>>)[food.category][lang]
-    : null;
-
-  const riskStyle = {
-    low:    { color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-    medium: { color: "#92400e", bg: "#fef3c7", border: "#fcd34d" },
-    high:   { color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
-  }[food.risk];
-  const riskLabel = {
-    low:    { en: "Low Risk",    ms: "Risiko Rendah",    zh: "低风险"   },
-    medium: { en: "Medium Risk", ms: "Risiko Sederhana", zh: "中等风险" },
-    high:   { en: "High Risk",  ms: "Risiko Tinggi",    zh: "高风险"   },
-  }[food.risk][lang];
-  const tipHeader  = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health Tip";
+  const sugarN = food.sugar ?? Number.NaN;
+  const sodiumN = food.sodium ?? Number.NaN;
+  const fatN = food.fat ?? Number.NaN;
+  const hasAllNums = Number.isFinite(sugarN) && Number.isFinite(sodiumN) && Number.isFinite(fatN);
+  const rk = hasAllNums ? computeRiskFromIndicators(sugarN, sodiumN, fatN, food.risk) : food.risk;
+  const riskLabel = localizedRiskFromKey(rk, lang);
+  const tipHeader  = lang === "zh" ? "健康提示" : lang === "ms" ? "Tip Kesihatan" : "Health tip";
   const noDbLabel      = { en: "AI-generated food analysis", ms: "Analisis makanan jana AI", zh: "AI生成的食物分析" }[lang];
   const noDbDisclaimer = {
     en: "This food is not currently in the SIHAT food database. The nutrition information and health advice shown here are estimated by AI and may not be fully accurate.",
@@ -1060,32 +901,64 @@ function AiFoodCard({ food, lang }: { food: EstimatedFoodCard; lang: LangCode })
   }[lang];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3" style={{ fontSize: "16px", lineHeight: "1.6" }}>
-      <p className="font-bold text-gray-800 mb-2" style={{ fontSize: "17px" }}>{food.name}</p>
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        {categoryLabel && (
-          <span className="inline-block rounded-full px-2.5 py-0.5 font-semibold"
-            style={{ background: "#ccfbf1", color: "#0f766e", border: "1.5px solid #5eead4", fontSize: "13px" }}>
-            {categoryLabel}
-          </span>
-        )}
-        <span className="inline-block rounded-full px-2.5 py-0.5 font-bold"
-          style={{ background: riskStyle.bg, color: riskStyle.color, border: `1.5px solid ${riskStyle.border}`, fontSize: "13px" }}>
-          {riskLabel}
-        </span>
-      </div>
-      {food.tip && (
-        <div className="rounded-lg px-3 py-2" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
-          <p className="font-semibold mb-0.5" style={{ fontSize: "12px", color: "#0a7a74", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+    <div className="text-gray-800" style={{ fontSize: "17px", lineHeight: "1.65" }}>
+      <p className="font-bold mb-1">{food.name}</p>
+      <p className="mb-2" style={{ lineHeight: "1.65" }}>{riskLabel}</p>
+      {food.tip ? (
+        <>
+          <p className="font-semibold mb-1" style={{ lineHeight: "1.65" }}>
             {tipHeader}
+            {lang === "zh" ? "：" : ":"}
           </p>
-          <p className="text-gray-800" style={{ fontSize: "15px", lineHeight: "1.6" }}>{food.tip}</p>
-        </div>
-      )}
+          <p style={{ lineHeight: "1.65" }}>{food.tip}</p>
+        </>
+      ) : null}
       <p className="mt-2 font-semibold text-gray-500" style={{ fontSize: "12px" }}>{noDbLabel}</p>
       <p className="mt-1 text-gray-400" style={{ fontSize: "12px" }}>{noDbDisclaimer}</p>
     </div>
   );
+}
+
+/**
+ * Prepares sessionStorage before navigating to /recommendation.
+ * Returns true if photo scan context keys were cleared (caller should sync scanContext state).
+ */
+function prepareRecommendationNavigationForMessage(msg: Message, uiLang: LangCode): boolean {
+  const hasDb = Boolean(msg.suggestions?.length);
+  const est = msg.estimatedFood ? [msg.estimatedFood] : (msg.estimatedFoods ?? []);
+  const hasEst = est.length > 0;
+
+  if (!hasDb && !hasEst) {
+    sessionStorage.removeItem(CHATBOT_ESTIMATED_ANALYSIS_KEY);
+    return false;
+  }
+
+  sessionStorage.removeItem(SCAN_CONTEXT_KEY);
+  sessionStorage.removeItem(ANALYSIS_SESSION_KEY);
+
+  if (!hasDb && hasEst) {
+    sessionStorage.setItem(
+      CHATBOT_ESTIMATED_ANALYSIS_KEY,
+      JSON.stringify({ v: 1, foods: est, lang: uiLang })
+    );
+    sessionStorage.setItem("rec-text", est.map((f) => f.name).join(", "));
+    return true;
+  }
+
+  sessionStorage.removeItem(CHATBOT_ESTIMATED_ANALYSIS_KEY);
+
+  if (hasDb && hasEst) {
+    const matchedNames = msg.suggestions!.map((f) => getCartFoodName(f, uiLang));
+    const estimatedNames = est.map((f) => f.name);
+    sessionStorage.setItem("rec-text", [...matchedNames, ...estimatedNames].join(", "));
+    return true;
+  }
+
+  if (hasDb) {
+    const matchedNames = msg.suggestions!.map((f) => getCartFoodName(f, uiLang));
+    sessionStorage.setItem("rec-text", matchedNames.join(", "));
+  }
+  return true;
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
@@ -1139,6 +1012,8 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
   // Ref mirrors of volatile state so stable callbacks can read current values.
   const isOpenRef = useRef(false);
   const txRef = useRef<typeof tx>(tx);
+  const messagesRef = useRef<Message[]>([]);
+  const pendingImagesRef = useRef<PendingChatImage[]>([]);
 
   const revokeImagePreview = useCallback((url: string) => {
     URL.revokeObjectURL(url);
@@ -1166,6 +1041,14 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
   // Keep volatile-state mirrors up to date so stable callbacks can read them.
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
   useEffect(() => { txRef.current = tx; }, [tx]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+
+  const hasUserMessage = useMemo(() => messages.some((m) => m.role === "user"), [messages]);
 
   // Track whether the panel was open on the previous render so we can tell
   // "just opened" from "new message while already open".
@@ -1314,6 +1197,9 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
       setMessages(msgs);
       setHasInitialised(true);
+      conversationLangRef.current = lang;
+      setConversationLang(lang);
+      lastRequestedLangRef.current = lang;
 
       // Focus input after open animation
       setTimeout(() => inputRef.current?.focus(), 300);
@@ -1395,39 +1281,11 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     };
   }, [pathname, appendScanHintIfNew]);
 
-  // Add a minimal in-chat language switch indicator when language changes
-  useEffect(() => {
-    if (!isOpen || !hasInitialised) return;
-    if (lastRequestedLangRef.current === lang) return;
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        kind: "system",
-        content: tx.languageSwitched,
-        id: uid(),
-      },
-    ]);
-    lastRequestedLangRef.current = lang;
-    conversationLangRef.current = lang;
-    setConversationLang(lang);
-
-    // Fire multiple scroll attempts at increasing delays.
-    // Mobile Safari often reflows the layout after the first render, so a
-    // single RAF or timeout is not enough — each call re-reads scrollHeight
-    // after the next paint/reflow cycle.
-    requestAnimationFrame(() => scrollChatToBottom());
-    setTimeout(() => scrollChatToBottom(), 50);
-    setTimeout(() => scrollChatToBottom(), 150);
-    setTimeout(() => scrollChatToBottom(false), 300);
-  }, [lang, isOpen, hasInitialised, tx, scrollChatToBottom]);
-
   // ─── SEND MESSAGE ───────────────────────────────────────────────────────────
 
   const toggleSuggestedFood = useCallback(
     (food: CartFoodItem) => {
-      const foodName = getCartFoodName(food, lang);
+      const foodName = getCartFoodName(food, conversationLang);
       const alreadyAdded = isInCart(food.name.en);
 
       if (alreadyAdded) {
@@ -1441,7 +1299,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
       lastUnavailableRequestRef.current = null;
     },
-    [addToCart, cart, isInCart, lang, removeFromCart]
+    [addToCart, cart, conversationLang, isInCart, removeFromCart]
   );
 
   const getFreshWelcomeMessages = useCallback((): Message[] => {
@@ -1470,6 +1328,47 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
     return freshMessages;
   }, [tx.scanFound, tx.suggestedQ, tx.welcome]);
 
+  // Page language changed: refresh welcome + starters when no real chat yet; otherwise append switch notice.
+  useEffect(() => {
+    if (!isOpen || !hasInitialised) return;
+    if (lastRequestedLangRef.current === lang) return;
+
+    const snapshot = messagesRef.current;
+    const hasPendingImages = pendingImagesRef.current.length > 0;
+    const hasImagePreviews = Object.keys(messageImagePreviews).length > 0;
+
+    if (!hasPendingImages && !hasImagePreviews && isChatInInitialSeedState(snapshot)) {
+      lastRequestedLangRef.current = lang;
+      conversationLangRef.current = lang;
+      setConversationLang(lang);
+      const fresh = getFreshWelcomeMessages();
+      setMessages(fresh);
+      requestAnimationFrame(() => scrollChatToBottom());
+      setTimeout(() => scrollChatToBottom(), 50);
+      setTimeout(() => scrollChatToBottom(), 150);
+      setTimeout(() => scrollChatToBottom(false), 300);
+      return;
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        kind: "system",
+        content: tx.languageSwitched,
+        id: uid(),
+      },
+    ]);
+    lastRequestedLangRef.current = lang;
+    conversationLangRef.current = lang;
+    setConversationLang(lang);
+
+    requestAnimationFrame(() => scrollChatToBottom());
+    setTimeout(() => scrollChatToBottom(), 50);
+    setTimeout(() => scrollChatToBottom(), 150);
+    setTimeout(() => scrollChatToBottom(false), 300);
+  }, [lang, isOpen, hasInitialised, getFreshWelcomeMessages, tx.languageSwitched, scrollChatToBottom]);
+
   const clearConversation = useCallback(() => {
     if (typeof window !== "undefined" && !window.confirm(tx.clearConfirm)) return;
     chatAbortRef.current?.abort();
@@ -1495,53 +1394,55 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
   }, [getFreshWelcomeMessages, lang, tx.clearConfirm]);
 
   const buildPhotoSummary = useCallback(
-    (ctx: ScanContext, userText = ""): string => {
+    (ctx: ScanContext, userText = "", responseLang: LangCode): string => {
+      const txR = t[responseLang] ?? t.en;
       const names = getScanFoodNames(ctx).slice(0, 5);
-      const lines = [`${tx.foundFoods}`, ...names.map((name) => `• ${name}`)];
-      const categories = getScanCategoryNames(ctx, lang);
+      const lines = [`${txR.foundFoods}`, ...names.map((name) => `• ${name}`)];
+      const categories = getScanCategoryNames(ctx, responseLang);
       if (categories.length) {
-        lines.push("", tx.foundCategories, ...categories.map((category) => `• ${category}`));
+        lines.push("", txR.foundCategories, ...categories.map((category) => `• ${category}`));
       }
       const bestName = isHealthierComparisonRequest(userText) ? getLowestRiskFoodName(ctx) : null;
       if (bestName) {
         lines.push(
           "",
-          lang === "zh"
+          responseLang === "zh"
             ? `较健康的选择：${bestName}`
-            : lang === "ms"
+            : responseLang === "ms"
             ? `Pilihan yang lebih sihat: ${bestName}`
             : `Healthier choice: ${bestName}`
         );
       }
       if (hasHighFatOrSodium(ctx)) {
-        lines.push("", tx.highNutrientSummary);
+        lines.push("", txR.highNutrientSummary);
       }
       return lines.join("\n");
     },
-    [lang, tx.foundCategories, tx.foundFoods, tx.highNutrientSummary]
+    []
   );
 
   const buildAutomaticBestChoiceSummary = useCallback(
-    (ctx: ScanContext): string => {
-      const categories = getScanCategoryNames(ctx, lang);
+    (ctx: ScanContext, responseLang: LangCode): string => {
+      const txR = t[responseLang] ?? t.en;
+      const categories = getScanCategoryNames(ctx, responseLang);
       const bestName = getLowestRiskFoodName(ctx);
       const lines =
-        lang === "zh"
+        responseLang === "zh"
           ? ["我已查看找到的食物。"]
-          : lang === "ms"
+          : responseLang === "ms"
           ? ["Saya telah menyemak makanan yang dijumpai."]
           : ["I checked the foods I found."];
 
       if (categories.length) {
-        lines.push("", tx.foundCategories, ...categories.map((category) => `• ${category}`));
+        lines.push("", txR.foundCategories, ...categories.map((category) => `• ${category}`));
       }
 
       if (bestName) {
         lines.push(
           "",
-          lang === "zh"
+          responseLang === "zh"
             ? `较健康的选择：${bestName}`
-            : lang === "ms"
+            : responseLang === "ms"
             ? `Pilihan yang lebih sihat: ${bestName}`
             : `Healthier choice: ${bestName}`
         );
@@ -1549,7 +1450,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
       return lines.join("\n");
     },
-    [lang, tx.foundCategories]
+    []
   );
 
   const openFullAnalysis = useCallback((href: string) => {
@@ -1635,10 +1536,24 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
       const imagesToSend = pendingImages;
       if (!imagesToSend.length || isLoading || isPhotoAnalyzing) return;
 
+      const photoMsgLang = getUserMessageLanguage(text.trim(), conversationLangRef.current);
+      const txPhoto = t[photoMsgLang] ?? t.en;
+      const typedLanguageSwitchMsg: Message | null =
+        photoMsgLang !== conversationLangRef.current
+          ? {
+              role: "assistant",
+              kind: "system",
+              content: t[photoMsgLang].languageSwitched,
+              id: uid(),
+            }
+          : null;
+
       const messageId = uid();
-      const userMsg: Message = { role: "user", content: text.trim() || tx.uploadPhotoUser, id: messageId };
+      const userMsg: Message = { role: "user", content: text.trim() || txPhoto.uploadPhotoUser, id: messageId };
       setMessageImagePreviews((prev) => ({ ...prev, [messageId]: imagesToSend.map((image) => image.url) }));
-      setMessages((prev) => [...prev, userMsg]);
+      setMessages((prev) => [...prev, userMsg, ...(typedLanguageSwitchMsg ? [typedLanguageSwitchMsg] : [])]);
+      conversationLangRef.current = photoMsgLang;
+      setConversationLang(photoMsgLang);
       setPendingImages([]);
       setInput("");
       setIsPhotoAnalyzing(true);
@@ -1651,7 +1566,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
         const formData = new FormData();
         imagesToSend.forEach((image) => formData.append("file", image.file));
         if (text.trim()) formData.append("userText", text.trim());
-        formData.append("language", lang);
+        formData.append("language", photoMsgLang);
 
         const res = await fetch("/api/predict", { method: "POST", body: formData });
         if (!res.ok) {
@@ -1663,7 +1578,10 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
           clearStoredScanContext();
           lastScanContextRawRef.current = null;
           setScanContext(null);
-          setMessages((prev) => [...prev, { role: "assistant", content: tx.noFoodDetected, id: uid() }]);
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: txPhoto.noFoodDetected, id: uid(), locale: photoMsgLang },
+          ]);
           return;
         }
 
@@ -1677,46 +1595,38 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
         setScanContext(data);
 
         const scannedFoods = getScanFoodItems(data);
-        const singleFood = scannedFoods.length === 1 ? scannedFoods[0] : null;
-        const scanFood: ScanFoodSummary | undefined = singleFood
-          ? {
-              name: singleFood.f,
-              risk: singleFood.risk,
-              tip: typeof singleFood.tip === "object"
-                ? (singleFood.tip[lang] || singleFood.tip.en || "")
-                : (singleFood.tip ?? ""),
-              category: getFoodScanCategory(data, singleFood.f),
-            }
-          : undefined;
+        const scanFood: ScanFoodSummary | undefined =
+          scannedFoods.length === 1 ? foodItemToScanSummary(scannedFoods[0]!, data, photoMsgLang) : undefined;
+        const scanFoods: ScanFoodSummary[] | undefined =
+          scannedFoods.length > 1
+            ? scannedFoods.map((item) => foodItemToScanSummary(item, data, photoMsgLang))
+            : undefined;
+        const assistantContent =
+          scannedFoods.length > 1 ? txPhoto.foundFoods : buildPhotoSummary(data, text, photoMsgLang);
 
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: buildPhotoSummary(data, text),
+            content: assistantContent,
             scanFood,
-            actionButton: { label: tx.openFullAnalysis, href: "/recommendation" },
+            scanFoods,
+            actionButton: { label: txPhoto.openFullAnalysis, href: "/recommendation" },
+            locale: photoMsgLang,
             id: uid(),
           },
         ]);
       } catch {
-        setMessages((prev) => [...prev, { role: "assistant", content: tx.photoFailed, id: uid() }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: txPhoto.photoFailed, id: uid(), locale: photoMsgLang },
+        ]);
       } finally {
         setIsPhotoAnalyzing(false);
         setTimeout(() => inputRef.current?.focus(), 100);
       }
     },
-    [
-      buildPhotoSummary,
-      isLoading,
-      isPhotoAnalyzing,
-      lang,
-      tx.noFoodDetected,
-      tx.openFullAnalysis,
-      tx.photoFailed,
-      tx.uploadPhotoUser,
-      pendingImages,
-    ]
+    [buildPhotoSummary, isLoading, isPhotoAnalyzing, pendingImages]
   );
 
   const resizeInput = useCallback(() => {
@@ -1743,7 +1653,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
       }
       if (!trimmed || isLoading || isPhotoAnalyzing) return;
       const repeatKey = normalizeRepeatKey(trimmed);
-      const messageLang = getUserMessageLanguage(trimmed, lang);
+      const messageLang = getUserMessageLanguage(trimmed, conversationLangRef.current);
       const shouldShowTypedLanguageSwitch = messageLang !== conversationLangRef.current;
       const typedLanguageSwitchMsg: Message | null = shouldShowTypedLanguageSwitch
         ? {
@@ -1862,7 +1772,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
           ...prev,
           userMsg,
           ...(typedLanguageSwitchMsg ? [typedLanguageSwitchMsg] : []),
-          { role: "assistant", content: tx.stillUnavailable, id: uid() },
+          { role: "assistant", content: t[messageLang].stillUnavailable, id: uid() },
         ]);
         conversationLangRef.current = messageLang;
         setConversationLang(messageLang);
@@ -1920,9 +1830,11 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
         const data = (await res.json()) as ChatResponse;
         const apiReply = data.reply || tx.errorRetry;
         const categoryPrompt = isManualCategoryPrompt(apiReply, data.quickReplies) && hasScanContextItems(latestScanContext);
-        const reply = categoryPrompt ? buildAutomaticBestChoiceSummary(latestScanContext!) : apiReply;
+        const reply = categoryPrompt ? buildAutomaticBestChoiceSummary(latestScanContext!, messageLang) : apiReply;
         const quickReplies = categoryPrompt ? undefined : data.quickReplies;
-        const actionButton = categoryPrompt ? { label: tx.openFullAnalysis, href: "/recommendation" } : undefined;
+        const actionButton = categoryPrompt
+          ? { label: t[messageLang].openFullAnalysis, href: "/recommendation" }
+          : undefined;
 
         if (data.action?.type === "add" && data.action.food) {
           // Guard against stale cart snapshot: don't add if already present
@@ -1953,12 +1865,14 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
           typeof window !== "undefined" &&
           !categoryPrompt &&
           data.actionButton?.href?.includes("/recommendation") &&
-          data.suggestions?.length
+          (data.suggestions?.length || data.estimatedFood || data.estimatedFoods?.length)
         ) {
-          const matchedNames = data.suggestions.map((f) => getCartFoodName(f, messageLang));
+          const matchedNames = (data.suggestions ?? []).map((f) => getCartFoodName(f, messageLang));
+          const estimatedSingleName = data.estimatedFood ? [data.estimatedFood.name] : [];
           const estimatedNames = (data.estimatedFoods ?? []).map((f) => f.name);
-          const allNames = [...matchedNames, ...estimatedNames].join(", ");
+          const allNames = [...matchedNames, ...estimatedSingleName, ...estimatedNames].join(", ");
           sessionStorage.setItem("rec-text", allNames);
+          sessionStorage.removeItem(CHATBOT_ESTIMATED_ANALYSIS_KEY);
           sessionStorage.removeItem(SCAN_CONTEXT_KEY);
           sessionStorage.removeItem(ANALYSIS_SESSION_KEY);
           setScanContext(null);
@@ -1977,6 +1891,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
             isMultiFood: data.isMultiFood,
             estimatedFood: data.estimatedFood,
             estimatedFoods: data.estimatedFoods,
+            locale: messageLang,
             id: uid(),
           },
         ]);
@@ -1984,7 +1899,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
         if (chatAbortRef.current?.signal.aborted) return;
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: tx.errorRetry, id: uid() },
+          { role: "assistant", content: t[messageLang].errorRetry, id: uid(), locale: messageLang },
         ]);
       } finally {
         chatAbortRef.current = null;
@@ -2233,7 +2148,10 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
 
           {/* ── Messages ── */}
           <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50" aria-live="polite" aria-atomic="false">
-            {messages.map((msg, index) => (
+            {messages.map((msg, index) => {
+              const cardLang = msg.locale ?? conversationLang ?? lang;
+              const mctx = t[cardLang] ?? t.en;
+              return (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -2280,40 +2198,54 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                         ))}
                       </div>
                     ) : null}
-                    {msg.role === "assistant" && msg.isMultiFood && (msg.suggestions?.length || msg.estimatedFoods?.length)
+                    {msg.role === "assistant" && msg.scanFoods?.length ? (
+                      <div className="space-y-5">
+                        {msg.content.trim() ? (
+                          <p className="mb-1 font-semibold text-gray-800" style={{ fontSize: "18px", lineHeight: "1.65" }}>
+                            {msg.content}
+                          </p>
+                        ) : null}
+                        {msg.scanFoods.map((sf, scanIdx) => (
+                          <FoodScanSummary key={`${msg.id}-sf-${scanIdx}`} scanFood={sf} lang={cardLang} />
+                        ))}
+                      </div>
+                    )
+                    : msg.role === "assistant" && msg.isMultiFood && (msg.suggestions?.length || msg.estimatedFoods?.length)
                       ? (
-                        <div className="space-y-3">
+                        <div className="space-y-5">
                           {msg.suggestions?.map((food) => (
-                            <FoodItemCard key={food.name.en} food={food} lang={lang} />
+                            <FoodItemCard key={food.name.en} food={food} lang={cardLang} />
                           ))}
                           {msg.estimatedFoods?.map((food) => (
-                            <AiFoodCard key={food.name} food={food} lang={lang} />
+                            <AiFoodCard key={food.name} food={food} lang={cardLang} />
                           ))}
                         </div>
                       )
                       : msg.role === "assistant" && msg.estimatedFood
-                      ? <AiFoodCard food={msg.estimatedFood} lang={lang} />
+                      ? <AiFoodCard food={msg.estimatedFood} lang={cardLang} />
                       : msg.role === "assistant" && (msg.scanFood || msg.suggestions?.length === 1)
                       ? <FoodSummaryCard
                           content={msg.content}
                           food={msg.suggestions?.[0]}
                           scanFood={msg.scanFood}
-                          lang={lang}
+                          lang={cardLang}
                         />
+                      : msg.role === "assistant" && msg.starterQuestions?.length && !hasUserMessage
+                      ? renderMessageContent(ctx.welcome)
                       : renderMessageContent(msg.content)}
                     {msg.role === "assistant" &&
                     msg.starterQuestions?.length &&
-                    !messages.some((message) => message.role === "user") &&
+                    !hasUserMessage &&
                     !isLoading &&
                     !isPhotoAnalyzing &&
                     !input.trim() ? (
                       <div className="mt-3 grid w-full gap-2">
-                        {msg.starterQuestions.map((question, questionIndex) => {
+                        {(t[conversationLang] ?? t.en).suggestedQ.map((question, questionIndex) => {
                           const StarterIcon = questionIndex === 0 ? Utensils : questionIndex === 1 ? ClipboardList : BookOpen;
                           const isPrimaryStarter = questionIndex === 0;
                           return (
                           <button
-                            key={question}
+                            key={`starter-${questionIndex}`}
                             type="button"
                             onClick={() => sendMessage(question)}
                             className="flex min-h-14 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left font-semibold transition-colors hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -2349,12 +2281,17 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (msg.actionButton!.href === "/food") {
+                          const href = msg.actionButton!.href;
+                          if (href === "/food") {
                             console.log("Open Food Page clicked");
                             router.push("/food");
                             setIsOpen(false);
+                          } else if (href.includes("/recommendation")) {
+                            const clearedScan = prepareRecommendationNavigationForMessage(msg, cardLang);
+                            if (clearedScan) setScanContext(null);
+                            openFullAnalysis(href);
                           } else {
-                            openFullAnalysis(msg.actionButton!.href);
+                            openFullAnalysis(href);
                           }
                         }}
                         className="min-h-12 w-full rounded-xl border-2 px-4 py-3 font-bold shadow-sm text-white cursor-pointer select-none transition-all active:opacity-90 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -2370,11 +2307,11 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                         }}
                       >
                         {msg.actionButton.href === "/recommendation"
-                          ? ctx.openFullAnalysis
+                          ? mctx.openFullAnalysis
                           : msg.actionButton.href === "/learn"
-                          ? ctx.openLearnPage
+                          ? mctx.openLearnPage
                           : msg.actionButton.href === "/food"
-                          ? ctx.openFoodPage
+                          ? mctx.openFoodPage
                           : msg.actionButton.label}
                       </button>
                     </div>
@@ -2382,7 +2319,7 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                   {msg.role === "assistant" && msg.suggestions?.length ? (
                     <div className="mt-2 flex flex-col gap-2">
                       {msg.suggestions.map((food) => {
-                        const foodName = getCartFoodName(food, lang);
+                        const foodName = getCartFoodName(food, cardLang);
                         const alreadyAdded = isInCart(food.name.en);
                         return (
                           <button
@@ -2402,10 +2339,10 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                             <span className="flex items-center gap-2">
                               {alreadyAdded ? <Check className="h-5 w-5 shrink-0 text-green-600" /> : <Plus className="h-5 w-5 shrink-0" />}
                               <span className="flex flex-col gap-0.5">
-                                <span>{alreadyAdded ? ` ${ctx.inMealPlan}: ${foodName}` : ` ${ctx.addToMealPlan}: ${foodName}`}</span>
+                                <span>{alreadyAdded ? ` ${mctx.inMealPlan}: ${foodName}` : ` ${mctx.addToMealPlan}: ${foodName}`}</span>
                                 {alreadyAdded && (
                                   <span style={{ fontSize: "13px", color: "#16a34a", fontWeight: "500" }}>
-                                    {ctx.tapAgainToRemove}
+                                    {mctx.tapAgainToRemove}
                                   </span>
                                 )}
                               </span>
@@ -2473,7 +2410,8 @@ export function AIChatbot({ lang }: { lang: LangCode }) {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
 
             {/* Loading indicator */}
             {(isLoading || isPhotoAnalyzing) && (

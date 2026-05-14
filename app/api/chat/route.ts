@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllFoodData, type FoodDataRow } from "@/lib/queries";
 import { buildDailyIntakeSummary, type DailyIntakeSummary } from "@/lib/daily-intake-summary";
 import { type FoodItem, getSugarLevel, getGILevel, getFatLevel, getSodiumLevel } from "@/lib/food-functions";
+import { computeRiskFromIndicators, parseNutrientNumber as parseNutrientFromDisplayString } from "@/lib/food-recognition-risk";
 
 export const maxDuration = 30;
 
@@ -20,6 +21,12 @@ interface EstimatedFoodCard {
   category: EstimatedFoodCategory | null;
   risk: "low" | "medium" | "high";
   tip: string;
+  /** Estimated grams sugar per serving */
+  sugar?: number;
+  /** Estimated sodium mg per serving */
+  sodium?: number;
+  /** Estimated grams fat per serving (same field semantics as menu analysis) */
+  fat?: number;
 }
 
 interface ChatResponse {
@@ -125,7 +132,10 @@ function buildQuickFoodSummary(food: FoodItem, lang: LangCode): string {
   const giLevel = getGILevel(food.gi);
   const fatLevel = getFatLevel(food.fat);
   const sodiumLevel = getSodiumLevel(food.sodium);
-  const risk = food.risk;
+  const sugarN = parseNutrientFromDisplayString(food.sugar);
+  const sodiumN = parseNutrientFromDisplayString(food.sodium);
+  const fatN = parseNutrientFromDisplayString(food.fat);
+  const risk = computeRiskFromIndicators(sugarN, sodiumN, fatN, food.risk);
 
   const notes: string[] = [];
   if (sugarLevel === "low") notes.push(labels.lowerSugar);
@@ -152,35 +162,57 @@ type FoodMatchResult =
   | { status: "ambiguous"; foods: FoodItem[] }
   | { status: "none" }
 
+function messageContainsAsciiToken(message: string, token: string): boolean {
+  return new RegExp(`\\b${escapeRegExp(token)}\\b`, "i").test(message);
+}
+
+function messageContainsAnyMarker(message: string, markers: string[]): boolean {
+  return markers.some((m) => (/[^\x00-\x7f]/.test(m) ? message.includes(m) : messageContainsAsciiToken(message, m)));
+}
+
+/** "加" alone is too broad (e.g. 增加); only treat as add when it reads like "…帮我加[食物]". */
+function messageSuggestChineseAddJia(message: string): boolean {
+  if (/(增加|增長|增长)/.test(message)) return false;
+  return /(帮|幫|请|請|那|麻烦|麻煩).{0,12}加/u.test(message);
+}
+
 function parseCartCommand(message: string, foods: FoodItem[], lang: LangCode): { action: string; food?: FoodItem; suggestions?: FoodItem[]; query?: string } | null {
   const lowerMsg = message.toLowerCase();
   const labels = {
     en: { add: ["add", "put", "include", "insert"], remove: ["remove", "delete"], clear: ["clear", "empty"], view: ["what is in my food plan", "show my plan", "my food plan"] },
     ms: { add: ["tambah", "masukkan"], remove: ["buang", "padam"], clear: ["kosongkan", "clear"], view: ["apa dalam pelan makanan saya", "tunjuk pelan saya"] },
-    zh: { add: ["添加", "加入", "放"], remove: ["删除", "移除"], clear: ["清空"], view: ["我的食物计划有什么"] },
+    zh: { add: ["添加", "加入", "放", "加"], remove: ["删除", "移除"], clear: ["清空"], view: ["我的食物计划有什么"] },
   };
 
   const l = labels[lang];
+  const stripLang = detectUserMessageLanguage(message) ?? lang;
+
+  const addMarkersAll = [...labels.en.add, ...labels.ms.add, "添加", "加入", "放"];
+  const removeMarkersAll = [...labels.en.remove, ...labels.ms.remove, ...labels.zh.remove];
 
   // Check for clear
-  if (l.clear.some(word => lowerMsg.includes(word))) {
+  if (l.clear.some((word) => lowerMsg.includes(word))) {
     return { action: "clear" };
   }
 
   // Check for view
-  if (l.view.some(phrase => lowerMsg.includes(phrase))) {
+  if (l.view.some((phrase) => lowerMsg.includes(phrase))) {
     return { action: "view" };
   }
 
-  // Check for add/remove
-  for (const action of ["add", "remove"] as const) {
-    if (l[action].some(word => lowerMsg.includes(word))) {
-      const query = stripCartIntent(message, action, lang);
-      const foodMatch = matchFoodQuery(query, foods);
-      if (foodMatch.status === "matched") return { action, food: foodMatch.food, query };
-      if (foodMatch.status === "ambiguous") return { action, suggestions: foodMatch.foods, query };
-      return { action, query };
-    }
+  // Check for add/remove — markers from any language (user may type Chinese while UI is English).
+  for (const action of ["remove", "add"] as const) {
+    const markers = action === "add" ? addMarkersAll : removeMarkersAll;
+    const addIntent =
+      action === "add" &&
+      (messageContainsAnyMarker(message, markers) || messageSuggestChineseAddJia(message));
+    const removeIntent = action === "remove" && messageContainsAnyMarker(message, markers);
+    if (!addIntent && !removeIntent) continue;
+    const query = stripCartIntent(message, action, stripLang);
+    const foodMatch = matchFoodQuery(query, foods);
+    if (foodMatch.status === "matched") return { action, food: foodMatch.food, query };
+    if (foodMatch.status === "ambiguous") return { action, suggestions: foodMatch.foods, query };
+    return { action, query };
   }
 
   return null;
@@ -289,9 +321,9 @@ function updateCart(cart: FoodItem[], command: { action: string; food?: FoodItem
 
 function formatFoodSuggestions(foods: FoodItem[], lang: LangCode, query?: string): ChatResponse {
   const choose = {
-    en: "Here are some similar foods you can try:",
-    ms: "Cuba pilih daripada makanan yang serupa:",
-    zh: "以下是一些相似的食物，您可以试试：",
+    en: "Did you mean one of these? You can pick one below:",
+    ms: "Adakah anda maksudkan salah satu berikut? Pilih di bawah:",
+    zh: "您是指以下哪一种？可在下方选择：",
   };
   const unavailablePrefix = { en: "Sorry,", ms: "Maaf,", zh: "抱歉，" };
   const unavailableSuffix = {
@@ -543,7 +575,9 @@ function toLangCode(value: string | undefined): LangCode {
 // commas and other separators that normalizeFoodText would otherwise strip.
 function splitMultipleFoodNames(query: string): string[] {
   const parts = query
-    .split(/[,，；;\/]|\s+(?:and|&|plus|serta|dan|dengan|和|跟)\s+/gi)
+    .split(
+      /[,，；;\/或]|\s+(?:and|or|atau|&|plus|serta|dan|dengan|和|跟)\s+/gi
+    )
     .map((p) => p.trim())
     .filter((p) => p.length > 1);
   return parts.length > 1 ? parts : [];
@@ -622,7 +656,7 @@ function stripCartIntent(message: string, action: "add" | "remove", lang: LangCo
   const verbsByAction: Record<string, Record<string, string[]>> = {
     en: { add: ["add", "put", "insert", "include"], remove: ["remove", "delete"] },
     ms: { add: ["tambah", "masukkan"], remove: ["buang", "padam"] },
-    zh: { add: ["添加", "加入", "放"], remove: ["删除", "移除"] },
+    zh: { add: ["添加", "加入", "放", "加"], remove: ["删除", "移除"] },
   };
   const verbs = verbsByAction[lang]?.[action] ?? [];
 
@@ -770,6 +804,126 @@ function stripCartIntent(message: string, action: "add" | "remove", lang: LangCo
   return cleanCandidate(normalized);
 }
 
+/**
+ * Strips question wrappers and conversational / cart-style prefixes so the food
+ * matcher receives a real dish name (e.g. "那幫我加拉茶" → "拉茶").
+ */
+function extractFoodQueryCandidate(message: string): string {
+  let normalized = stripFoodQuestionIntent(message);
+  if (!normalized) return "";
+
+  const leadingJunk = [
+    "那帮我加",
+    "那幫我加",
+    "那请帮我加",
+    "那請幫我加",
+    "请帮我加",
+    "請幫我加",
+    "帮我加",
+    "幫我加",
+    "请加",
+    "請加",
+    "请把",
+    "請把",
+    "麻烦加",
+    "麻煩加",
+    "帮我",
+    "幫我",
+    "请",
+    "請",
+    "那麼",
+    "那么",
+    "那",
+    "我想问",
+    "我想問",
+    "想问",
+    "想問",
+    "我想了解",
+    "想了解",
+    "我想知道",
+    "想知道",
+    "我想吃",
+    "想吃",
+    "我要吃",
+    "要吃",
+    "能不能吃",
+    "可以吃吗",
+    "可以吃嗎",
+    "可不可以吃",
+    "能吃吗",
+    "能吃嗎",
+    "tolong tambah",
+    "boleh tambah",
+    "sila tambah",
+    "can you add",
+    "please add",
+    "could you add",
+    "kindly add",
+  ].sort((a, b) => normalizeFoodText(b).length - normalizeFoodText(a).length);
+
+  const trailingJunk = [
+    "健康吗",
+    "健康嗎",
+    "怎么样",
+    "怎麼樣",
+    "行不行",
+    "可以吗",
+    "可以嗎",
+    "好吗",
+    "好嗎",
+    "谢谢",
+    "謝謝",
+    "多谢",
+    "多謝",
+  ].sort((a, b) => normalizeFoodText(b).length - normalizeFoodText(a).length);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const before = normalized;
+    for (const phrase of leadingJunk) {
+      const np = normalizeFoodText(phrase);
+      if (!np) continue;
+      if (hasCjk(np)) {
+        if (normalized.startsWith(np)) {
+          normalized = normalized.slice(np.length).trim();
+          changed = true;
+          break;
+        }
+      } else if (normalized.startsWith(np)) {
+        normalized = normalized.slice(np.length).trim();
+        changed = true;
+        break;
+      }
+    }
+    if (before === normalized) break;
+  }
+
+  changed = true;
+  while (changed) {
+    changed = false;
+    const before = normalized;
+    for (const phrase of trailingJunk) {
+      const np = normalizeFoodText(phrase);
+      if (!np) continue;
+      if (hasCjk(np)) {
+        if (normalized.endsWith(np)) {
+          normalized = normalized.slice(0, normalized.length - np.length).trim();
+          changed = true;
+          break;
+        }
+      } else if (normalized.endsWith(np)) {
+        normalized = normalized.slice(0, normalized.length - np.length).trim();
+        changed = true;
+        break;
+      }
+    }
+    if (before === normalized) break;
+  }
+
+  return normalized.replace(/\s+/g, " ").trim();
+}
+
 function stripFoodQuestionIntent(message: string): string {
   let normalized = normalizeFoodText(message);
   const wrappers = [
@@ -876,63 +1030,141 @@ function hasCjk(value: string): boolean {
   return /\p{Script=Han}/u.test(value);
 }
 
-function hasPartialFoodRelationship(normalizedQuery: string, normalizedName: string): boolean {
-  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
-  const nameTokens = normalizedName.split(" ").filter(Boolean);
+/** Normalized query → normalized canonical name (must match DB normalizeFoodText output). */
+const NORMALIZED_FOOD_QUERY_ALIASES: Record<string, string> = {
+  "iced milo": "milo ice",
+  "ice milo": "milo ice",
+  "milo iced": "milo ice",
+};
 
-  if (!hasCjk(normalizedQuery) && !hasCjk(normalizedName)) {
-    // SAFE direction only: the food name in the DB must CONTAIN the query tokens.
-    // This prevents short DB names (e.g. "apple") from matching longer queries
-    // (e.g. "apple juice") — which would be a dangerous false positive.
-    // Require at least 2 query tokens so single-word queries never fuzzy-expand.
-    if (queryTokens.length < 2) return false;
-    return hasContiguousTokens(nameTokens, queryTokens);
+type FoodNameEntry = {
+  food: FoodItem;
+  name: string;
+  normalizedName: string;
+  compactName: string;
+  nameTokens: string[];
+};
+
+/** True when `nameTokens` begins with every token of `queryTokens` in order (extra trailing tokens = modifiers). */
+function tokensPrefix(nameTokens: string[], queryTokens: string[]): boolean {
+  if (queryTokens.length > nameTokens.length) return false;
+  for (let i = 0; i < queryTokens.length; i++) {
+    if (nameTokens[i] !== queryTokens[i]) return false;
   }
+  return true;
+}
 
-  const compactQuery = normalizedQuery.replace(/\s+/g, "");
-  const compactName = normalizedName.replace(/\s+/g, "");
-  if (compactQuery === compactName) return false;
+function minTokenCountAcrossNames(food: FoodItem): number {
+  return Math.min(
+    ...getFoodNames(food).map((n) => normalizeFoodText(n).split(" ").filter(Boolean).length)
+  );
+}
 
-  // CJK: only match when the DB food name contains the query — same safe direction.
-  return compactName.indexOf(compactQuery) !== -1;
+/** When multiple DB rows tie, prefer the shortest canonical name (fewest tokens). */
+function pickShortestCandidateFood(foods: FoodItem[]): FoodItem {
+  return foods.reduce((best, cur) =>
+    minTokenCountAcrossNames(cur) < minTokenCountAcrossNames(best) ? cur : best
+  );
 }
 
 function matchFoodQuery(query: string, foods: FoodItem[]): FoodMatchResult {
   const normalizedQuery = normalizeFoodText(query);
   const compactQuery = compactFoodText(query);
-  if (!normalizedQuery || !compactQuery) return { status: "none" };
+  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+  if (!normalizedQuery || !compactQuery || !queryTokens.length) return { status: "none" };
 
-  const entries = foods.flatMap((food) =>
-    getFoodNames(food).map((name) => ({
-      food,
-      name,
-      normalizedName: normalizeFoodText(name),
-      compactName: compactFoodText(name),
-    }))
+  const entries: FoodNameEntry[] = foods.flatMap((food) =>
+    getFoodNames(food).map((name) => {
+      const normalizedName = normalizeFoodText(name);
+      return {
+        food,
+        name,
+        normalizedName,
+        compactName: compactFoodText(name),
+        nameTokens: normalizedName.split(" ").filter(Boolean),
+      };
+    })
   );
 
-  const exactMatches = uniqueFoods(entries
-    .filter((entry) => entry.normalizedName === normalizedQuery || entry.compactName === compactQuery)
-    .map((entry) => entry.food));
+  const exactMatches = uniqueFoods(
+    entries
+      .filter((entry) => entry.normalizedName === normalizedQuery || entry.compactName === compactQuery)
+      .map((entry) => entry.food)
+  );
 
   if (exactMatches.length === 1) return { status: "matched", food: exactMatches[0] };
   if (exactMatches.length > 1) return { status: "ambiguous", foods: exactMatches.slice(0, 3) };
 
-  const partialMatches = uniqueFoods(entries
-    .filter((entry) => {
-      if (entry.normalizedName === normalizedQuery || entry.compactName === compactQuery) return false;
-      return hasPartialFoodRelationship(normalizedQuery, entry.normalizedName);
-    })
-    .sort((a, b) => b.compactName.length - a.compactName.length)
-    .map((entry) => entry.food));
+  const aliasTarget = NORMALIZED_FOOD_QUERY_ALIASES[normalizedQuery];
+  if (aliasTarget) {
+    const aliasNorm = normalizeFoodText(aliasTarget);
+    const aliasCompact = compactFoodText(aliasTarget);
+    const aliasMatches = uniqueFoods(
+      entries
+        .filter((e) => e.normalizedName === aliasNorm || e.compactName === aliasCompact)
+        .map((e) => e.food)
+    );
+    if (aliasMatches.length === 1) return { status: "matched", food: aliasMatches[0] };
+    if (aliasMatches.length > 1) return { status: "ambiguous", foods: aliasMatches.slice(0, 3) };
+  }
 
-  if (partialMatches.length > 0) {
-    return { status: "ambiguous", foods: partialMatches.slice(0, 3) };
+  const queryHasCjk = hasCjk(normalizedQuery);
+
+  if (queryHasCjk) {
+    const prefixHits = entries.filter((e) => e.compactName.startsWith(compactQuery));
+    if (prefixHits.length) {
+      const minCL = Math.min(...prefixHits.map((e) => e.compactName.length));
+      const narrowed = uniqueFoods(
+        prefixHits.filter((e) => e.compactName.length === minCL).map((e) => e.food)
+      );
+      if (narrowed.length === 1) return { status: "matched", food: narrowed[0] };
+      if (narrowed.length > 1) return { status: "ambiguous", foods: narrowed.slice(0, 3) };
+    }
+    const substrHits = entries.filter(
+      (e) =>
+        e.compactName.includes(compactQuery) &&
+        e.compactName !== compactQuery &&
+        !e.compactName.startsWith(compactQuery)
+    );
+    if (substrHits.length) {
+      const minCL = Math.min(...substrHits.map((e) => e.compactName.length));
+      const narrowed = uniqueFoods(
+        substrHits.filter((e) => e.compactName.length === minCL).map((e) => e.food)
+      );
+      if (narrowed.length === 1) return { status: "matched", food: narrowed[0] };
+      if (narrowed.length > 1) return { status: "ambiguous", foods: narrowed.slice(0, 3) };
+    }
+  } else {
+    const latinPrefix = entries.filter((e) => tokensPrefix(e.nameTokens, queryTokens));
+    if (latinPrefix.length) {
+      const minT = Math.min(...latinPrefix.map((e) => e.nameTokens.length));
+      const narrowed = uniqueFoods(
+        latinPrefix.filter((e) => e.nameTokens.length === minT).map((e) => e.food)
+      );
+      if (narrowed.length === 1) return { status: "matched", food: narrowed[0] };
+      if (narrowed.length > 1) return { status: "ambiguous", foods: narrowed.slice(0, 3) };
+    }
+
+    const latinEmbed = entries.filter(
+      (e) =>
+        !tokensPrefix(e.nameTokens, queryTokens) &&
+        queryTokens.length >= 2 &&
+        hasContiguousTokens(e.nameTokens, queryTokens)
+    );
+    if (latinEmbed.length) {
+      const minT = Math.min(...latinEmbed.map((e) => e.nameTokens.length));
+      const narrowed = uniqueFoods(
+        latinEmbed.filter((e) => e.nameTokens.length === minT).map((e) => e.food)
+      );
+      if (narrowed.length === 1) return { status: "matched", food: narrowed[0] };
+      if (narrowed.length > 1) return { status: "ambiguous", foods: narrowed.slice(0, 3) };
+    }
   }
 
   const fuzzyMatches = entries
     .map((entry) => ({
       food: entry.food,
+      nameTokens: entry.nameTokens,
       score: similarityScore(compactQuery, entry.compactName),
     }))
     .sort((a, b) => b.score - a.score);
@@ -940,13 +1172,23 @@ function matchFoodQuery(query: string, foods: FoodItem[]): FoodMatchResult {
   const best = fuzzyMatches[0];
   const second = fuzzyMatches.find((match) => match.food.name.en !== best?.food.name.en);
 
-  if (best && best.score >= 0.88 && (!second || best.score - second.score >= 0.08)) {
+  const extraNameTokens = best ? best.nameTokens.length - queryTokens.length : 0;
+  const prefixAligned = best ? tokensPrefix(best.nameTokens, queryTokens) : false;
+  const confidentFuzzy =
+    best &&
+    best.score >= 0.92 &&
+    (!second || best.score - second.score >= 0.06) &&
+    (prefixAligned ||
+      extraNameTokens <= 0 ||
+      (best.score >= 0.97 && extraNameTokens <= 1));
+
+  if (confidentFuzzy && best) {
     return { status: "matched", food: best.food };
   }
 
-  const closeMatches = uniqueFoods(fuzzyMatches
-    .filter((match) => match.score >= 0.72)
-    .map((match) => match.food));
+  const closeMatches = uniqueFoods(
+    fuzzyMatches.filter((match) => match.score >= 0.74).map((match) => match.food)
+  );
 
   if (closeMatches.length > 0) {
     return { status: "ambiguous", foods: closeMatches.slice(0, 3) };
@@ -1400,21 +1642,29 @@ async function getEstimatedFoodCards(
 
   const prompt = isSingle
     ? `Analyze the food or drink "${names[0]}" for an elderly person. Reply ONLY with this JSON (no other text):
-{"category":"Main Dish","risk":"medium","tip":"One sentence health tip."}
+{"category":"Main Dish","risk":"medium","sugar":0,"sodium":0,"fat":0,"tip":"One sentence health tip."}
 category: "Main Dish"|"Appetizer"|"Dessert"|"Drink"
-risk: "low"|"medium"|"high"
+risk: "low"|"medium"|"high" (initial guess; will be overridden by numbers if inconsistent)
+sugar: estimated sugar in grams per typical serving (number)
+sodium: estimated sodium in milligrams per typical serving (number)
+fat: estimated fat in grams per typical serving (number)
 tip: one short sentence in ${langName}`
     : `Analyze these foods for an elderly person. Reply ONLY with a JSON array (no other text):
 ${names.map((n, i) => `${i + 1}. ${n}`).join("\n")}
-[{"category":"Main Dish","risk":"medium","tip":"Tip."},...]
+[{"category":"Main Dish","risk":"medium","sugar":0,"sodium":0,"fat":0,"tip":"Tip."},...]
 category: "Main Dish"|"Appetizer"|"Dessert"|"Drink"
 risk: "low"|"medium"|"high"
+sugar, sodium, fat: numeric estimates per typical serving (sugar and fat in g, sodium in mg)
 tip: short ${langName} sentence`;
 
   const validCat = (v: unknown): EstimatedFoodCategory | null =>
     (["Main Dish", "Appetizer", "Dessert", "Drink"] as EstimatedFoodCategory[]).find(c => c === v) ?? null;
   const validRisk = (v: unknown): "low" | "medium" | "high" =>
     (["low", "medium", "high"] as const).find(r => r === v) ?? "medium";
+  const num = (v: unknown): number | undefined => {
+    const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+    return Number.isFinite(n) ? n : undefined;
+  };
   const fallback = (n: string): EstimatedFoodCard => ({ name: n, category: null, risk: "medium", tip: "" });
 
   try {
@@ -1436,7 +1686,25 @@ tip: short ${langName} sentence`;
       const m = text.match(/\{[\s\S]*?\}/);
       if (!m) return [fallback(names[0])];
       const p = JSON.parse(m[0]);
-      return [{ name: names[0], category: validCat(p.category), risk: validRisk(p.risk), tip: String(p.tip ?? "").trim() }];
+      const sugar = num(p.sugar);
+      const sodium = num(p.sodium);
+      const fat = num(p.fat);
+      const modelRisk = validRisk(p.risk);
+      const risk =
+        sugar !== undefined && sodium !== undefined && fat !== undefined
+          ? computeRiskFromIndicators(sugar, sodium, fat, modelRisk)
+          : modelRisk;
+      return [
+        {
+          name: names[0],
+          category: validCat(p.category),
+          risk,
+          tip: String(p.tip ?? "").trim(),
+          sugar,
+          sodium,
+          fat,
+        },
+      ];
     } else {
       const m = text.match(/\[[\s\S]*\]/);
       if (!m) return names.map(fallback);
@@ -1444,7 +1712,23 @@ tip: short ${langName} sentence`;
       if (!Array.isArray(arr)) return names.map(fallback);
       return names.map((n, i) => {
         const p: Record<string, unknown> = arr[i] ?? {};
-        return { name: n, category: validCat(p.category), risk: validRisk(p.risk), tip: String(p.tip ?? "").trim() };
+        const sugar = num(p.sugar);
+        const sodium = num(p.sodium);
+        const fat = num(p.fat);
+        const modelRisk = validRisk(p.risk);
+        const risk =
+          sugar !== undefined && sodium !== undefined && fat !== undefined
+            ? computeRiskFromIndicators(sugar, sodium, fat, modelRisk)
+            : modelRisk;
+        return {
+          name: n,
+          category: validCat(p.category),
+          risk,
+          tip: String(p.tip ?? "").trim(),
+          sugar,
+          sodium,
+          fat,
+        };
       });
     }
   } catch {
@@ -1505,8 +1789,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(buildBestChoiceResponse(scanCategory, analysedScanContext, foods, requestLang));
     }
 
-    // Check for food mention in user message
-    const foodQuestionQuery = stripFoodQuestionIntent(message);
+    // Check for food mention in user message (strip wrappers + multilingual command chatter)
+    const foodQuestionQuery = extractFoodQueryCandidate(message);
     const foodMention = matchFoodQuery(foodQuestionQuery, foods);
 
     const primaryKey = process.env.GROQ_API_KEY_3 ?? process.env.GROQ_API_KEY;
@@ -1528,8 +1812,7 @@ export async function POST(req: NextRequest) {
         if (m.status === "matched") {
           matchedFoods.push(m.food);
         } else if (m.status === "ambiguous" && m.foods.length > 0) {
-          // For multi-food queries, pick best ambiguous match rather than discarding.
-          matchedFoods.push(m.foods[0]);
+          matchedFoods.push(pickShortestCandidateFood(m.foods));
         } else {
           const displayName = formatUnavailableFoodName(part, requestLang);
           if (displayName) unmatchedNames.push(displayName);
@@ -1547,9 +1830,8 @@ export async function POST(req: NextRequest) {
         reply: buildMultiFoodIntro(totalCount, requestLang),
         suggestions: uniqueMatched.length > 0 ? uniqueMatched : undefined,
         estimatedFoods: estimatedFoods.length > 0 ? estimatedFoods : undefined,
-        actionButton: uniqueMatched.length > 0
-          ? { label: openFullLabels[requestLang], href: "/recommendation" }
-          : undefined,
+        actionButton:
+          totalCount > 0 ? { label: openFullLabels[requestLang], href: "/recommendation" } : undefined,
         isMultiFood: true,
       });
     };
@@ -1588,7 +1870,11 @@ export async function POST(req: NextRequest) {
         const displayName = formatUnavailableFoodName(foodQuestionQuery, requestLang) || foodQuestionQuery;
         const [estimated] = await getEstimatedFoodCards([displayName], requestLang, primaryKey);
         if (estimated) {
-          return NextResponse.json({ estimatedFood: estimated });
+          return NextResponse.json({
+            reply: buildMultiFoodIntro(1, requestLang),
+            estimatedFood: estimated,
+            actionButton: { label: openFullLabels[requestLang], href: "/recommendation" },
+          });
         }
       }
 
