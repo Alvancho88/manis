@@ -15,7 +15,7 @@ import { DailyIntakePanel, type DailyIntakePanelStrings } from "@/components/dai
 import Image from "next/image"
 import {
   Camera, Upload, X, Star, TrendingDown, TrendingUp, Minus,
-  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, ArrowLeft, ImageIcon, ShoppingCart, Type, ChevronLeft, ChevronRight
+  CheckCircle, Info, Loader2, ZoomIn, Utensils, GlassWater, Cake, Salad, Plus, Trash2, ArrowRight, ArrowLeft, ImageIcon, ShoppingCart, Type, ChevronLeft, ChevronRight, Sun
 } from "lucide-react"
 
 // Define language codes for multi-language support
@@ -296,7 +296,7 @@ const content = {
     scanning_steps: ["正在读取菜单...", "正在识别食物...", "正在计算营养值...", "即将完成..."],
     success_found: "个食物已找到！",
     success_none: "未检测到食物",
-    top3_disclaimer: "我们为您展示了食物���片��发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
+    top3_disclaimer: "我们为您展示了食物����片��发现的前3个最健康的选择。这些是对您血糖最安全的选项。",
     analyze_new_food: "重新开始",
     back_to_category: "返回类别",
     best_choice_reason_label: "为何是最佳选择",
@@ -1190,11 +1190,11 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
         const t = content[lang]
         return (
           <>
-          <div className="max-w-2xl mx-auto px-4 py-4 md:py-6 min-h-[calc(100vh-200px)]">
+            <div className="max-w-2xl lg:max-w-5xl mx-auto px-4 py-4 md:py-6 min-h-[calc(100vh-200px)]">
             {/* Simple Header - follows 5 second rule */}
             <div className="text-center mb-6 pt-10">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-2 text-balance">{t.page_title}</h1>
-              <p className="text-lg text-muted-foreground">{t.page_subtitle}</p>
+              <h1 className="text-4xl md:text-5xl font-extrabold mb-3 text-balance">{t.page_title}</h1>
+              <p className="text-xl md:text-2xl text-muted-foreground">{t.page_subtitle}</p>
             </div>
 
             {/* Panel Navigation Indicator - only show when we have results */}
@@ -1202,24 +1202,24 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
               <div ref={panelNavRef} className="flex items-center justify-center gap-2 mb-6">
                 <button
                   onClick={() => setCurrentPanel("upload")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-base font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full text-lg font-semibold transition-all ${
                     currentPanel === "upload"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-5 h-5" />
                   {t.panel_upload}
                 </button>
                 <button
                   onClick={() => setCurrentPanel("results")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-base font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full text-lg font-semibold transition-all ${
                     currentPanel === "results"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-5 h-5" />
                   {t.panel_results}
                 </button>
               </div>
@@ -1232,10 +1232,11 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
               <div ref={uploadPanelRef} className="space-y-4">
                 {/* Main Upload Area */}
                 <div className="bg-card rounded-2xl border-2 border-primary/20 p-6 shadow-sm">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-center justify-center">
-                    <Camera className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 text-center justify-center">
+                    <Camera className="w-7 h-7 text-primary" />
                     {t.upload_title}
                   </h3>
+                  <p className="text-base text-muted-foreground text-center mb-4">{t.max_photos} (0/{MAX_IMAGES})</p>
 
                   {isUploading ? (
                     <div className="border-2 border-dashed border-primary/40 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[280px]">
@@ -1246,13 +1247,13 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
                     <div>
                       {/* Photo count indicator */}
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                        <span className={`text-base font-bold ${uploadedImages.length >= MAX_IMAGES ? "text-amber-600" : "text-muted-foreground"}`}>
-                          {uploadedImages.length}/{MAX_IMAGES} {t.photos_count}
+                        <span className={`text-lg font-bold ${uploadedImages.length >= MAX_IMAGES ? "text-amber-600" : "text-muted-foreground"}`}>
+                          {t.max_photos} ({uploadedImages.length}/{MAX_IMAGES})
                         </span>
                         {uploadedImages.length > 1 && (
                           <button
                             onClick={removeAllImages}
-                            className="flex items-center gap-1 text-sm text-destructive hover:underline"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-base font-semibold text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-lg border border-destructive/30 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                             {t.delete_all}
@@ -1262,7 +1263,7 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
 
                       {/* Max photos warning */}
                       {uploadedImages.length >= MAX_IMAGES && (
-                        <div className="bg-amber-50 border border-amber-200 text-amber-700 text-base font-semibold px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                        <div className="bg-amber-50 border border-amber-200 text-amber-700 text-lg font-semibold px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
                           <Info className="w-5 h-5 shrink-0" />
                           {t.max_photos_warning}
                         </div>
@@ -1319,16 +1320,16 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
                         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                           <Camera className="w-10 h-10 text-primary" />
                         </div>
-                        <p className="text-lg font-semibold text-foreground mb-2">{t.upload_hint}</p>
-                        <p className="text-sm text-muted-foreground">{t.max_photos}</p>
+                        <p className="text-xl font-semibold text-foreground mb-2">{t.upload_hint}</p>
+                        <p className="text-base text-muted-foreground">JPG, PNG ({t.max_photos})</p>
                       </div>
 
                       {/* Large Take Photo Button */}
                       <button
                         onClick={handleAddPhotoClick}
-                        className="mt-4 w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-bold text-xl py-5 px-4 rounded-2xl hover:opacity-90 shadow-lg"
+                        className="mt-4 w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-bold text-2xl py-5 px-4 rounded-2xl hover:opacity-90 shadow-lg"
                       >
-                        <Camera className="w-7 h-7" />
+                        <Camera className="w-8 h-8" />
                         {t.camera_btn}
                       </button>
                     </>
@@ -1359,9 +1360,9 @@ export default function RecommendationClient({ initialFoods }: { initialFoods: M
                 {!showTextInput ? (
                   <button
                     onClick={() => setShowTextInput(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-primary font-semibold hover:bg-primary/5 rounded-xl transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-4 text-lg text-primary font-bold bg-primary/10 hover:bg-primary/20 rounded-xl border-2 border-primary/30 transition-colors"
                   >
-                    <Type className="w-5 h-5" />
+                    <Type className="w-6 h-6" />
                     {t.type_food_instead}
                   </button>
                 ) : (
